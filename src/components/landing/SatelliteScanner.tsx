@@ -1,13 +1,13 @@
 'use client';
 
-// Animowana wizualizacja "satelita skanuje pole" — serce landingu.
+// Animowana wizualizacja "skan pola z góry" — serce landingu.
 // Czysty CSS + SVG, zero dependencji. Idzie nawet na telefonie z 4G.
 //
 // Warstwy:
-// 1. Grid pól w widoku satelitarnym (top-down, lekki tilt) z NDVI-owymi kolorami
+// 1. Grid pól w widoku z góry (top-down, lekki tilt) z kolorami zdrowia roślin
 // 2. Animowany skan (beam) przelatujący od lewej do prawej — wiadro pól podświetla się po kolei
-// 3. Satelita (SVG) powyżej krawędzi kadru, z orbit trail
-// 4. Dane które wyskakują po zeskanowaniu: "NDVI 0.68", "18% wilgoć", "stres: niski"
+// 3. Sensor (SVG) powyżej krawędzi kadru, z orbit trail
+// 4. Dane które wyskakują po zeskanowaniu: średnie zdrowie, wilgotność, okno działania
 
 import { useEffect, useMemo, useState } from 'react';
 
@@ -22,7 +22,7 @@ type Patch = {
   delay: number;
 };
 
-// Paleta NDVI z lib/satellite/ndvi.ts — trzymana w sync
+// Paleta zdrowia roślin — trzymana w sync z silnikiem analiz
 function ndviColor(ndvi: number): string {
   if (ndvi < 0.2) return '#78350f'; // bare soil brown
   if (ndvi < 0.35) return '#dc2626'; // stressed
@@ -41,7 +41,7 @@ export function SatelliteScanner() {
     const rng = mulberry32(42); // deterministic layout
     for (let row = 0; row < FIELD_ROWS; row++) {
       for (let col = 0; col < FIELD_COLS; col++) {
-        // NDVI: mozaika z "stresem" w jednym rogu dla dramaturgii
+        // mozaika ze „stresem" w jednym rogu dla dramaturgii
         const distFromStressed = Math.hypot(col - 1, row - 3);
         const base = 0.72 - Math.max(0, 4 - distFromStressed) * 0.1;
         const noise = (rng() - 0.5) * 0.12;
@@ -284,19 +284,19 @@ function Hud() {
         <div className="flex items-center gap-2 rounded-full bg-black/30 backdrop-blur-md px-3 py-1.5 ring-1 ring-white/15">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           <span className="text-[11px] font-mono tracking-widest text-sky-100">
-            SENTINEL-2 · 52.31°N · 19.12°E
+            LIVE · 52.31°N · 19.12°E
           </span>
         </div>
         <div className="hidden sm:flex items-center gap-2 rounded-full bg-black/30 backdrop-blur-md px-3 py-1.5 ring-1 ring-white/15">
           <span className="text-[11px] font-mono tracking-widest text-sky-100">
-            NDVI · 10 m / pixel
+            Skan · 10 m / piksel
           </span>
         </div>
       </div>
 
       {/* dolne karty danych */}
       <div className="absolute bottom-4 left-4 right-4 flex flex-wrap justify-between gap-2">
-        <HudCard label="NDVI średnie" value="0.42" badge="spadek" />
+        <HudCard label="Zdrowie pola" value="0.42" badge="spadek" />
         <HudCard label="Wilgoć gleby" value="18%" badge="niska" tone="warn" />
         <HudCard label="Okno oprysku" value="5:30" suffix=" jutro" tone="ok" />
       </div>

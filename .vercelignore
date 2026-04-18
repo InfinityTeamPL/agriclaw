@@ -1,0 +1,12 @@
+node_modules
+.next
+.env
+.env.local
+.env.production
+.claude
+docker-compose.yml
+*.log
+.vscode
+.idea
+coverage
+.DS_Store

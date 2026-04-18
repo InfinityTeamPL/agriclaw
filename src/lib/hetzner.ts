@@ -43,13 +43,13 @@ async function hetznerRequest<T>(
 let cachedFirewallId: number | null = null;
 
 export async function ensureFirewall(): Promise<number | null> {
-  const serverIp = process.env.AGENTAI_SERVER_IP;
+  const serverIp = process.env.AGRICLAW_SERVER_IP;
   if (!serverIp) return null;
 
   if (cachedFirewallId) return cachedFirewallId;
 
   const list = await hetznerRequest<{ firewalls: { id: number }[] }>(
-    "/firewalls?name=agentai-fw"
+    "/firewalls?name=agriclaw-fw"
   );
 
   if (list.firewalls.length > 0) {
@@ -60,21 +60,21 @@ export async function ensureFirewall(): Promise<number | null> {
   const fw = await hetznerRequest<{ firewall: { id: number } }>("/firewalls", {
     method: "POST",
     body: JSON.stringify({
-      name: "agentai-fw",
+      name: "agriclaw-fw",
       rules: [
         {
           direction: "in",
           protocol: "tcp",
           port: "22",
           source_ips: [`${serverIp}/32`],
-          description: "SSH from AgentAI only",
+          description: "SSH from AgriClaw only",
         },
         {
           direction: "in",
           protocol: "tcp",
           port: "18789",
           source_ips: [`${serverIp}/32`],
-          description: "Gateway from AgentAI only",
+          description: "Gateway from AgriClaw only",
         },
         {
           direction: "in",
@@ -159,7 +159,7 @@ export async function createServer(
     location: location || process.env.HETZNER_LOCATION || "hel1",
     user_data: userData,
     labels: {
-      managed_by: "agentai",
+      managed_by: "agriclaw",
       agent_name: agentLabel.replace(/[^a-zA-Z0-9-]/g, "-").toLowerCase(),
     },
   };
@@ -286,7 +286,7 @@ export async function listServers(): Promise<
   { id: number; name: string; status: string; ip: string }[]
 > {
   const data = await hetznerRequest<{ servers: HetznerServer[] }>(
-    "/servers?label_selector=managed_by=agentai"
+    "/servers?label_selector=managed_by=agriclaw"
   );
   return data.servers.map((s) => ({
     id: s.id,
@@ -307,13 +307,13 @@ export async function listAllAccountServers(): Promise<
     name: s.name,
     status: s.status,
     ip: s.public_net.ipv4.ip,
-    managed: s.labels?.managed_by === "agentai",
+    managed: s.labels?.managed_by === "agriclaw",
   }));
 }
 
 export async function createSnapshot(
   serverId: number,
-  description: string = "agentai-base"
+  description: string = "agriclaw-base"
 ): Promise<number> {
   const data = await hetznerRequest<{ image: { id: number } }>(
     `/servers/${serverId}/actions/create_image`,
