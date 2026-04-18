@@ -254,7 +254,7 @@ export async function GET(req: NextRequest) {
   const bytes = await pdf.save();
   const filename = `ksiega-polowa-${new Date().toISOString().slice(0, 10)}.pdf`;
 
-  return new NextResponse(bytes, {
+  return new NextResponse(Buffer.from(bytes), {
     headers: {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="${filename}"`,
