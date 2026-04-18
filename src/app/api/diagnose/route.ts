@@ -15,19 +15,21 @@ const bodySchema = z.object({
 });
 
 const DIAGNOSIS_SCHEMA = `{
-  "diagnoza": "krótka diagnoza po polsku (np. 'rdza brunatna pszenicy')",
+  "rozpoznanaUprawa": "co widzisz na zdjęciu: pszenica | kukurydza | rzepak | jęczmień | ziemniaki | inna (nazwa)",
+  "fazaRozwoju": "krótki opis fazy: np. 'wczesna wegetacja, BBCH 20-30'",
+  "diagnoza": "TWOJA NAJBARDZIEJ PRAWDOPODOBNA DIAGNOZA po polsku (nawet przy niskiej pewności — wymień top 1-2 możliwości). Jeśli widzisz coś nietypowego/podejrzanego — OPISZ co widzisz konkretnie ('liście żółknące od brzegów', 'plamki brązowe średnicy 2-5 mm', etc)",
   "pewnosc": "wysoka | średnia | niska",
-  "typProblemu": "choroba_grzybowa | szkodnik | niedobor | chwast | herbicyd | mechaniczne | inne",
-  "objawy": ["lista widocznych objawów"],
+  "typProblemu": "choroba_grzybowa | szkodnik | niedobor | chwast | herbicyd | mechaniczne | stres_wodny | stres_termiczny | brak_problemu | inne",
+  "objawy": ["konkretne obserwacje z obrazu, np. 'plamy chlorotyczne na górnych liściach', 'zwinięcie brzegów liścia', 'żerowanie larwy na nerwie liścia'"],
   "rekomendacja": {
     "pilnosc": "pilne | w_ciagu_tygodnia | monitoruj",
-    "akcja": "konkretna akcja do wykonania",
+    "akcja": "konkretna akcja — co zrobić DZIŚ",
     "srodki": [
-      { "typ": "fungicyd | herbicyd | insektycyd | nawoz | inne", "substancja_czynna": "nazwa", "przyklad_handlowy": "przykładowa nazwa handlowa PL", "dawka": "np. 1L/ha" }
+      { "typ": "fungicyd | herbicyd | insektycyd | nawoz | inne", "substancja_czynna": "pełna nazwa", "przyklad_handlowy": "nazwa handlowa PL (np. Falcon 460 EC)", "dawka": "z etykiety, np. 0.6 l/ha" }
     ],
-    "okno_oprysku": "np. rano 5:30-9:00, bez wiatru >15 km/h"
+    "okno_oprysku": "np. jutro rano 5:30-9:00, bez wiatru >15 km/h"
   },
-  "porada_dodatkowa": "jedno zdanie kontekstu"
+  "porada_dodatkowa": "np. gdzie jeszcze się rozejrzeć, co obserwować w następnych dniach"
 }`;
 
 export async function POST(req: NextRequest) {
@@ -74,11 +76,21 @@ export async function POST(req: NextRequest) {
     ? `Dodatkowy kontekst od rolnika: „${parsed.data.note}"`
     : '';
 
-  const instruction = `Obejrzyj zdjęcie i zdiagnozuj problem u rośliny. ${cropHint} ${userNoteHint}
+  const instruction = `Jesteś doświadczonym agronomem z 20-letnim stażem w polskich gospodarstwach. Oglądasz zdjęcie z pola. ${cropHint} ${userNoteHint}
 
-WAŻNE: Jeśli nie widzisz wyraźnego problemu na zdjęciu, ustaw diagnoza="brak problemów widocznych" i pewnosc="niska".
+ZADANIE:
+1. **Zidentyfikuj uprawę** którą widzisz (nawet jeśli różni się od tej co rolnik zadeklarował — powiedz mu!)
+2. **Określ fazę rozwojową** (BBCH lub opis: wschody/krzewienie/strzelanie/kwitnienie/dojrzewanie)
+3. **Diagnozuj co widzisz** — nawet jeśli nie ma oczywistego problemu, to:
+   - zauważ RZECZY NORMALNE ("zdrowe zielone liście, pokrycie łanu ~90%")
+   - jeśli widzisz COKOLWIEK nietypowego (przebarwienie, plamka, chwast na brzegu, zagęszczenie) — OPISZ dokładnie co widać
+   - NIE odpowiadaj "brak problemów" bez sprawdzenia min 3 rzeczy: kolor liści, struktura, obecność szkodników, chwastów, uszkodzeń
+4. **Daj najbardziej prawdopodobną diagnozę** — nawet przy niskiej pewności wymień top 1-2 możliwości. Rolnik woli dowiedzieć się "może być septoria albo plamistość siatkowa" niż "nie wiem".
+5. **Konkretna rekomendacja**: nazwa handlowa ŚOR zarejestrowanego w Polsce (MRiRW), dawka z etykiety, okno oprysku.
 
-Nie używaj generic rad. Konkretna substancja czynna + przykład handlowy dostępny w Polsce. Dawki zgodne z etykietą PL.`;
+Jeśli zdjęcie faktycznie jest zbyt słabe/dalekie — zwróć fazy rozwoju i uprawy + powiedz "zrób zbliżenie liścia 20-30 cm od rośliny" w poradzie_dodatkowa.
+
+Unikaj generycznych rad typu "stosuj fungicyd". Podaj KONKRET: substancja czynna + nazwa handlowa + dawka.`;
 
   let rawResponse: string;
   try {
