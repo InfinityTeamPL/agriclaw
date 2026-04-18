@@ -39,6 +39,7 @@ import { SprayTimer } from '@/components/dashboard/SprayTimer';
 import { FrostAlert } from '@/components/dashboard/FrostAlert';
 import { NitrogenCalculator } from '@/components/dashboard/NitrogenCalculator';
 import { WaterBalance } from '@/components/dashboard/WaterBalance';
+import { DiseaseRiskPanel } from '@/components/dashboard/DiseaseRiskPanel';
 
 interface Field {
   id: string;
@@ -197,6 +198,9 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
 
       {/* Bilans wodny FAO-56 — opady vs ETc + sugestia nawodnienia */}
       <WaterBalance fieldId={field.id} />
+
+      {/* Ryzyko chorób grzybowych — 7 modeli × BBCH + pogoda 72h */}
+      <DiseaseRiskPanel fieldId={field.id} />
 
       {/* Historia Sentinel-2 10 lat */}
       <HistoryChart fieldId={field.id} />
