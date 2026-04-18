@@ -10,12 +10,22 @@ import { compare } from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { isAdmin } from '@/lib/admin';
 
+const hasGoogle = Boolean(
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
+);
+
+export const googleEnabled = hasGoogle;
+
 export const authOptions: NextAuthOptions = {
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-    }),
+    ...(hasGoogle
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+          }),
+        ]
+      : []),
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
