@@ -106,7 +106,7 @@ export function FarmMiniMap({ fields, center, className }: Props) {
   return (
     <div className={className ?? 'relative w-full h-[280px]'}>
       <div className="absolute inset-0 rounded-3xl overflow-hidden bg-gradient-to-br from-emerald-50 to-slate-100">
-        <div ref={containerRef} className="absolute inset-0" />
+        <div ref={containerRef} className="w-full h-full" />
       </div>
       {!ready && (
         <div className="absolute inset-0 flex items-center justify-center">

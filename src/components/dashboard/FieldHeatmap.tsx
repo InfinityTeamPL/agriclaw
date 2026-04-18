@@ -151,7 +151,7 @@ export function FieldHeatmap({ polygon, centroid, ndviMean, className }: Props) 
   return (
     <div className={className ?? 'relative w-full h-[480px]'}>
       <div className="absolute inset-0 overflow-hidden bg-gradient-to-br from-emerald-50 to-slate-100">
-        <div ref={containerRef} className="absolute inset-0" />
+        <div ref={containerRef} className="w-full h-full" />
       </div>
       {!ready && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-sm">

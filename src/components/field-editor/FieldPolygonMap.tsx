@@ -113,7 +113,7 @@ export function FieldPolygonMap({ polygon, centroid, ndviMean, className }: Prop
   return (
     <div className={className ?? 'relative w-full h-[400px]'}>
       <div className="absolute inset-0 bg-gray-100">
-        <div ref={containerRef} className="absolute inset-0" />
+        <div ref={containerRef} className="w-full h-full" />
       </div>
       {!ready && (
         <div className="absolute inset-0 flex items-center justify-center bg-white/60">

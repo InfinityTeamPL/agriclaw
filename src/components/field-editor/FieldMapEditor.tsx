@@ -295,7 +295,7 @@ export function FieldMapEditor({ farmId, center }: Props) {
 
       {/* Prawa kolumna — mapa */}
       <div className="relative w-full h-[420px] sm:h-[560px] rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
-        <div ref={mapContainerRef} className="absolute inset-0" />
+        <div ref={mapContainerRef} className="w-full h-full" />
         {!mapReady && (
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-emerald-50/80 to-white/80 backdrop-blur-sm">
             <div className="flex items-center gap-2 text-emerald-700 text-sm">
