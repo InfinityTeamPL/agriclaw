@@ -30,6 +30,7 @@ import {
   severityStyle,
 } from '@/lib/ui/format';
 import { FieldLayerMap } from '@/components/dashboard/FieldLayerMap';
+import { BbchTracker } from '@/components/dashboard/BbchTracker';
 import { Sparkline } from '@/components/dashboard/Sparkline';
 import { MultiIndexPanel } from '@/components/dashboard/MultiIndexPanel';
 import { SprayTimer } from '@/components/dashboard/SprayTimer';
