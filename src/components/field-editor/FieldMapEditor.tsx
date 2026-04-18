@@ -13,6 +13,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { toast } from 'sonner';
 import { Loader2, Trash2, Undo2, Save, MapIcon } from 'lucide-react';
 import { CROPS } from '@/lib/ui/format';
+import { hybridStyle } from '@/lib/map-style';
 
 interface Props {
   farmId: string;
@@ -20,8 +21,6 @@ interface Props {
 }
 
 type Lnglat = [number, number]; // [lon, lat]
-
-const SATELLITE_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 
 export function FieldMapEditor({ farmId, center }: Props) {
   const router = useRouter();
@@ -47,9 +46,9 @@ export function FieldMapEditor({ farmId, center }: Props) {
 
     const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      style: SATELLITE_STYLE,
+      style: hybridStyle,
       center: [center.lon, center.lat],
-      zoom: 15,
+      zoom: 16,
       attributionControl: false,
     });
 

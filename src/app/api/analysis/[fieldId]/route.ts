@@ -6,6 +6,7 @@ import { computeNdviStats, classifyNdvi, describeNdvi } from '@/lib/satellite/nd
 import { fetchWeatherForecast } from '@/lib/satellite/weather';
 import { fetchSmapSoilMoisture } from '@/lib/satellite/smap';
 import { generateRecommendation } from '@/lib/recommendations';
+import { generateMockNdvi, isCopernicusConfigured } from '@/lib/satellite/ndvi-mock';
 
 export async function POST(
   _req: NextRequest,
@@ -39,25 +40,53 @@ export async function POST(
   const today = new Date().toISOString().slice(0, 10);
   const fourteenDaysAgo = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10);
 
-  // Równolegle: NDVI + pogoda + SMAP
-  const [tiffBuffer, weather, smap] = await Promise.allSettled([
-    getCopernicusClient().fetchNdviGeotiff(polygon, fourteenDaysAgo, today),
+  // Równolegle: pogoda + SMAP (NDVI osobno niżej, z fallbackiem)
+  const [weather, smap] = await Promise.allSettled([
     fetchWeatherForecast(field.centroid_lat, field.centroid_lon, 7),
     fetchSmapSoilMoisture(field.centroid_lat, field.centroid_lon),
   ]);
 
-  // NDVI
-  if (tiffBuffer.status === 'rejected') {
-    return NextResponse.json(
-      {
-        error: 'Nie udało się pobrać danych satelitarnych',
-        details: String(tiffBuffer.reason),
-      },
-      { status: 502 },
-    );
+  // NDVI — Copernicus Sentinel-2 jeśli skonfigurowane, inaczej deterministyczny mock
+  let stats: {
+    mean: number;
+    min: number;
+    max: number;
+    validCount: number;
+    stddev: number;
+  };
+  let isMock = false;
+  let cdseError: string | undefined;
+
+  if (isCopernicusConfigured()) {
+    try {
+      const tiff = await getCopernicusClient().fetchNdviGeotiff(
+        polygon,
+        fourteenDaysAgo,
+        today,
+      );
+      const values = await extractNdviValues(tiff);
+      stats = computeNdviStats(values);
+    } catch (err) {
+      cdseError = String(err);
+      const mock = generateMockNdvi({
+        fieldId: field.id,
+        crop: field.crop,
+        lat: field.centroid_lat,
+        lon: field.centroid_lon,
+      });
+      stats = mock;
+      isMock = true;
+    }
+  } else {
+    const mock = generateMockNdvi({
+      fieldId: field.id,
+      crop: field.crop,
+      lat: field.centroid_lat,
+      lon: field.centroid_lon,
+    });
+    stats = mock;
+    isMock = true;
   }
-  const ndviValues = await extractNdviValues(tiffBuffer.value);
-  const stats = computeNdviStats(ndviValues);
 
   // Previous NDVI dla porównania
   const previousReading = await prisma.ndviReading.findFirst({
@@ -129,6 +158,9 @@ export async function POST(
       stddev: stats.stddev,
       classification: classifyNdvi(stats.mean),
       description: describeNdvi(stats.mean, field.crop),
+      source: isMock ? 'mock' : 'sentinel-2',
+      mock: isMock,
+      cdse_error: cdseError,
       trend: previousReading
         ? {
             previousMean: previousReading.ndviMean,

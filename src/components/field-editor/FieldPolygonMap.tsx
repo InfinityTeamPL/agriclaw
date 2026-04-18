@@ -6,16 +6,26 @@ import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Loader2 } from 'lucide-react';
+import { hybridStyle } from '@/lib/map-style';
 
 interface Props {
   polygon: GeoJSON.Polygon;
   centroid: { lat: number; lon: number };
+  ndviMean?: number | null;
   className?: string;
 }
 
-const STYLE = 'https://tiles.openfreemap.org/styles/liberty';
+function ndviToColor(ndvi: number): string {
+  if (ndvi < 0.2) return '#78350f';
+  if (ndvi < 0.35) return '#dc2626';
+  if (ndvi < 0.5) return '#f97316';
+  if (ndvi < 0.6) return '#facc15';
+  if (ndvi < 0.7) return '#84cc16';
+  if (ndvi < 0.8) return '#16a34a';
+  return '#14532d';
+}
 
-export function FieldPolygonMap({ polygon, centroid, className }: Props) {
+export function FieldPolygonMap({ polygon, centroid, ndviMean, className }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [ready, setReady] = useState(false);
@@ -25,9 +35,9 @@ export function FieldPolygonMap({ polygon, centroid, className }: Props) {
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: STYLE,
+      style: hybridStyle,
       center: [centroid.lon, centroid.lat],
-      zoom: 15,
+      zoom: 16,
       interactive: true,
       attributionControl: false,
     });
@@ -50,13 +60,14 @@ export function FieldPolygonMap({ polygon, centroid, className }: Props) {
           properties: {},
         },
       });
+      const fillColor = typeof ndviMean === 'number' ? ndviToColor(ndviMean) : '#10b981';
       map.addLayer({
         id: 'field-polygon-fill',
         type: 'fill',
         source: 'field-polygon',
         paint: {
-          'fill-color': '#10b981',
-          'fill-opacity': 0.35,
+          'fill-color': fillColor,
+          'fill-opacity': 0.45,
         },
       });
       map.addLayer({
@@ -64,8 +75,17 @@ export function FieldPolygonMap({ polygon, centroid, className }: Props) {
         type: 'line',
         source: 'field-polygon',
         paint: {
+          'line-color': '#ffffff',
+          'line-width': 3,
+        },
+      });
+      map.addLayer({
+        id: 'field-polygon-outline-inner',
+        type: 'line',
+        source: 'field-polygon',
+        paint: {
           'line-color': '#065f46',
-          'line-width': 2,
+          'line-width': 1.5,
         },
       });
 
@@ -88,7 +108,7 @@ export function FieldPolygonMap({ polygon, centroid, className }: Props) {
       map.remove();
       mapRef.current = null;
     };
-  }, [polygon, centroid.lat, centroid.lon]);
+  }, [polygon, centroid.lat, centroid.lon, ndviMean]);
 
   return (
     <div className={className ?? 'relative w-full h-[400px]'}>
