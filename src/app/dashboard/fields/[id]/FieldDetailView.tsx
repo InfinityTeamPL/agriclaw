@@ -32,6 +32,7 @@ import {
 import { FieldLayerMap } from '@/components/dashboard/FieldLayerMap';
 import { BbchTracker } from '@/components/dashboard/BbchTracker';
 import { HistoryChart } from '@/components/dashboard/HistoryChart';
+import { ThermalBadge } from '@/components/dashboard/ThermalBadge';
 import { Sparkline } from '@/components/dashboard/Sparkline';
 import { MultiIndexPanel } from '@/components/dashboard/MultiIndexPanel';
 import { SprayTimer } from '@/components/dashboard/SprayTimer';
@@ -187,6 +188,9 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
 
       {/* Historia Sentinel-2 10 lat */}
       <HistoryChart fieldId={field.id} />
+
+      {/* Thermal Landsat 8/9 — na żądanie */}
+      <ThermalBadge fieldId={field.id} />
 
       {/* Split view */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5">
