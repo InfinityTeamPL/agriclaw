@@ -11,25 +11,37 @@
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 // Vision-capable modele na OpenRouter (stan kwiecień 2026).
-// Gemma 4 26B A4B (MoE) — preferujemy paid wersję (bez :free) bo nie ma rate limitu.
-// Koszt ~$0.001-0.01 per zdjęcie = grosz polski, za stabilność pełną warto.
+// Dostępne warianty Gemma 4:
+//  - 31B Dense (full params) — najlepszy reasoning, wolniejszy
+//  - 26B A4B MoE (4B active) — szybszy, tańszy, też dobry vision
+// Plus mamy non-Google fallback: Qwen 2.5 VL 72B (często top w vision benchmarkach),
+// Llama 3.2 Vision 11B/90B, Gemini Flash 2.0.
 export type VisionModel =
-  | 'google/gemma-4-26b-a4b-it'
+  | 'google/gemma-4-31b-it:free'
+  | 'google/gemma-4-31b-it'
   | 'google/gemma-4-26b-a4b-it:free'
+  | 'google/gemma-4-26b-a4b-it'
+  | 'qwen/qwen-2.5-vl-72b-instruct:free'
   | 'meta-llama/llama-3.2-11b-vision-instruct:free'
   | 'meta-llama/llama-3.2-90b-vision-instruct:free'
-  | 'qwen/qwen-2.5-vl-72b-instruct:free'
   | 'google/gemma-3-27b-it:free'
   | 'google/gemini-2.0-flash-exp:free';
 
-// Fallback chain — priorytet: Gemma 4 paid (stabilna) → :free (gdy kredyty wyczerpane)
-// → Llama / Qwen / Gemini free jako ostateczność.
+// Fallback chain zgodnie z preferencją usera:
+// 1. Najpierw darmowe :free (Gemma 4 31B > 26B > Qwen > Llama > Gemini)
+// 2. Potem płatne (Gemma 4 31B paid > 26B paid) jako safety net
+//
+// Dla agronomicznej diagnozy zdjęć Gemma 4 31B Dense zazwyczaj wygrywa
+// (więcej parametrów = precyzyjniejsze rozpoznawanie chorób liści).
+// Qwen 2.5 VL 72B jest ogólnie topowym vision modelem — też dobry backup.
 const VISION_FALLBACK_CHAIN: VisionModel[] = [
-  'google/gemma-4-26b-a4b-it', // paid, bez rate-limitu
-  'google/gemma-4-26b-a4b-it:free', // darmowa — ale Google AI Studio rate limits
+  'google/gemma-4-31b-it:free', // preferowany darmowy
+  'google/gemma-4-26b-a4b-it:free', // mniejszy, ale też solidny
+  'qwen/qwen-2.5-vl-72b-instruct:free', // non-Google, inny upstream = różne rate limity
   'meta-llama/llama-3.2-11b-vision-instruct:free',
-  'qwen/qwen-2.5-vl-72b-instruct:free',
   'google/gemini-2.0-flash-exp:free',
+  'google/gemma-4-31b-it', // paid fallback (bez rate limitu)
+  'google/gemma-4-26b-a4b-it', // paid fallback mniejszy
 ];
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -69,7 +81,7 @@ export interface OpenRouterCompletionOptions {
 export class OpenRouterClient {
   constructor(
     private readonly apiKey: string = process.env.OPENROUTER_API_KEY ?? '',
-    private readonly defaultModel: VisionModel = 'google/gemma-4-26b-a4b-it',
+    private readonly defaultModel: VisionModel = 'google/gemma-4-31b-it:free',
   ) {
     if (!apiKey) {
       throw new Error('OpenRouterClient: brak OPENROUTER_API_KEY');
