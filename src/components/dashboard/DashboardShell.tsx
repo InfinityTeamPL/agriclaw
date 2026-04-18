@@ -24,6 +24,7 @@ import {
   ChevronsRight,
   ChevronDown,
   Bell,
+  ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -38,6 +39,7 @@ const navLinks = [
   { href: '/dashboard/fields', label: 'Moje pola', icon: Sprout },
   { href: '/dashboard/scouting', label: 'Obserwacje', icon: MapPin },
   { href: '/dashboard/journal', label: 'Księga polowa', icon: BookOpen },
+  { href: '/dashboard/compliance', label: 'Zgodność ARiMR', icon: ShieldCheck },
   { href: '/dashboard/diagnose', label: 'Diagnoza z kamery', icon: Camera },
   { href: '/dashboard/agent', label: 'AgroAgent', icon: Bot },
   { href: '/dashboard/settings', label: 'Ustawienia', icon: Settings },
