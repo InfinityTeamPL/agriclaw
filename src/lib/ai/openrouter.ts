@@ -10,11 +10,23 @@
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-export type GemmaModel =
-  | 'google/gemma-4-27b-it:free'
-  | 'google/gemma-4-9b-it:free'
-  | 'google/gemma-2-27b-it:free'
-  | 'google/gemma-2-9b-it:free';
+// Vision-capable modele na OpenRouter (stan kwiecień 2026).
+// Gemma 4 26B A4B (MoE) jest dostępna jako `google/gemma-4-26b-a4b-it:free`.
+export type VisionModel =
+  | 'google/gemma-4-26b-a4b-it:free'
+  | 'meta-llama/llama-3.2-11b-vision-instruct:free'
+  | 'meta-llama/llama-3.2-90b-vision-instruct:free'
+  | 'qwen/qwen-2.5-vl-72b-instruct:free'
+  | 'google/gemma-3-27b-it:free'
+  | 'google/gemini-2.0-flash-exp:free';
+
+// Fallback chain — priorytet: Gemma 4 → Llama Vision → Qwen VL → Gemini.
+const VISION_FALLBACK_CHAIN: VisionModel[] = [
+  'google/gemma-4-26b-a4b-it:free',
+  'meta-llama/llama-3.2-11b-vision-instruct:free',
+  'qwen/qwen-2.5-vl-72b-instruct:free',
+  'google/gemini-2.0-flash-exp:free',
+];
 
 export interface OpenRouterMessage {
   role: 'system' | 'user' | 'assistant';
@@ -40,34 +52,35 @@ export interface OpenRouterCompletionResponse {
 }
 
 export interface OpenRouterCompletionOptions {
-  model?: GemmaModel | (string & {});
+  model?: VisionModel | (string & {});
   messages: OpenRouterMessage[];
   temperature?: number;
   max_tokens?: number;
   json?: boolean;
+  fallback?: boolean; // jeśli true, próbuje chainu modelowego
 }
 
 export class OpenRouterClient {
   constructor(
     private readonly apiKey: string = process.env.OPENROUTER_API_KEY ?? '',
-    private readonly defaultModel: GemmaModel = 'google/gemma-4-27b-it:free',
+    private readonly defaultModel: VisionModel = 'google/gemma-4-26b-a4b-it:free',
   ) {
     if (!apiKey) {
       throw new Error('OpenRouterClient: brak OPENROUTER_API_KEY');
     }
   }
 
-  async completion(opts: OpenRouterCompletionOptions): Promise<string> {
+  private async completionSingle(
+    model: string,
+    opts: OpenRouterCompletionOptions,
+  ): Promise<string> {
     const body: Record<string, unknown> = {
-      model: opts.model ?? this.defaultModel,
+      model,
       messages: opts.messages,
       temperature: opts.temperature ?? 0.3,
       max_tokens: opts.max_tokens ?? 1024,
     };
-
-    if (opts.json) {
-      body.response_format = { type: 'json_object' };
-    }
+    if (opts.json) body.response_format = { type: 'json_object' };
 
     const res = await fetch(OPENROUTER_URL, {
       method: 'POST',
@@ -81,11 +94,40 @@ export class OpenRouterClient {
     });
 
     if (!res.ok) {
-      throw new Error(`OpenRouter failed: ${res.status} ${await res.text()}`);
+      const text = await res.text();
+      throw new Error(`OpenRouter ${model} failed: ${res.status} ${text}`);
     }
-
     const data = (await res.json()) as OpenRouterCompletionResponse;
     return data.choices[0]?.message?.content ?? '';
+  }
+
+  async completion(opts: OpenRouterCompletionOptions): Promise<string> {
+    const preferredModel = opts.model ?? this.defaultModel;
+    const tryFallback = opts.fallback !== false; // domyślnie true
+
+    // Pierwsza próba: preferowany model
+    try {
+      return await this.completionSingle(preferredModel, opts);
+    } catch (err) {
+      if (!tryFallback) throw err;
+      const errMsg = String(err);
+      console.warn(`[OpenRouter] ${preferredModel} failed: ${errMsg}. Trying fallback chain…`);
+
+      // Fallback chain — próbujemy kolejne modele (pomijając ten który już padł)
+      const chain = VISION_FALLBACK_CHAIN.filter((m) => m !== preferredModel);
+      for (const fallbackModel of chain) {
+        try {
+          return await this.completionSingle(fallbackModel, opts);
+        } catch (fbErr) {
+          console.warn(`[OpenRouter] fallback ${fallbackModel} failed: ${fbErr}`);
+        }
+      }
+
+      // Nic nie zadziałało — zgłoś pierwszy błąd
+      throw new Error(
+        `OpenRouter: wszystkie modele zawiodły. Ostatni błąd: ${errMsg}`,
+      );
+    }
   }
 
   /**
