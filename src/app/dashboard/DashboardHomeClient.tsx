@@ -22,6 +22,7 @@ import {
   Sparkles,
   Loader2,
   Radar,
+  ShieldCheck,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { CountUp } from '@/components/dashboard/CountUp';
@@ -70,6 +71,9 @@ interface Props {
     totalHa: number;
     activeAlerts: number;
     lastAnalysisAt: string | null;
+    complianceScore: number;
+    complianceFails: number;
+    complianceWarns: number;
   };
   recentRecs: RecItem[];
   recentEvents: EventItem[];
@@ -254,7 +258,7 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
       {/* Hero stats grid */}
       <motion.div
         variants={item}
-        className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4"
+        className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4"
       >
         <StatTile
           icon={<Sprout className="w-4 h-4" />}
@@ -285,6 +289,21 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
           accent={stats.activeAlerts > 0 ? 'amber' : 'emerald'}
           trend={stats.activeAlerts > 0 ? 'sprawdź pola' : 'wszystko spokojne'}
         />
+        <Link href="/dashboard/compliance" className="contents">
+          <StatTile
+            icon={<ShieldCheck className="w-4 h-4" />}
+            label="Zgodność ARiMR"
+            value={<><CountUp value={stats.complianceScore} />%</>}
+            accent={stats.complianceScore >= 80 ? 'emerald' : stats.complianceScore >= 50 ? 'amber' : 'rose'}
+            trend={
+              stats.complianceFails > 0
+                ? `${stats.complianceFails} naruszenia`
+                : stats.complianceWarns > 0
+                  ? `${stats.complianceWarns} ostrzeżenia`
+                  : 'WPR 2023-2027'
+            }
+          />
+        </Link>
       </motion.div>
 
       {/* Map + Activity stream */}
@@ -496,7 +515,7 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
   );
 }
 
-type AccentColor = 'emerald' | 'sky' | 'amber' | 'violet';
+type AccentColor = 'emerald' | 'sky' | 'amber' | 'violet' | 'rose';
 
 const accentTokens: Record<AccentColor, { grad: string; icon: string; trend: string }> = {
   emerald: {
@@ -518,6 +537,11 @@ const accentTokens: Record<AccentColor, { grad: string; icon: string; trend: str
     grad: 'from-violet-500/15 via-violet-500/5 to-transparent',
     icon: 'bg-violet-100 text-violet-700',
     trend: 'text-violet-700',
+  },
+  rose: {
+    grad: 'from-rose-500/15 via-rose-500/5 to-transparent',
+    icon: 'bg-rose-100 text-rose-700',
+    trend: 'text-rose-700',
   },
 };
 

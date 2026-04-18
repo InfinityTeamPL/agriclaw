@@ -186,37 +186,7 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
 
       {running && <AnalysisProgress />}
 
-      {/* BBCH + Spray Timer — faza rozwoju + okno oprysku 72h */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.3fr] gap-4">
-        <BbchTracker fieldId={field.id} />
-        <SprayTimer fieldId={field.id} />
-      </div>
-
-      {/* Frost alert — prognoza przymrozków 10 nocy, krytyczne w kwietniu */}
-      <FrostAlert fieldId={field.id} />
-
-      {/* Heat stress — prognoza upałów 10 dni, krytyczne latem (czerwiec-sierpień) */}
-      <HeatAlert fieldId={field.id} />
-
-      {/* Kalkulator azotu — kg N/ha z NDRE + BBCH + area = zł oszczędności */}
-      <NitrogenCalculator fieldId={field.id} />
-
-      {/* Bilans wodny FAO-56 — opady vs ETc + sugestia nawodnienia */}
-      <WaterBalance fieldId={field.id} />
-
-      {/* Ryzyko chorób grzybowych — 7 modeli × BBCH + pogoda 72h */}
-      <DiseaseRiskPanel fieldId={field.id} />
-
-      {/* Historia Sentinel-2 10 lat */}
-      <HistoryChart fieldId={field.id} />
-
-      {/* Thermal Landsat + Radar Sentinel-1 — obie na żądanie, side-by-side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ThermalBadge fieldId={field.id} />
-        <RadarBadge fieldId={field.id} />
-      </div>
-
-      {/* Split view */}
+      {/* Mapa pola — NA GÓRZE, obok sidebar z NDVI i tabami */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5">
         {/* Map */}
         <motion.div
@@ -310,6 +280,36 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
             </div>
           </div>
         </motion.div>
+      </div>
+
+      {/* BBCH + Spray Timer — faza rozwoju + okno oprysku 72h */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.3fr] gap-4">
+        <BbchTracker fieldId={field.id} />
+        <SprayTimer fieldId={field.id} />
+      </div>
+
+      {/* Frost alert — prognoza przymrozków 10 nocy, krytyczne w kwietniu */}
+      <FrostAlert fieldId={field.id} />
+
+      {/* Heat stress — prognoza upałów 10 dni, krytyczne latem */}
+      <HeatAlert fieldId={field.id} />
+
+      {/* Kalkulator azotu — kg N/ha z NDRE + BBCH + area = zł oszczędności */}
+      <NitrogenCalculator fieldId={field.id} />
+
+      {/* Bilans wodny FAO-56 — opady vs ETc + sugestia nawodnienia */}
+      <WaterBalance fieldId={field.id} />
+
+      {/* Ryzyko chorób grzybowych — 7 modeli × BBCH + pogoda 72h */}
+      <DiseaseRiskPanel fieldId={field.id} />
+
+      {/* Historia Sentinel-2 10 lat */}
+      <HistoryChart fieldId={field.id} />
+
+      {/* Thermal Landsat + Radar Sentinel-1 — obie na żądanie, side-by-side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <ThermalBadge fieldId={field.id} />
+        <RadarBadge fieldId={field.id} />
       </div>
     </div>
   );
