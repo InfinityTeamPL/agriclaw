@@ -97,6 +97,7 @@ model Field {
   moistureReadings SoilMoistureReading[]
   recommendations  Recommendation[]
   treatments       Treatment[]
+  scoutings        Scouting[]
 
   @@index([farmId])
   @@map("fields")
@@ -392,4 +393,28 @@ model PoolServer {
 
   @@index([status, planTier])
   @@map("pool_servers")
+}
+
+// Scouting — rolnik w polu robi zdjęcie, zaznacza pinezkę, notuje.
+// GPS + foto (base64 MVP, potem Vercel Blob) + tag + severity + AI diagnoza.
+model Scouting {
+  id             String    @id @default(uuid())
+  fieldId        String    @map("field_id")
+  lat            Float
+  lon            Float
+  tag            String // disease, pest, frost, mechanical, weed, other
+  severity       String    @default("medium") // low, medium, high
+  note           String?   @db.Text
+  photoUrl       String?   @db.Text @map("photo_url")
+  aiDiagnosis    String?   @db.Text @map("ai_diagnosis")
+  resolvedAt     DateTime? @map("resolved_at")
+  resolvedAction String?   @db.Text @map("resolved_action")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  field Field @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@index([fieldId, createdAt])
+  @@index([tag])
+  @@map("scoutings")
 }
