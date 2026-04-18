@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
-import { getCopernicusClient, extractNdviValues } from '@/lib/satellite/copernicus';
-import { computeNdviStats, classifyNdvi, describeNdvi } from '@/lib/satellite/ndvi';
+import { getCopernicusClient, extractMultiIndexValues } from '@/lib/satellite/copernicus';
+import { classifyNdvi, describeNdvi } from '@/lib/satellite/ndvi';
+import { computeAllIndices, interpretNdre, interpretNdwi, interpretSavi } from '@/lib/satellite/indices';
 import { fetchWeatherForecast } from '@/lib/satellite/weather';
 import { fetchSmapSoilMoisture } from '@/lib/satellite/smap';
 import { generateRecommendation } from '@/lib/recommendations';
@@ -46,26 +47,22 @@ export async function POST(
     fetchSmapSoilMoisture(field.centroid_lat, field.centroid_lon),
   ]);
 
-  // NDVI — Copernicus Sentinel-2 jeśli skonfigurowane, inaczej deterministyczny mock
-  let stats: {
-    mean: number;
-    min: number;
-    max: number;
-    validCount: number;
-    stddev: number;
-  };
+  // 4 indeksy Sentinel-2 (NDVI, NDRE, NDWI, SAVI) w jednym zapytaniu do CDSE.
+  // Gdy brak credentials — deterministyczny mock tylko dla NDVI (reszta = 0 placeholder).
+  type IdxStats = { mean: number; min: number; max: number; validCount: number; stddev: number };
+  let indices: { ndvi: IdxStats; ndre: IdxStats; ndwi: IdxStats; savi: IdxStats };
   let isMock = false;
   let cdseError: string | undefined;
 
   if (isCopernicusConfigured()) {
     try {
-      const tiff = await getCopernicusClient().fetchNdviGeotiff(
+      const tiff = await getCopernicusClient().fetchMultiIndexGeotiff(
         polygon,
         fourteenDaysAgo,
         today,
       );
-      const values = await extractNdviValues(tiff);
-      stats = computeNdviStats(values);
+      const rasters = await extractMultiIndexValues(tiff);
+      indices = computeAllIndices(rasters);
     } catch (err) {
       cdseError = String(err);
       const mock = generateMockNdvi({
@@ -74,7 +71,13 @@ export async function POST(
         lat: field.centroid_lat,
         lon: field.centroid_lon,
       });
-      stats = mock;
+      indices = {
+        ndvi: mock,
+        // Mock estymacje pozostałych indeksów na podstawie NDVI
+        ndre: { ...mock, mean: mock.mean * 0.55, min: mock.min * 0.5, max: mock.max * 0.6 },
+        ndwi: { ...mock, mean: mock.mean * 0.3 - 0.05, min: mock.min * 0.3 - 0.08, max: mock.max * 0.35 },
+        savi: { ...mock, mean: mock.mean * 1.15, min: mock.min * 1.1, max: mock.max * 1.2 },
+      };
       isMock = true;
     }
   } else {
@@ -84,9 +87,15 @@ export async function POST(
       lat: field.centroid_lat,
       lon: field.centroid_lon,
     });
-    stats = mock;
+    indices = {
+      ndvi: mock,
+      ndre: { ...mock, mean: mock.mean * 0.55, min: mock.min * 0.5, max: mock.max * 0.6 },
+      ndwi: { ...mock, mean: mock.mean * 0.3 - 0.05, min: mock.min * 0.3 - 0.08, max: mock.max * 0.35 },
+      savi: { ...mock, mean: mock.mean * 1.15, min: mock.min * 1.1, max: mock.max * 1.2 },
+    };
     isMock = true;
   }
+  const stats = indices.ndvi; // backward-compat alias dla dalszej logiki
 
   // Previous NDVI dla porównania
   const previousReading = await prisma.ndviReading.findFirst({
@@ -94,15 +103,24 @@ export async function POST(
     orderBy: { observedAt: 'desc' },
   });
 
-  // Zapisz NDVI
+  // Zapisz wszystkie 4 indeksy
   const reading = await prisma.ndviReading.create({
     data: {
       fieldId: field.id,
       observedAt: new Date(),
-      ndviMean: stats.mean,
-      ndviMin: stats.min,
-      ndviMax: stats.max,
-      validCount: stats.validCount,
+      ndviMean: indices.ndvi.mean,
+      ndviMin: indices.ndvi.min,
+      ndviMax: indices.ndvi.max,
+      ndreMean: indices.ndre.mean,
+      ndreMin: indices.ndre.min,
+      ndreMax: indices.ndre.max,
+      ndwiMean: indices.ndwi.mean,
+      ndwiMin: indices.ndwi.min,
+      ndwiMax: indices.ndwi.max,
+      saviMean: indices.savi.mean,
+      saviMin: indices.savi.min,
+      saviMax: indices.savi.max,
+      validCount: indices.ndvi.validCount,
       cloudCover: 0,
     },
   });
@@ -151,13 +169,13 @@ export async function POST(
     fieldId: field.id,
     observedAt: reading.observedAt.toISOString(),
     ndvi: {
-      mean: stats.mean,
-      min: stats.min,
-      max: stats.max,
-      validCount: stats.validCount,
-      stddev: stats.stddev,
-      classification: classifyNdvi(stats.mean),
-      description: describeNdvi(stats.mean, field.crop),
+      mean: indices.ndvi.mean,
+      min: indices.ndvi.min,
+      max: indices.ndvi.max,
+      validCount: indices.ndvi.validCount,
+      stddev: indices.ndvi.stddev,
+      classification: classifyNdvi(indices.ndvi.mean),
+      description: describeNdvi(indices.ndvi.mean, field.crop),
       source: isMock ? 'mock' : 'sentinel-2',
       mock: isMock,
       cdse_error: cdseError,
@@ -165,9 +183,27 @@ export async function POST(
         ? {
             previousMean: previousReading.ndviMean,
             previousObservedAt: previousReading.observedAt.toISOString(),
-            delta: stats.mean - previousReading.ndviMean,
+            delta: indices.ndvi.mean - previousReading.ndviMean,
           }
         : null,
+    },
+    ndre: {
+      mean: indices.ndre.mean,
+      min: indices.ndre.min,
+      max: indices.ndre.max,
+      interpretation: interpretNdre(indices.ndre.mean, field.crop),
+    },
+    ndwi: {
+      mean: indices.ndwi.mean,
+      min: indices.ndwi.min,
+      max: indices.ndwi.max,
+      interpretation: interpretNdwi(indices.ndwi.mean),
+    },
+    savi: {
+      mean: indices.savi.mean,
+      min: indices.savi.min,
+      max: indices.savi.max,
+      interpretation: interpretSavi(indices.savi.mean, indices.ndvi.mean),
     },
     weather: weather.status === 'fulfilled' ? {
       daysWithoutRain: weatherSummary.daysWithoutRain,

@@ -23,6 +23,28 @@ function evaluatePixel(s) {
   return [(s.B08 - s.B04) / (s.B08 + s.B04)];
 }`;
 
+// 4 indeksy w jednym zapytaniu — oszczędzamy CDSE quota (1 request zamiast 4).
+// Band 1: NDVI — ogólne zdrowie roślin (B08, B04)
+// Band 2: NDRE — niedobór azotu (B08, B05)
+// Band 3: NDWI (Gao) — stres wodny w liściach (B08, B11)
+// Band 4: SAVI — skorygowany o glebę (B08, B04, L=0.5)
+const MULTI_INDEX_EVALSCRIPT = `//VERSION=3
+function setup() {
+  return {
+    input: ["B04", "B05", "B08", "B11", "dataMask"],
+    output: { bands: 4, sampleType: "FLOAT32" }
+  };
+}
+function evaluatePixel(s) {
+  if (s.dataMask === 0) return [NaN, NaN, NaN, NaN];
+  const ndvi = (s.B08 - s.B04) / (s.B08 + s.B04);
+  const ndre = (s.B08 - s.B05) / (s.B08 + s.B05);
+  const ndwi = (s.B08 - s.B11) / (s.B08 + s.B11);
+  const L = 0.5;
+  const savi = ((s.B08 - s.B04) / (s.B08 + s.B04 + L)) * (1 + L);
+  return [ndvi, ndre, ndwi, savi];
+}`;
+
 const TRUE_COLOR_EVALSCRIPT = `//VERSION=3
 function setup() {
   return {
@@ -83,6 +105,29 @@ export class CopernicusClient {
     dateTo: string,
     opts: { width?: number; height?: number; maxCloudCoverage?: number } = {},
   ): Promise<ArrayBuffer> {
+    return this.processRequest(polygon, dateFrom, dateTo, NDVI_EVALSCRIPT, opts);
+  }
+
+  /**
+   * Jedno zapytanie → GeoTIFF z 4 band: NDVI, NDRE, NDWI, SAVI.
+   * Używamy do pełnej analizy pola (zamiast 4 osobnych zapytań).
+   */
+  async fetchMultiIndexGeotiff(
+    polygon: GeoJSON.Polygon,
+    dateFrom: string,
+    dateTo: string,
+    opts: { width?: number; height?: number; maxCloudCoverage?: number } = {},
+  ): Promise<ArrayBuffer> {
+    return this.processRequest(polygon, dateFrom, dateTo, MULTI_INDEX_EVALSCRIPT, opts);
+  }
+
+  private async processRequest(
+    polygon: GeoJSON.Polygon,
+    dateFrom: string,
+    dateTo: string,
+    evalscript: string,
+    opts: { width?: number; height?: number; maxCloudCoverage?: number } = {},
+  ): Promise<ArrayBuffer> {
     const token = await this.getToken();
     const payload = {
       input: {
@@ -110,7 +155,7 @@ export class CopernicusClient {
           { identifier: 'default', format: { type: 'image/tiff' } },
         ],
       },
-      evalscript: NDVI_EVALSCRIPT,
+      evalscript,
     };
 
     const res = await fetch(PROCESS_URL, {
@@ -188,6 +233,32 @@ export async function extractNdviValues(geotiffBuffer: ArrayBuffer): Promise<Flo
   const raster = await image.readRasters({ interleave: false });
   const values = raster[0] as Float32Array;
   return values;
+}
+
+/**
+ * Dekoduje multi-band GeoTIFF do 4 osobnych Float32Array (NDVI, NDRE, NDWI, SAVI).
+ */
+export async function extractMultiIndexValues(
+  geotiffBuffer: ArrayBuffer,
+): Promise<{
+  ndvi: Float32Array;
+  ndre: Float32Array;
+  ndwi: Float32Array;
+  savi: Float32Array;
+}> {
+  const tiff = await fromArrayBuffer(geotiffBuffer);
+  const image = await tiff.getImage();
+  const raster = await image.readRasters({ interleave: false });
+  const bands = raster as unknown as Float32Array[];
+  if (bands.length < 4) {
+    throw new Error(`Oczekiwano 4 pasm, dostano ${bands.length}`);
+  }
+  return {
+    ndvi: bands[0],
+    ndre: bands[1],
+    ndwi: bands[2],
+    savi: bands[3],
+  };
 }
 
 /**

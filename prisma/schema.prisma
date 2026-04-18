@@ -108,6 +108,17 @@ model NdviReading {
   ndviMean   Float    @map("ndvi_mean")
   ndviMin    Float    @map("ndvi_min")
   ndviMax    Float    @map("ndvi_max")
+  // Dodatkowe indeksy Sentinel-2 (wszystkie z jednego zapytania):
+  // NDRE — niedobór azotu; NDWI — stres wodny; SAVI — skorygowany o glebę
+  ndreMean   Float?   @map("ndre_mean")
+  ndreMin    Float?   @map("ndre_min")
+  ndreMax    Float?   @map("ndre_max")
+  ndwiMean   Float?   @map("ndwi_mean")
+  ndwiMin    Float?   @map("ndwi_min")
+  ndwiMax    Float?   @map("ndwi_max")
+  saviMean   Float?   @map("savi_mean")
+  saviMin    Float?   @map("savi_min")
+  saviMax    Float?   @map("savi_max")
   validCount Int      @default(0) @map("valid_count") // ile pikseli było walidnych
   cloudCover Float    @default(0) @map("cloud_cover")
   source     String   @default("sentinel-2")

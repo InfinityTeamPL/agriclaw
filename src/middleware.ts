@@ -9,6 +9,7 @@ export const config = {
     '/api/agents/:path*',
     '/api/chat/:path*',
     '/api/farms/:path*',
+    '/api/diagnose',
     '/api/geocode',
     '/api/user',
   ],
