@@ -36,6 +36,7 @@ import { ThermalBadge } from '@/components/dashboard/ThermalBadge';
 import { Sparkline } from '@/components/dashboard/Sparkline';
 import { MultiIndexPanel } from '@/components/dashboard/MultiIndexPanel';
 import { SprayTimer } from '@/components/dashboard/SprayTimer';
+import { FrostAlert } from '@/components/dashboard/FrostAlert';
 
 interface Field {
   id: string;
@@ -185,6 +186,9 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
         <BbchTracker fieldId={field.id} />
         <SprayTimer fieldId={field.id} />
       </div>
+
+      {/* Frost alert — prognoza przymrozków 10 nocy, krytyczne w kwietniu */}
+      <FrostAlert fieldId={field.id} />
 
       {/* Historia Sentinel-2 10 lat */}
       <HistoryChart fieldId={field.id} />
