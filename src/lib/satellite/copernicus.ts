@@ -23,6 +23,24 @@ function evaluatePixel(s) {
   return [(s.B08 - s.B04) / (s.B08 + s.B04)];
 }`;
 
+// Landsat 8/9 TIRS — surface temperature (LST), kelwiny → Celsjusze.
+// Rewizyta 16 dni per satelita, 8 dni combined (Landsat-8 + Landsat-9).
+// Rozdzielczość natywna 100m (thermal), resampled do 30m w L2.
+// Użycie: wczesny stres termiczny (rośliny się przegrzewają, przed NDVI spadkiem).
+const LANDSAT_THERMAL_EVALSCRIPT = `//VERSION=3
+function setup() {
+  return {
+    input: ["ST_B10", "dataMask"],
+    output: { bands: 1, sampleType: "FLOAT32" }
+  };
+}
+function evaluatePixel(s) {
+  if (s.dataMask === 0) return [NaN];
+  // ST_B10 = Surface Temperature w Kelvinach (Scaled: 0.00341802 + offset 149.0)
+  // Wynik już w Kelvinach po applyCFactor, konwertujemy na °C.
+  return [s.ST_B10 - 273.15];
+}`;
+
 // Sentinel-1 SAR — przez chmury, krytyczne dla PL (200 dni/rok zachmurzenia).
 // VV = Vertical-Vertical polarization, VH = Vertical-Horizontal.
 // Różnica VV/VH wskazuje strukturę roślin vs ziemia.
@@ -188,6 +206,51 @@ export class CopernicusClient {
     opts: { width?: number; height?: number; maxCloudCoverage?: number } = {},
   ): Promise<ArrayBuffer> {
     return this.processRequest(polygon, dateFrom, dateTo, MULTI_INDEX_EVALSCRIPT, opts);
+  }
+
+  /**
+   * Landsat 8/9 thermal — surface temperature w °C.
+   * Zwraca 1-band GeoTIFF (Float32, °C, NaN dla chmur).
+   * Rewizyta 8 dni (combined L8+L9).
+   */
+  async fetchLandsatThermalGeotiff(
+    polygon: GeoJSON.Polygon,
+    dateFrom: string,
+    dateTo: string,
+    opts: { width?: number; height?: number; maxCloudCoverage?: number } = {},
+  ): Promise<ArrayBuffer> {
+    const token = await this.getToken();
+    const payload = {
+      input: {
+        bounds: {
+          geometry: polygon,
+          properties: { crs: 'http://www.opengis.net/def/crs/OGC/1.3/CRS84' },
+        },
+        data: [
+          {
+            type: 'landsat-ot-l2',
+            dataFilter: {
+              timeRange: { from: `${dateFrom}T00:00:00Z`, to: `${dateTo}T23:59:59Z` },
+              maxCloudCoverage: opts.maxCloudCoverage ?? 30,
+            },
+            processing: { upsampling: 'BILINEAR' },
+          },
+        ],
+      },
+      output: {
+        width: opts.width ?? 512,
+        height: opts.height ?? 512,
+        responses: [{ identifier: 'default', format: { type: 'image/tiff' } }],
+      },
+      evalscript: LANDSAT_THERMAL_EVALSCRIPT,
+    };
+    const res = await fetch(PROCESS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`CDSE Landsat thermal failed: ${res.status} ${await res.text()}`);
+    return res.arrayBuffer();
   }
 
   /**
