@@ -177,8 +177,11 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
 
       {running && <AnalysisProgress />}
 
-      {/* Spray Timer — okno oprysku 72h */}
-      <SprayTimer fieldId={field.id} />
+      {/* BBCH + Spray Timer — faza rozwoju + okno oprysku 72h */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.3fr] gap-4">
+        <BbchTracker fieldId={field.id} />
+        <SprayTimer fieldId={field.id} />
+      </div>
 
       {/* Split view */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5">
