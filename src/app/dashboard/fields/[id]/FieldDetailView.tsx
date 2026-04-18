@@ -36,6 +36,9 @@ import { ThermalBadge } from '@/components/dashboard/ThermalBadge';
 import { Sparkline } from '@/components/dashboard/Sparkline';
 import { MultiIndexPanel } from '@/components/dashboard/MultiIndexPanel';
 import { SprayTimer } from '@/components/dashboard/SprayTimer';
+import { FrostAlert } from '@/components/dashboard/FrostAlert';
+import { NitrogenCalculator } from '@/components/dashboard/NitrogenCalculator';
+import { WaterBalance } from '@/components/dashboard/WaterBalance';
 
 interface Field {
   id: string;
@@ -185,6 +188,15 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
         <BbchTracker fieldId={field.id} />
         <SprayTimer fieldId={field.id} />
       </div>
+
+      {/* Frost alert — prognoza przymrozków 10 nocy, krytyczne w kwietniu */}
+      <FrostAlert fieldId={field.id} />
+
+      {/* Kalkulator azotu — kg N/ha z NDRE + BBCH + area = zł oszczędności */}
+      <NitrogenCalculator fieldId={field.id} />
+
+      {/* Bilans wodny FAO-56 — opady vs ETc + sugestia nawodnienia */}
+      <WaterBalance fieldId={field.id} />
 
       {/* Historia Sentinel-2 10 lat */}
       <HistoryChart fieldId={field.id} />
