@@ -115,13 +115,20 @@ export function JournalClient({ fields, treatments: initial }: Props) {
             powyżej 10 ha (Dz.U. 2022 poz. 2453). Eksport CSV zgodny z wymogami kontroli.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={exportCsv}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-gray-300 bg-white hover:bg-gray-50 transition"
           >
             <Download className="w-4 h-4" />
-            Eksport CSV
+            CSV
+          </button>
+          <button
+            onClick={() => window.open('/api/treatments/export/pdf', '_blank')}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 transition"
+          >
+            <Download className="w-4 h-4" />
+            PDF (dla IJHARS)
           </button>
           <button
             onClick={() => setOpen(true)}
