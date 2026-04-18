@@ -132,11 +132,11 @@ export function WaterBalance({ fieldId }: Props) {
   return (
     <div
       className={cn(
-        'rounded-3xl border p-5 space-y-4 transition',
+        'rounded-xl border p-5 space-y-4',
         b.status === 'severe-drought' || b.status === 'drought'
-          ? 'bg-gradient-to-br from-orange-50 to-white border-orange-200'
+          ? 'bg-white border-orange-200'
           : b.status === 'surplus'
-            ? 'bg-gradient-to-br from-sky-50 to-white border-sky-200'
+            ? 'bg-white border-sky-200'
             : 'bg-white border-gray-200',
       )}
     >
@@ -145,11 +145,17 @@ export function WaterBalance({ fieldId }: Props) {
         <div className="flex items-start gap-3">
           <div
             className={cn(
-              'w-10 h-10 rounded-xl text-white flex items-center justify-center shrink-0',
-              meta.bg,
+              'w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border',
+              b.status === 'severe-drought' || b.status === 'drought'
+                ? 'bg-orange-50 text-orange-700 border-orange-200'
+                : b.status === 'surplus'
+                  ? 'bg-sky-50 text-sky-700 border-sky-200'
+                  : b.status === 'mild-deficit'
+                    ? 'bg-amber-50 text-amber-700 border-amber-200'
+                    : 'bg-emerald-50 text-emerald-700 border-emerald-200',
             )}
           >
-            <Droplets className="w-5 h-5" />
+            <Droplets className="w-4 h-4" />
           </div>
           <div>
             <div className="font-semibold text-gray-900">
@@ -266,7 +272,7 @@ export function WaterBalance({ fieldId }: Props) {
 
       {/* Irrigation box */}
       {b.irrigationSuggestionMm > 0 && (
-        <div className="rounded-2xl bg-gradient-to-r from-emerald-50 to-sky-50 border border-emerald-200 p-3">
+        <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
               <div className="text-[10px] uppercase tracking-wider text-emerald-700 font-semibold">

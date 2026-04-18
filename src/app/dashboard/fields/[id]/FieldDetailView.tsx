@@ -34,6 +34,7 @@ import { BbchTracker } from '@/components/dashboard/BbchTracker';
 import { HistoryChart } from '@/components/dashboard/HistoryChart';
 import { ThermalBadge } from '@/components/dashboard/ThermalBadge';
 import { RadarBadge } from '@/components/dashboard/RadarBadge';
+import { PlanetSnapshot } from '@/components/dashboard/PlanetSnapshot';
 import { Sparkline } from '@/components/dashboard/Sparkline';
 import { MultiIndexPanel } from '@/components/dashboard/MultiIndexPanel';
 import { SprayTimer } from '@/components/dashboard/SprayTimer';
@@ -306,10 +307,11 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
       {/* Historia Sentinel-2 10 lat */}
       <HistoryChart fieldId={field.id} />
 
-      {/* Thermal Landsat + Radar Sentinel-1 — obie na żądanie, side-by-side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Thermal Landsat + Radar Sentinel-1 + Planet — wszystkie na żądanie */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <ThermalBadge fieldId={field.id} />
         <RadarBadge fieldId={field.id} />
+        <PlanetSnapshot fieldId={field.id} />
       </div>
     </div>
   );

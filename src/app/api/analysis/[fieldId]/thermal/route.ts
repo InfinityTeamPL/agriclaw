@@ -98,8 +98,26 @@ export async function POST(
       source: 'landsat-ot-l2 (8/9 combined)',
     });
   } catch (err) {
+    const msg = String(err);
+    // CDSE zwraca "Unable to resolve: LOTL2" dla kluczy bez Landsat w subskrypcji.
+    // Darmowy plan CDSE nie zawiera Landsat 8/9 — pokaż przyjazny komunikat.
+    if (msg.includes('LOTL2') || msg.includes('RENDERER_EXCEPTION') || msg.includes('landsat')) {
+      return NextResponse.json(
+        {
+          error: 'Twoje konto Copernicus nie ma dostępu do Landsat 8/9. Używaj Sentinel-2 (działa w pełni) albo uruchom skaner pola — pogoda z Open-Meteo daje podobne dane cieplne.',
+          fallbackAvailable: true,
+          fallbackHint: 'Open-Meteo surface temperature jest dostępna bez klucza dla każdego pola.',
+        },
+        { status: 503 },
+      );
+    }
+    // Inne błędy — pokaż skrócony
     return NextResponse.json(
-      { error: String(err).slice(0, 300) },
+      {
+        error: msg.includes('502') || msg.includes('500')
+          ? 'Landsat chwilowo niedostępny — spróbuj za chwilę.'
+          : msg.slice(0, 200),
+      },
       { status: 502 },
     );
   }

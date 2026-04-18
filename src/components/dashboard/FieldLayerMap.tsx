@@ -8,11 +8,11 @@
 import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { Loader2, Layers, Sprout, Leaf, Droplets, MountainSnow, Camera, Satellite } from 'lucide-react';
+import { Loader2, Layers, Sprout, Leaf, Droplets, MountainSnow, Camera } from 'lucide-react';
 import { hybridStyle } from '@/lib/map-style';
 import { cn } from '@/lib/utils';
 
-type LayerType = 'ndvi' | 'ndre' | 'ndwi' | 'savi' | 'truecolor' | 'planet';
+type LayerType = 'ndvi' | 'ndre' | 'ndwi' | 'savi' | 'truecolor';
 
 interface LayerResponse {
   type: LayerType;
@@ -40,7 +40,6 @@ const LAYERS: Array<{
   { id: 'ndwi', label: 'NDWI', icon: Droplets, color: 'text-sky-700', hint: 'Woda' },
   { id: 'savi', label: 'SAVI', icon: MountainSnow, color: 'text-stone-700', hint: 'Biomasa+gleba' },
   { id: 'truecolor', label: 'Sentinel', icon: Camera, color: 'text-violet-700', hint: 'RGB Sentinel-2 10m (świeże)' },
-  { id: 'planet', label: 'Planet 3m', icon: Satellite, color: 'text-indigo-700', hint: 'PSScene 3m rozdzielczość, dzienne pokrycie' },
 ];
 
 const LEGENDS: Record<LayerType, Array<{ color: string; label: string }>> = {
@@ -77,11 +76,6 @@ const LEGENDS: Record<LayerType, Array<{ color: string; label: string }>> = {
     { color: '#4a7c2c', label: 'Zielony — roślinność' },
     { color: '#1e40af', label: 'Niebieski — woda' },
   ],
-  planet: [
-    { color: '#4a7c2c', label: 'Zieleń — roślinność' },
-    { color: '#8b7355', label: 'Brąz — gleba' },
-    { color: '#1e40af', label: 'Niebieski — woda' },
-  ],
 };
 
 export function FieldLayerMap({ fieldId, polygon, centroid, className }: Props) {
@@ -90,7 +84,7 @@ export function FieldLayerMap({ fieldId, polygon, centroid, className }: Props) 
   const [mapReady, setMapReady] = useState(false);
   const [activeLayer, setActiveLayer] = useState<LayerType>('ndvi');
   const [layerData, setLayerData] = useState<Record<LayerType, LayerResponse | null>>({
-    ndvi: null, ndre: null, ndwi: null, savi: null, truecolor: null, planet: null,
+    ndvi: null, ndre: null, ndwi: null, savi: null, truecolor: null,
   });
   const [layerLoading, setLayerLoading] = useState<LayerType | null>(null);
   const [layerError, setLayerError] = useState<string | null>(null);
@@ -212,29 +206,13 @@ export function FieldLayerMap({ fieldId, polygon, centroid, className }: Props) 
     let alive = true;
     setLayerLoading(activeLayer);
     setLayerError(null);
-    // Planet używa osobnego endpointu (quick-search PSScene),
-    // pozostałe warstwy idą przez /layer?type=... (Sentinel-2 CDSE Process API)
-    const url =
-      activeLayer === 'planet'
-        ? `/api/analysis/${fieldId}/planet`
-        : `/api/analysis/${fieldId}/layer?type=${activeLayer}`;
-    fetch(url)
+    fetch(`/api/analysis/${fieldId}/layer?type=${activeLayer}`)
       .then(async (r) => {
         if (!r.ok) {
           const data = await r.json().catch(() => ({}));
           throw new Error(data.error ?? `HTTP ${r.status}`);
         }
-        const raw = await r.json();
-        // Normalizacja: Planet zwraca {dataUrl, bbox, observedAt} — dopasuj do LayerResponse
-        if (activeLayer === 'planet') {
-          return {
-            type: 'planet' as LayerType,
-            bbox: raw.bbox,
-            dataUrl: raw.dataUrl,
-            observedAt: raw.observedAt,
-          } satisfies LayerResponse;
-        }
-        return raw as LayerResponse;
+        return r.json() as Promise<LayerResponse>;
       })
       .then((data) => {
         if (!alive) return;

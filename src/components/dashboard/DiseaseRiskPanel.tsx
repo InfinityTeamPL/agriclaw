@@ -132,20 +132,20 @@ export function DiseaseRiskPanel({ fieldId }: Props) {
   return (
     <div
       className={cn(
-        'rounded-3xl border p-5 space-y-3',
-        hasHigh
-          ? 'bg-gradient-to-br from-red-50 to-white border-red-200 ring-1 ring-red-100'
-          : 'bg-gradient-to-br from-amber-50 to-white border-amber-200',
+        'rounded-xl border p-5 space-y-3',
+        hasHigh ? 'bg-white border-red-200' : 'bg-white border-amber-200',
       )}
     >
       <div className="flex items-start gap-3">
         <div
           className={cn(
-            'w-10 h-10 rounded-xl text-white flex items-center justify-center shrink-0',
-            hasHigh ? 'bg-red-600' : 'bg-amber-500',
+            'w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border',
+            hasHigh
+              ? 'bg-red-50 text-red-700 border-red-200'
+              : 'bg-amber-50 text-amber-700 border-amber-200',
           )}
         >
-          <Bug className="w-5 h-5" />
+          <Bug className="w-4 h-4" />
         </div>
         <div className="flex-1">
           <div className="font-semibold text-gray-900">
