@@ -23,6 +23,15 @@ const S2_CLOUDLESS_TILES = [
   'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg',
 ];
 
+// GUGiK Ortofotomapa — oficjalne polskie zdjęcia lotnicze 25 cm (lokalnie 10 cm).
+// Darmowe, bez API key, pokrycie 100% Polski, aktualizacja co 2-3 lata.
+// WMS endpoint z geoportal.gov.pl, wygodniej przez WMS-to-XYZ proxy stylu.
+const GUGIK_ORTHO_WMS =
+  'https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMS/StandardResolution?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=Raster&STYLES=default&FORMAT=image/jpeg&CRS=EPSG:3857&WIDTH=256&HEIGHT=256&BBOX={bbox-epsg-3857}';
+
+const ATTRIBUTION_GUGIK =
+  '&copy; <a href="http://www.gugik.gov.pl/">GUGiK</a> Geoportal.gov.pl';
+
 // World_Imagery ma max native zoom 19 (30 cm dla większości PL) — pozwalamy aż tam.
 const ESRI_IMAGERY_TILES = [
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -69,6 +78,36 @@ export const satelliteStyle: StyleSpecification = {
         'raster-fade-duration': 200,
       },
     },
+  ],
+};
+
+/**
+ * GUGiK ortofotomapa — najdokładniejsza warstwa dla Polski (25 cm / 10 cm).
+ * Świeższa od ESRI w wielu regionach (aktualizacja co 2-3 lata).
+ */
+export const gugikOrthoStyle: StyleSpecification = {
+  version: 8,
+  glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
+  sources: {
+    gugik: {
+      type: 'raster',
+      tiles: [GUGIK_ORTHO_WMS],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: ATTRIBUTION_GUGIK,
+    },
+    // Fallback na ESRI poza PL (użytkownicy z gospodarstwami blisko granicy)
+    esri: {
+      type: 'raster',
+      tiles: ESRI_IMAGERY_TILES,
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: ATTRIBUTION_ESRI,
+    },
+  },
+  layers: [
+    { id: 'esri-base', type: 'raster', source: 'esri', minzoom: 0, maxzoom: 22 },
+    { id: 'gugik-ortho', type: 'raster', source: 'gugik', minzoom: 8, maxzoom: 22 },
   ],
 };
 

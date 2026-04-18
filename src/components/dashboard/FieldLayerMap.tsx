@@ -39,7 +39,7 @@ const LAYERS: Array<{
   { id: 'ndre', label: 'NDRE', icon: Leaf, color: 'text-amber-700', hint: 'Azot' },
   { id: 'ndwi', label: 'NDWI', icon: Droplets, color: 'text-sky-700', hint: 'Woda' },
   { id: 'savi', label: 'SAVI', icon: MountainSnow, color: 'text-stone-700', hint: 'Biomasa+gleba' },
-  { id: 'truecolor', label: 'Prawdziwy', icon: Camera, color: 'text-violet-700', hint: 'RGB Sentinel-2' },
+  { id: 'truecolor', label: 'Sentinel', icon: Camera, color: 'text-violet-700', hint: 'RGB Sentinel-2 10m (świeże)' },
 ];
 
 const LEGENDS: Record<LayerType, Array<{ color: string; label: string }>> = {
