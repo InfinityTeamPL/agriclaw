@@ -31,6 +31,7 @@ import {
 } from '@/lib/ui/format';
 import { FieldHeatmap } from '@/components/dashboard/FieldHeatmap';
 import { Sparkline } from '@/components/dashboard/Sparkline';
+import { MultiIndexPanel } from '@/components/dashboard/MultiIndexPanel';
 
 interface Field {
   id: string;
@@ -42,6 +43,12 @@ interface Field {
   createdAt: string;
 }
 
+interface IndexVal {
+  mean: number;
+  min: number;
+  max: number;
+}
+
 interface NdviPoint {
   id: string;
   observedAt: string;
@@ -49,6 +56,12 @@ interface NdviPoint {
   min: number;
   max: number;
   cloudCover: number;
+  indices?: {
+    ndvi: IndexVal;
+    ndre: IndexVal | null;
+    ndwi: IndexVal | null;
+    savi: IndexVal | null;
+  };
 }
 
 interface Recommendation {
@@ -303,14 +316,11 @@ function AnalysisTab({
       </div>
     );
   }
+  const idx = latest.indices;
   return (
-    <div className="space-y-3 text-sm">
+    <div className="space-y-4 text-sm">
+      {/* Metadata row */}
       <div className="grid grid-cols-2 gap-2">
-        <MetricMini
-          label="Zakres NDVI"
-          value={`${latest.min.toFixed(2)} – ${latest.max.toFixed(2)}`}
-          icon={<Sprout className="w-3.5 h-3.5 text-emerald-600" />}
-        />
         <MetricMini
           label="Zachmurzenie"
           value={`${Math.round(latest.cloudCover * 100)}%`}
@@ -321,12 +331,19 @@ function AnalysisTab({
           value={`${formatHa(field.areaHectares)} ha`}
           icon={<Droplets className="w-3.5 h-3.5 text-sky-600" />}
         />
-        <MetricMini
-          label="Uprawa"
-          value={cropLabel(crop)}
-          icon={<Sprout className="w-3.5 h-3.5 text-emerald-600" />}
-        />
       </div>
+
+      {/* 4 indeksy Sentinel-2 */}
+      {idx && (
+        <MultiIndexPanel
+          ndvi={idx.ndvi}
+          ndre={idx.ndre}
+          ndwi={idx.ndwi}
+          savi={idx.savi}
+          crop={crop}
+        />
+      )}
+
       <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-lime-50 border border-emerald-100 p-3 text-sm text-gray-800">
         {describeNdvi(latest.mean, crop)}
       </div>

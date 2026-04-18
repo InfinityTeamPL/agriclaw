@@ -95,6 +95,18 @@ export default async function FieldDetailPage({
           min: r.ndviMin,
           max: r.ndviMax,
           cloudCover: r.cloudCover,
+          indices: {
+            ndvi: { mean: r.ndviMean, min: r.ndviMin, max: r.ndviMax },
+            ndre: r.ndreMean !== null && r.ndreMin !== null && r.ndreMax !== null
+              ? { mean: r.ndreMean, min: r.ndreMin, max: r.ndreMax }
+              : null,
+            ndwi: r.ndwiMean !== null && r.ndwiMin !== null && r.ndwiMax !== null
+              ? { mean: r.ndwiMean, min: r.ndwiMin, max: r.ndwiMax }
+              : null,
+            savi: r.saviMean !== null && r.saviMin !== null && r.saviMax !== null
+              ? { mean: r.saviMean, min: r.saviMin, max: r.saviMax }
+              : null,
+          },
         }))}
         recommendations={recommendations.map((r) => ({
           id: r.id,
