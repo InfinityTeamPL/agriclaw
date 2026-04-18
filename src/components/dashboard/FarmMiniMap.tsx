@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { ndviColorHex } from '@/lib/satellite/ndvi';
+import { hybridStyle } from '@/lib/map-style';
 import { Loader2 } from 'lucide-react';
 
 interface FieldPoly {
@@ -22,8 +23,6 @@ interface Props {
   className?: string;
 }
 
-const STYLE = 'https://tiles.openfreemap.org/styles/liberty';
-
 export function FarmMiniMap({ fields, center, className }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -34,9 +33,9 @@ export function FarmMiniMap({ fields, center, className }: Props) {
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: STYLE,
+      style: hybridStyle,
       center: [center.lon, center.lat],
-      zoom: 13,
+      zoom: 14,
       interactive: false,
       attributionControl: false,
     });

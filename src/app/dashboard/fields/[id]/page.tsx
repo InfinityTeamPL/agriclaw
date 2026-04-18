@@ -64,14 +64,14 @@ export default async function FieldDetailPage({
   const polygon = JSON.parse(row.polygon) as GeoJSON.Polygon;
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-4">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       <div>
         <Link
           href="/dashboard/fields"
-          className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-emerald-700"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-emerald-700 transition"
         >
-          <ArrowLeft className="w-4 h-4" />
-          Wróć do listy pól
+          <ArrowLeft className="w-3.5 h-3.5" />
+          Wszystkie pola
         </Link>
       </div>
 

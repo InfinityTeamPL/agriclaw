@@ -8,6 +8,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Loader2 } from 'lucide-react';
 import { ndviColorHex } from '@/lib/satellite/ndvi';
+import { hybridStyle } from '@/lib/map-style';
 
 interface Props {
   polygon: GeoJSON.Polygon;
@@ -15,8 +16,6 @@ interface Props {
   ndviMean: number | null;
   className?: string;
 }
-
-const STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 
 export function FieldHeatmap({ polygon, centroid, ndviMean, className }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -28,9 +27,9 @@ export function FieldHeatmap({ polygon, centroid, ndviMean, className }: Props) 
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: STYLE,
+      style: hybridStyle,
       center: [centroid.lon, centroid.lat],
-      zoom: 15,
+      zoom: 16,
       interactive: true,
       attributionControl: false,
     });
