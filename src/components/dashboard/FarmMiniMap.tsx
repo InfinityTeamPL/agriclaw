@@ -88,7 +88,7 @@ export function FarmMiniMap({ fields, center, className }: Props) {
         if (allCoords.length >= 2) {
           const bounds = new maplibregl.LngLatBounds(allCoords[0], allCoords[0]);
           for (const c of allCoords) bounds.extend(c);
-          map.fitBounds(bounds, { padding: 30, duration: 0, maxZoom: 15 });
+          map.fitBounds(bounds, { padding: 25, duration: 0, maxZoom: 17 });
         }
       }
 

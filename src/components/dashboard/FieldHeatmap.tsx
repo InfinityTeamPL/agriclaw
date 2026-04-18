@@ -120,7 +120,8 @@ export function FieldHeatmap({ polygon, centroid, ndviMean, className }: Props) 
           coords[0] as [number, number],
         );
         for (const c of coords) bounds.extend(c as [number, number]);
-        map.fitBounds(bounds, { padding: 60, duration: 0 });
+        // Zoom max 18 — ESRI 30 cm/pixel (widać każde drzewo na miedzy).
+        map.fitBounds(bounds, { padding: 30, duration: 0, maxZoom: 18 });
       }
 
       setReady(true);

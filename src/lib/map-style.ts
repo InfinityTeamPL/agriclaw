@@ -23,6 +23,7 @@ const S2_CLOUDLESS_TILES = [
   'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg',
 ];
 
+// World_Imagery ma max native zoom 19 (30 cm dla większości PL) — pozwalamy aż tam.
 const ESRI_IMAGERY_TILES = [
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
 ];

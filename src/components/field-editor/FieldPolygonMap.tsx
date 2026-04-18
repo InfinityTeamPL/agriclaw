@@ -96,7 +96,7 @@ export function FieldPolygonMap({ polygon, centroid, ndviMean, className }: Prop
           coords[0] as [number, number],
         );
         for (const c of coords) bounds.extend(c as [number, number]);
-        map.fitBounds(bounds, { padding: 40, duration: 0 });
+        map.fitBounds(bounds, { padding: 30, duration: 0, maxZoom: 18 });
       }
 
       setReady(true);
