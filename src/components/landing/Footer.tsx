@@ -13,7 +13,7 @@ export function Footer() {
               <span className="font-bold text-white text-lg">AgriClaw</span>
             </div>
             <p className="text-sm max-w-md">
-              Super tech dla rolników. Twój cyfrowy agronom z danymi z kosmosu. Budowane przez Infinity Team na silniku AgroAgent.
+              Twój cyfrowy agronom. Skan pola z góry + konkretna rada przez WhatsApp.
             </p>
           </div>
 
@@ -30,21 +30,21 @@ export function Footer() {
 
           <div>
             <div className="text-xs font-mono uppercase tracking-wider text-gray-500 mb-3">
-              Kontakt
+              Firma
             </div>
             <ul className="space-y-2 text-sm">
               <li><a href="mailto:contact@infinityteam.io" className="hover:text-white transition">contact@infinityteam.io</a></li>
-              <li><a href="https://clawlabs.pro" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">clawlabs.pro</a></li>
+              <li><Link href="/privacy" className="hover:text-white transition">Polityka prywatności</Link></li>
+              <li><Link href="/terms" className="hover:text-white transition">Regulamin</Link></li>
             </ul>
           </div>
         </div>
 
         <div className="mt-10 pt-8 border-t border-gray-800 flex flex-col sm:flex-row justify-between gap-4 text-xs text-gray-500">
-          <div>© {new Date().getFullYear()} Infinity Team · Apache-2.0</div>
+          <div>© {new Date().getFullYear()} AgriClaw. Wszelkie prawa zastrzeżone.</div>
           <div className="flex gap-4">
-            <span>Sentinel-2: Copernicus</span>
-            <span>SMAP: NASA</span>
-            <span>Open-Meteo: CC-BY 4.0</span>
+            <Link href="/privacy" className="hover:text-white transition">Prywatność</Link>
+            <Link href="/terms" className="hover:text-white transition">Regulamin</Link>
           </div>
         </div>
       </div>
