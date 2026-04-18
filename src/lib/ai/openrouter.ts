@@ -27,16 +27,20 @@ export type VisionModel =
   | 'google/gemma-3-27b-it:free'
   | 'google/gemini-2.0-flash-exp:free';
 
-// Fallback chain: Gemma 4 31B:free (user verified best) → backupy non-Google → paid
-// Gemma 4 31B daje najlepsze tłumaczenie po polsku + najtrafniejszą diagnozę agronomiczną.
+// Fallback chain zgodnie z preferencją usera:
+// "jak sie da darmowy to najpierw darmowy; gemma-4-31b-it pierwszy"
+// 1. Gemma 4 31B :free — preferowany (user verified = najlepsze diagnozy PL)
+// 2. Gemma 4 31B paid — zaraz po, bo ten sam model bez rate-limitu Google AI Studio
+// 3-5. Non-Google backupy (różny upstream = różny rate-limit bucket)
+// 6. Gemma 4 26B paid — awaryjny tańszy
 const VISION_FALLBACK_CHAIN: VisionModel[] = [
-  'google/gemma-4-31b-it:free', // USER VERIFIED NAJLEPSZY
-  'google/gemma-4-26b-a4b-it:free', // backup Gemma mniejsza
-  'qwen/qwen-2.5-vl-72b-instruct:free', // non-Google — różny rate limit bucket
-  'meta-llama/llama-3.2-11b-vision-instruct:free',
-  'google/gemini-2.0-flash-exp:free',
-  'google/gemma-4-31b-it', // paid safety net Gemma 4 31B
-  'google/gemma-4-26b-a4b-it', // paid safety net mniejszy
+  'google/gemma-4-31b-it:free', // #1 USER NAJLEPSZY (free priority)
+  'google/gemma-4-31b-it', // #2 ten sam paid — bez rate-limitu
+  'qwen/qwen-2.5-vl-72b-instruct:free', // #3 non-Google — inny bucket
+  'google/gemma-4-26b-a4b-it:free', // #4 Gemma mniejsza :free
+  'meta-llama/llama-3.2-11b-vision-instruct:free', // #5 Meta
+  'google/gemini-2.0-flash-exp:free', // #6 Gemini Flash
+  'google/gemma-4-26b-a4b-it', // #7 ostatni ratunek paid
 ];
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
