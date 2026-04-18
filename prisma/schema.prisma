@@ -96,6 +96,7 @@ model Field {
   ndviReadings     NdviReading[]
   moistureReadings SoilMoistureReading[]
   recommendations  Recommendation[]
+  treatments       Treatment[]
 
   @@index([farmId])
   @@map("fields")
@@ -159,6 +160,55 @@ model Recommendation {
 
   @@index([fieldId, createdAt])
   @@map("recommendations")
+}
+
+// -----------------------------
+// Księga polowa (e-rejestr zabiegów agrotechnicznych)
+// OBOWIĄZEK PRAWNY PL/UE dla gospodarstw > 10 ha.
+// Zgodnie z Dz.U. 2022 poz. 2453 i rozporządzeniami 2023-2025.
+// IJHARS kontroluje, eksport do eWniosek Plus ARiMR.
+// -----------------------------
+
+model Treatment {
+  id              String   @id @default(uuid())
+  fieldId         String   @map("field_id")
+  // WHEN
+  performedAt     DateTime @map("performed_at")
+  plannedAt       DateTime? @map("planned_at")
+  // WHAT
+  type            String // spray, fertilizer, sowing, harvest, tillage, irrigation, mowing, other
+  purpose         String? // choroba, chwast, szkodnik, nawożenie, regulator wzrostu, inne
+  // PRODUCT
+  productName     String   @map("product_name")
+  activeSubstance String?  @map("active_substance")
+  registrationNo  String?  @map("registration_no")
+  // DOSE
+  doseValue       Float?   @map("dose_value")
+  doseUnit        String?  @map("dose_unit") // l/ha, kg/ha, dt/ha
+  areaTreated     Float    @map("area_treated")
+  waterVolume     Float?   @map("water_volume")
+  // WHO
+  operatorName    String?  @map("operator_name")
+  equipment       String?
+  // CONDITIONS
+  weatherTemp     Float?   @map("weather_temp")
+  weatherWind     Float?   @map("weather_wind")
+  weatherHumidity Float?   @map("weather_humidity")
+  weatherNotes    String?  @map("weather_notes")
+  // SAFETY
+  preHarvestIntervalDays Int? @map("pre_harvest_interval_days")
+  // META
+  cost            Float?
+  notes           String?  @db.Text
+  source          String   @default("manual")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  field Field @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@index([fieldId, performedAt])
+  @@index([type])
+  @@map("treatments")
 }
 
 // -----------------------------

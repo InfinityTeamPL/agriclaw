@@ -11,6 +11,7 @@ export const config = {
     '/api/farms/:path*',
     '/api/diagnose',
     '/api/geocode',
+    '/api/treatments/:path*',
     '/api/user',
   ],
 };

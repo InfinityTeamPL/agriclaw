@@ -12,6 +12,8 @@ import {
   Map as MapIcon,
   Sprout,
   Bot,
+  BookOpen,
+  Camera,
   Settings,
   Menu,
   X,
@@ -33,7 +35,9 @@ interface DashboardShellProps {
 const navLinks = [
   { href: '/dashboard', label: 'Panel', icon: Home, exact: true },
   { href: '/dashboard/fields', label: 'Moje pola', icon: Sprout },
-  { href: '/dashboard/agent', label: 'Agent', icon: Bot },
+  { href: '/dashboard/journal', label: 'Księga polowa', icon: BookOpen },
+  { href: '/dashboard/diagnose', label: 'Diagnoza z kamery', icon: Camera },
+  { href: '/dashboard/agent', label: 'AgroAgent', icon: Bot },
   { href: '/dashboard/settings', label: 'Ustawienia', icon: Settings },
 ];
 
