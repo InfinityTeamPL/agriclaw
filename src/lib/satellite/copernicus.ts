@@ -23,6 +23,27 @@ function evaluatePixel(s) {
   return [(s.B08 - s.B04) / (s.B08 + s.B04)];
 }`;
 
+// Sentinel-1 SAR — przez chmury, krytyczne dla PL (200 dni/rok zachmurzenia).
+// VV = Vertical-Vertical polarization, VH = Vertical-Horizontal.
+// Różnica VV/VH wskazuje strukturę roślin vs ziemia.
+// Backscatter w dB: -25 do 0 (niskie = gładkie jak woda, wysokie = chropowate jak pole).
+const RADAR_EVALSCRIPT = `//VERSION=3
+function setup() {
+  return {
+    input: [{ bands: ["VV", "VH", "dataMask"] }],
+    output: { bands: 3, sampleType: "FLOAT32" }
+  };
+}
+function evaluatePixel(s) {
+  if (s.dataMask === 0) return [NaN, NaN, NaN];
+  // log10 * 10 = dB, clamped do -30..0 dla czytelności
+  const vvDb = Math.max(-30, Math.min(0, 10 * Math.log(s.VV) / Math.LN10));
+  const vhDb = Math.max(-30, Math.min(0, 10 * Math.log(s.VH) / Math.LN10));
+  // RVI (Radar Vegetation Index) — 4*VH / (VV+VH), 0..1
+  const rvi = (4 * s.VH) / (s.VV + s.VH);
+  return [vvDb, vhDb, rvi];
+}`;
+
 // 4 indeksy w jednym zapytaniu — oszczędzamy CDSE quota (1 request zamiast 4).
 // Band 1: NDVI — ogólne zdrowie roślin (B08, B04)
 // Band 2: NDRE — niedobór azotu (B08, B05)
@@ -119,6 +140,65 @@ export class CopernicusClient {
     opts: { width?: number; height?: number; maxCloudCoverage?: number } = {},
   ): Promise<ArrayBuffer> {
     return this.processRequest(polygon, dateFrom, dateTo, MULTI_INDEX_EVALSCRIPT, opts);
+  }
+
+  /**
+   * Sentinel-1 SAR — radar, widzi przez chmury.
+   * Zwraca 3-band: VV (dB), VH (dB), RVI (Radar Vegetation Index).
+   * Używamy gdy Sentinel-2 niedostępny (>30% chmury) albo dla wykrywania
+   * szkód mechanicznych (wyleganie, zalanie, wycięcie).
+   */
+  async fetchRadarGeotiff(
+    polygon: GeoJSON.Polygon,
+    dateFrom: string,
+    dateTo: string,
+    opts: { width?: number; height?: number } = {},
+  ): Promise<ArrayBuffer> {
+    const token = await this.getToken();
+    const payload = {
+      input: {
+        bounds: {
+          geometry: polygon,
+          properties: { crs: 'http://www.opengis.net/def/crs/OGC/1.3/CRS84' },
+        },
+        data: [
+          {
+            type: 'sentinel-1-grd',
+            dataFilter: {
+              timeRange: {
+                from: `${dateFrom}T00:00:00Z`,
+                to: `${dateTo}T23:59:59Z`,
+              },
+              polarization: 'DV', // dual VV+VH (standard dla rolnictwa)
+              acquisitionMode: 'IW', // Interferometric Wide swath
+              resolution: 'HIGH',
+            },
+            processing: {
+              backCoeff: 'GAMMA0_TERRAIN', // terrain-corrected
+              orthorectify: true,
+            },
+          },
+        ],
+      },
+      output: {
+        width: opts.width ?? 512,
+        height: opts.height ?? 512,
+        responses: [{ identifier: 'default', format: { type: 'image/tiff' } }],
+      },
+      evalscript: RADAR_EVALSCRIPT,
+    };
+    const res = await fetch(PROCESS_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      throw new Error(`CDSE S-1 failed: ${res.status} ${await res.text()}`);
+    }
+    return res.arrayBuffer();
   }
 
   private async processRequest(
@@ -259,6 +339,22 @@ export async function extractMultiIndexValues(
     ndwi: bands[2],
     savi: bands[3],
   };
+}
+
+/**
+ * Dekoduje 3-band GeoTIFF z Sentinel-1 (VV dB, VH dB, RVI).
+ */
+export async function extractRadarValues(
+  geotiffBuffer: ArrayBuffer,
+): Promise<{ vv: Float32Array; vh: Float32Array; rvi: Float32Array }> {
+  const tiff = await fromArrayBuffer(geotiffBuffer);
+  const image = await tiff.getImage();
+  const raster = await image.readRasters({ interleave: false });
+  const bands = raster as unknown as Float32Array[];
+  if (bands.length < 3) {
+    throw new Error(`Oczekiwano 3 pasm SAR, dostano ${bands.length}`);
+  }
+  return { vv: bands[0], vh: bands[1], rvi: bands[2] };
 }
 
 /**
