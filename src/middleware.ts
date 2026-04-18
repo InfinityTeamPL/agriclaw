@@ -13,5 +13,7 @@ export const config = {
     '/api/geocode',
     '/api/treatments/:path*',
     '/api/user',
+    '/api/weather/:path*',
+    '/api/scouting/:path*',
   ],
 };
