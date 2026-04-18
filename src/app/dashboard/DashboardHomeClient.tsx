@@ -3,8 +3,10 @@
 // Główny widok panelu gospodarstwa — client side, bo animuje countery
 // i potrzebuje framer-motion + MapLibre w dzieciach.
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   Plus,
   Sprout,
@@ -18,7 +20,10 @@ import {
   CheckCircle2,
   CircleDot,
   Sparkles,
+  Loader2,
+  Radar,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { CountUp } from '@/components/dashboard/CountUp';
 import { Sparkline } from '@/components/dashboard/Sparkline';
 import { PolygonThumb } from '@/components/dashboard/PolygonThumb';
@@ -91,6 +96,35 @@ const item = {
 };
 
 export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEvents }: Props) {
+  const router = useRouter();
+  const [scanning, setScanning] = useState(false);
+
+  const runScan = async () => {
+    if (scanning) return;
+    setScanning(true);
+    toast.info(`Skanuję ${fields.length} pól — frost, heat, choroby, bilans wodny…`);
+    try {
+      const res = await fetch('/api/alerts/scan', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? 'Skan nie powiódł się');
+        return;
+      }
+      if (data.newRecommendations > 0) {
+        toast.success(`Skan ukończony · ${data.newRecommendations} nowych sygnałów`);
+      } else {
+        toast.success('Skan ukończony · brak nowych zagrożeń');
+      }
+      router.refresh();
+    } catch (err) {
+      toast.error(String(err));
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const highSeverityRecs = recentRecs.filter((r) => r.severity === 'high');
+
   const miniMapFields = fields.map((f) => ({
     id: f.id,
     name: f.name,
@@ -131,6 +165,91 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
           Dodaj pole
         </Link>
       </motion.div>
+
+      {/* Pilne sygnały hero banner — tylko gdy są high severity */}
+      {highSeverityRecs.length > 0 && (
+        <motion.div
+          variants={item}
+          className="rounded-3xl bg-gradient-to-br from-red-50 via-orange-50 to-amber-50 border border-red-200 ring-1 ring-red-100 p-5 shadow-[0_20px_60px_-30px_rgba(239,68,68,0.3)]"
+        >
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-md">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="font-semibold text-gray-900 text-lg">
+                  {highSeverityRecs.length === 1
+                    ? 'Pilny sygnał wymaga uwagi'
+                    : `${highSeverityRecs.length} pilnych sygnałów wymaga uwagi`}
+                </div>
+                <div className="text-sm text-gray-600 mt-0.5">
+                  Kliknij w sygnał, żeby przejść do pola.
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={runScan}
+              disabled={scanning || fields.length === 0}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white border border-gray-200 text-gray-900 text-sm font-semibold hover:bg-gray-50 transition disabled:opacity-50"
+            >
+              {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radar className="w-4 h-4" />}
+              {scanning ? 'Skanuję…' : 'Skanuj wszystkie pola'}
+            </button>
+          </div>
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {highSeverityRecs.slice(0, 6).map((r) => (
+              <Link
+                key={r.id}
+                href={`/dashboard/fields/${r.fieldId}`}
+                className="group rounded-2xl bg-white/80 border border-red-100 p-3 hover:bg-white hover:shadow-md transition flex items-start gap-2"
+              >
+                <div className="w-2 h-2 rounded-full bg-red-600 shrink-0 mt-1.5 animate-pulse" />
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-semibold text-gray-500 truncate">
+                    {r.fieldName}
+                  </div>
+                  <div className="text-sm font-medium text-gray-900 truncate group-hover:text-red-700">
+                    {r.title}
+                  </div>
+                  <div className="text-[10px] text-gray-400 mt-0.5">
+                    {formatDateTimePL(r.createdAt)}
+                  </div>
+                </div>
+                <ArrowUpRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-red-600 shrink-0" />
+              </Link>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Skan banner — tylko gdy brak high-severity i user może skanować */}
+      {highSeverityRecs.length === 0 && fields.length > 0 && (
+        <motion.div
+          variants={item}
+          className="rounded-3xl bg-gradient-to-br from-emerald-50 to-sky-50 border border-emerald-200 p-4 flex items-center justify-between gap-3 flex-wrap"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-md">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-semibold text-gray-900">Brak pilnych sygnałów</div>
+              <div className="text-sm text-gray-500">
+                Skanuj wszystkie pola żeby sprawdzić przymrozki, upały, choroby i bilans wodny.
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={runScan}
+            disabled={scanning}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition disabled:opacity-50"
+          >
+            {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radar className="w-4 h-4" />}
+            {scanning ? 'Skanuję…' : 'Skanuj pola'}
+          </button>
+        </motion.div>
+      )}
 
       {/* Hero stats grid */}
       <motion.div
