@@ -31,6 +31,7 @@ import {
 } from '@/lib/ui/format';
 import { FieldLayerMap } from '@/components/dashboard/FieldLayerMap';
 import { BbchTracker } from '@/components/dashboard/BbchTracker';
+import { HistoryChart } from '@/components/dashboard/HistoryChart';
 import { Sparkline } from '@/components/dashboard/Sparkline';
 import { MultiIndexPanel } from '@/components/dashboard/MultiIndexPanel';
 import { SprayTimer } from '@/components/dashboard/SprayTimer';
@@ -183,6 +184,9 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
         <BbchTracker fieldId={field.id} />
         <SprayTimer fieldId={field.id} />
       </div>
+
+      {/* Historia Sentinel-2 10 lat */}
+      <HistoryChart fieldId={field.id} />
 
       {/* Split view */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5">
