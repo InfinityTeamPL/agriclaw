@@ -1,0 +1,334 @@
+// AgriClaw — schema zbudowana na wzorcu clawlabspro
+// Różnice: Farm (zamiast Tenant), Field (z PostGIS geometry), NdviReading, Recommendation
+// Utrzymane: Agent, InstalledSkill, Conversation, Message, Event, Usage, Task — bo każdy rolnik dostaje własnego agenta identycznie jak w clawlabspro
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  directUrl  = env("DATABASE_URL_UNPOOLED")
+  extensions = [postgis]
+}
+
+// -----------------------------
+// Users + Auth (wzorzec clawlabspro)
+// -----------------------------
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String?
+  name          String?
+  phoneNumber   String?  @unique @map("phone_number") // dla WhatsApp identyfikacji
+  emailVerified Boolean  @default(false) @map("email_verified")
+  avatarUrl     String?  @map("avatar_url")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  farms              Farm[]
+  verificationTokens VerificationToken[]
+
+  @@map("users")
+}
+
+model VerificationToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("verification_tokens")
+}
+
+// -----------------------------
+// Farm — odpowiednik Tenant z clawlabspro
+// -----------------------------
+
+model Farm {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  name      String // "Gospodarstwo Kowalski"
+  address   String
+  lat       Float
+  lon       Float
+  apiKey    String   @unique @map("api_key") // do zewnętrznych integracji
+  plan      String   @default("free") // free, standard, premium
+  suspended Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fields        Field[]
+  agents        Agent[]
+  conversations Conversation[]
+  events        Event[]
+  tasks         Task[]
+  usage         Usage[]
+
+  @@index([userId])
+  @@map("farms")
+}
+
+// -----------------------------
+// Field — pole z PostGIS polygon
+// -----------------------------
+
+model Field {
+  id           String                                 @id @default(uuid())
+  farmId       String                                 @map("farm_id")
+  name         String // "Pole za stodołą"
+  // PostGIS POLYGON 4326 — polygon rysowany przez rolnika na mapie
+  polygon      Unsupported("geometry(Polygon, 4326)")
+  crop         String // wheat, corn, rapeseed, barley, potato, other
+  areaHectares Float                                  @map("area_hectares")
+  createdAt    DateTime                               @default(now()) @map("created_at")
+  updatedAt    DateTime                               @updatedAt @map("updated_at")
+
+  farm             Farm                  @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  ndviReadings     NdviReading[]
+  moistureReadings SoilMoistureReading[]
+  recommendations  Recommendation[]
+
+  @@index([farmId])
+  @@map("fields")
+}
+
+model NdviReading {
+  id         String   @id @default(uuid())
+  fieldId    String   @map("field_id")
+  observedAt DateTime @map("observed_at")
+  ndviMean   Float    @map("ndvi_mean")
+  ndviMin    Float    @map("ndvi_min")
+  ndviMax    Float    @map("ndvi_max")
+  validCount Int      @default(0) @map("valid_count") // ile pikseli było walidnych
+  cloudCover Float    @default(0) @map("cloud_cover")
+  source     String   @default("sentinel-2")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  field Field @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@index([fieldId, observedAt])
+  @@map("ndvi_readings")
+}
+
+model SoilMoistureReading {
+  id          String   @id @default(uuid())
+  fieldId     String   @map("field_id")
+  observedAt  DateTime @map("observed_at")
+  moisturePct Float    @map("moisture_pct")
+  source      String   @default("smap")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  field Field @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@index([fieldId, observedAt])
+  @@map("soil_moisture_readings")
+}
+
+model Recommendation {
+  id              String    @id @default(uuid())
+  fieldId         String    @map("field_id")
+  severity        String // none, low, medium, high
+  title           String
+  message         String    @db.Text
+  action          String    @db.Text
+  sentViaWhatsapp Boolean   @default(false) @map("sent_via_whatsapp")
+  sentAt          DateTime? @map("sent_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  field Field @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@index([fieldId, createdAt])
+  @@map("recommendations")
+}
+
+// -----------------------------
+// Agent — KAŻDY rolnik dostaje własny agent, wzorzec clawlabspro
+// Każdy Agent ma swój Hetzner VM z OpenClaw Gateway
+// -----------------------------
+
+model Agent {
+  id              String    @id @default(uuid())
+  farmId          String    @map("farm_id")
+  name            String // "AgriClaw Advisor dla Gospodarstwa Kowalski"
+  description     String?
+  avatarUrl       String?   @map("avatar_url")
+  model           String    @default("claude-sonnet-4-6") // AI model backend
+  channel         String    @default("WEB") // WEB, WHATSAPP, TELEGRAM
+  channelToken    String?   @map("channel_token")
+  template        String    @default("agri-advisor") // always agri-advisor w AgriClaw
+  // Hetzner provisioning (reuse z clawlabspro)
+  hetznerServerId String?   @map("hetzner_server_id")
+  cloudProvider   String?   @default("hetzner") @map("cloud_provider")
+  cloudServerId   String?   @map("cloud_server_id")
+  serverIp        String?   @map("server_ip")
+  gatewayPort     Int       @default(18789) @map("gateway_port")
+  gatewayToken    String?   @map("gateway_token")
+  provisionToken  String?   @map("provision_token")
+  status          String    @default("PROVISIONING") // PROVISIONING, READY, ERROR, DELETED
+  lastHealthCheck DateTime? @map("last_health_check")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Markdown konfiguracja osobowości (wzorzec OpenClaw)
+  soulMd      String? @map("soul_md") // rola + styl komunikacji
+  identityMd  String? @map("identity_md") // "jestem doradcą rolnika X"
+  heartbeatMd String? @map("heartbeat_md") // rytm codzienny
+  toolsMd     String? @map("tools_md") // lista skilli agri-*
+  bootstrapMd String? @map("bootstrap_md") // initial state
+  userMd      String? @map("user_md") // kontekst gospodarstwa
+  agentsMd    String? @map("agents_md") // sub-agenty
+
+  // JSON-stringified configs
+  automations     String? @default("[]")
+  customScripts   String? @default("[]") @map("custom_scripts")
+  channelConfig   String? @map("channel_config")
+  integrationKeys String? @map("integration_keys")
+  pendingConfig   String? @map("pending_config")
+
+  farm            Farm             @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  tasks           Task[]
+  messages        Message[]
+  events          Event[]
+  installedSkills InstalledSkill[]
+  conversations   Conversation[]
+
+  @@index([farmId])
+  @@index([status])
+  @@map("agents")
+}
+
+model Task {
+  id          String    @id @default(uuid())
+  farmId      String    @map("farm_id")
+  agentId     String?   @map("agent_id")
+  status      String    @default("PENDING") // PENDING, RUNNING, COMPLETED, FAILED
+  input       String    @db.Text
+  output      String?   @db.Text
+  error       String?   @db.Text
+  tokensUsed  Int       @default(0) @map("tokens_used")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  completedAt DateTime? @map("completed_at")
+
+  farm  Farm   @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  agent Agent? @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  @@index([farmId])
+  @@index([agentId])
+  @@map("tasks")
+}
+
+model InstalledSkill {
+  id          String   @id @default(uuid())
+  agentId     String   @map("agent_id")
+  skillId     String   @map("skill_id") // agri-fields, agri-satellite, ...
+  name        String
+  version     String   @default("latest")
+  installedAt DateTime @default(now()) @map("installed_at")
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, skillId])
+  @@map("installed_skills")
+}
+
+model Conversation {
+  id         String   @id @default(uuid())
+  farmId     String   @map("farm_id")
+  agentId    String   @map("agent_id")
+  sessionKey String   @unique @map("session_key") // OpenClaw session key
+  title      String   @default("Nowa rozmowa")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  farm     Farm      @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  agent    Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([farmId])
+  @@index([agentId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  agentId        String   @map("agent_id")
+  conversationId String?  @map("conversation_id")
+  role           String   @default("USER") // USER, ASSISTANT, TOOL
+  content        String   @db.Text
+  toolCalls      Json?    @map("tool_calls")
+  metadata       String?  @db.Text
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  agent        Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+
+  @@index([agentId])
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
+
+model Event {
+  id        String   @id @default(uuid())
+  farmId    String   @map("farm_id")
+  agentId   String?  @map("agent_id")
+  type      String // agent.deployed, ndvi.alert, whatsapp.sent, etc
+  title     String
+  detail    String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  farm  Farm   @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  agent Agent? @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  @@index([farmId, createdAt])
+  @@index([agentId])
+  @@map("events")
+}
+
+model Usage {
+  id                   String   @id @default(uuid())
+  farmId               String   @map("farm_id")
+  tasksCount           Int      @default(0) @map("tasks_count")
+  tokensUsed           Int      @default(0) @map("tokens_used")
+  promptTokensUsed     Int      @default(0) @map("prompt_tokens_used")
+  completionTokensUsed Int      @default(0) @map("completion_tokens_used")
+  periodStart          DateTime @map("period_start")
+  periodEnd            DateTime @map("period_end")
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@index([farmId, periodStart])
+  @@map("usage")
+}
+
+// -----------------------------
+// Pool server (reuse z clawlabspro — shared pool dla pre-provisioned VMs)
+// -----------------------------
+
+model PoolServer {
+  id              String    @id @default(uuid())
+  planTier        String    @map("plan_tier") // free, standard, premium
+  serverType      String    @map("server_type") // cx22, cx32...
+  hetznerServerId String?   @map("hetzner_server_id")
+  cloudProvider   String    @default("hetzner") @map("cloud_provider")
+  cloudServerId   String?   @map("cloud_server_id")
+  serverIp        String?   @map("server_ip")
+  poolToken       String    @map("pool_token")
+  status          String    @default("PROVISIONING") // PROVISIONING, READY, ASSIGNED
+  assignedAgentId String?   @map("assigned_agent_id")
+  lastPollAt      DateTime? @map("last_poll_at")
+  errorMessage    String?   @map("error_message") @db.Text
+  createdAt       DateTime  @default(now()) @map("created_at")
+  readyAt         DateTime? @map("ready_at")
+
+  @@index([status, planTier])
+  @@map("pool_servers")
+}
