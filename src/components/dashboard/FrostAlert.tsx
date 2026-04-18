@@ -104,8 +104,8 @@ export function FrostAlert({ fieldId }: Props) {
 
   if (loading) {
     return (
-      <div className="rounded-3xl bg-white border border-gray-200 p-5 flex items-center gap-3 text-sm text-gray-500">
-        <Loader2 className="w-4 h-4 animate-spin text-sky-600" />
+      <div className="rounded-xl bg-white border border-gray-200 p-4 flex items-center gap-2.5 text-sm text-gray-500">
+        <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
         Sprawdzam prognozę przymrozków na 10 nocy…
       </div>
     );
@@ -113,7 +113,7 @@ export function FrostAlert({ fieldId }: Props) {
 
   if (error) {
     return (
-      <div className="rounded-3xl bg-red-50 border border-red-200 p-4 text-sm text-red-800">
+      <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
         Prognoza przymrozków niedostępna: {error}
       </div>
     );
@@ -134,11 +134,11 @@ export function FrostAlert({ fieldId }: Props) {
   return (
     <div
       className={cn(
-        'rounded-3xl border p-5 space-y-4 transition',
+        'rounded-xl border p-5 space-y-4',
         data.worstLevel === 'critical'
-          ? 'bg-gradient-to-br from-red-50 to-white border-red-200 ring-1 ring-red-100'
+          ? 'bg-white border-red-200'
           : data.worstLevel === 'warning'
-            ? 'bg-gradient-to-br from-amber-50 to-white border-amber-200 ring-1 ring-amber-100'
+            ? 'bg-white border-amber-200'
             : 'bg-white border-gray-200',
       )}
     >
@@ -147,17 +147,17 @@ export function FrostAlert({ fieldId }: Props) {
         <div className="flex items-start gap-3">
           <div
             className={cn(
-              'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+              'w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border',
               data.worstLevel === 'critical'
-                ? 'bg-red-600 text-white'
+                ? 'bg-red-50 text-red-700 border-red-200'
                 : data.worstLevel === 'warning'
-                  ? 'bg-amber-500 text-white'
+                  ? 'bg-amber-50 text-amber-700 border-amber-200'
                   : data.worstLevel === 'watch'
-                    ? 'bg-sky-100 text-sky-700'
-                    : 'bg-emerald-100 text-emerald-700',
+                    ? 'bg-sky-50 text-sky-700 border-sky-200'
+                    : 'bg-emerald-50 text-emerald-700 border-emerald-200',
             )}
           >
-            <Icon className="w-5 h-5" />
+            <Icon className="w-4 h-4" />
           </div>
           <div>
             <div className="font-semibold text-gray-900">

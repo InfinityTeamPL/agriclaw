@@ -126,12 +126,12 @@ export function NitrogenCalculator({ fieldId }: Props) {
   const isIncrease = rec.adjustmentPct > 0;
 
   return (
-    <div className="rounded-3xl bg-gradient-to-br from-amber-50 to-white border border-amber-200 p-5 space-y-4">
+    <div className="rounded-xl bg-white border border-amber-200 p-5 space-y-4">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
-            <Beaker className="w-5 h-5" />
+          <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 flex items-center justify-center shrink-0">
+            <Beaker className="w-4 h-4" />
           </div>
           <div>
             <div className="font-semibold text-gray-900">Kalkulator azotu</div>
@@ -177,12 +177,12 @@ export function NitrogenCalculator({ fieldId }: Props) {
           </div>
         </div>
         {rec.savingVsBaseline && rec.savingVsBaseline.kgN > 0 && (
-          <div className="rounded-2xl bg-emerald-500 text-white p-3 text-right shadow-md shadow-emerald-200">
-            <div className="text-[10px] uppercase tracking-wider font-semibold text-emerald-100">
+          <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-right">
+            <div className="text-[10px] uppercase tracking-wider font-semibold text-emerald-700">
               Oszczędność na polu
             </div>
-            <div className="text-2xl font-bold tabular-nums">{rec.savingVsBaseline.pln} zł</div>
-            <div className="text-[10px] text-emerald-100">
+            <div className="text-2xl font-semibold tabular-nums text-emerald-900">{rec.savingVsBaseline.pln} zł</div>
+            <div className="text-[10px] text-emerald-700">
               {rec.savingVsBaseline.kgN} kg N × {data.areaHectares.toFixed(1)} ha
             </div>
           </div>

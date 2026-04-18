@@ -119,11 +119,11 @@ export function HeatAlert({ fieldId }: Props) {
   return (
     <div
       className={cn(
-        'rounded-3xl border p-5 space-y-4 transition',
+        'rounded-xl border p-5 space-y-4',
         data.worstLevel === 'critical'
-          ? 'bg-gradient-to-br from-red-50 to-white border-red-200 ring-1 ring-red-100'
+          ? 'bg-white border-red-200'
           : data.worstLevel === 'warning'
-            ? 'bg-gradient-to-br from-orange-50 to-white border-orange-200 ring-1 ring-orange-100'
+            ? 'bg-white border-orange-200'
             : 'bg-white border-gray-200',
       )}
     >
@@ -132,15 +132,15 @@ export function HeatAlert({ fieldId }: Props) {
         <div className="flex items-start gap-3">
           <div
             className={cn(
-              'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+              'w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border',
               data.worstLevel === 'critical'
-                ? 'bg-red-600 text-white'
+                ? 'bg-red-50 text-red-700 border-red-200'
                 : data.worstLevel === 'warning'
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-amber-100 text-amber-700',
+                  ? 'bg-orange-50 text-orange-700 border-orange-200'
+                  : 'bg-amber-50 text-amber-700 border-amber-200',
             )}
           >
-            <Icon className="w-5 h-5" />
+            <Icon className="w-4 h-4" />
           </div>
           <div>
             <div className="font-semibold text-gray-900">

@@ -174,12 +174,12 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
       {highSeverityRecs.length > 0 && (
         <motion.div
           variants={item}
-          className="rounded-3xl bg-gradient-to-br from-red-50 via-orange-50 to-amber-50 border border-red-200 ring-1 ring-red-100 p-5 shadow-[0_20px_60px_-30px_rgba(239,68,68,0.3)]"
+          className="rounded-xl bg-white border border-red-200 p-5"
         >
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-md">
-                <AlertTriangle className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-lg bg-red-50 text-red-700 border border-red-200 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-4 h-4" />
               </div>
               <div>
                 <div className="font-semibold text-gray-900 text-lg">
@@ -231,11 +231,11 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
       {highSeverityRecs.length === 0 && fields.length > 0 && (
         <motion.div
           variants={item}
-          className="rounded-3xl bg-gradient-to-br from-emerald-50 to-sky-50 border border-emerald-200 p-4 flex items-center justify-between gap-3 flex-wrap"
+          className="rounded-xl bg-white border border-gray-200 p-4 flex items-center justify-between gap-3 flex-wrap"
         >
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-md">
-              <CheckCircle2 className="w-5 h-5" />
+            <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center">
+              <CheckCircle2 className="w-4 h-4" />
             </div>
             <div>
               <div className="font-semibold text-gray-900">Brak pilnych sygnałów</div>
