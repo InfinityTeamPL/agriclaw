@@ -90,7 +90,7 @@ function AgentEmptyCTA() {
       <div>
         <h2 className="text-lg font-semibold text-gray-900">Uruchom swojego agenta</h2>
         <p className="text-sm text-gray-500 mt-1 max-w-md mx-auto">
-          Każde gospodarstwo dostaje własnego agenta AI, który odpowiada po polsku i czyta dane z
+          Każde gospodarstwo dostaje własnego AgroAgenta, który odpowiada po polsku i czyta dane z
           Twoich pól.
         </p>
       </div>

@@ -51,7 +51,7 @@ export default function TermsPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-2">4. Jak działa rada</h2>
             <p>
               AgriClaw liczy wskaźniki zdrowia roślin, wilgotności gleby i prognozę pogody,
-              a następnie agent AI podpowiada, co z tym zrobić. Rady mają charakter informacyjny.
+              a następnie AgroAgent podpowiada, co z tym zrobić. Rady mają charakter informacyjny.
               Decyzję o oprysku, nawożeniu, siewie czy zbiorze zawsze podejmujesz Ty — jako gospodarz.
               Nie gwarantujemy, że każde podpowiedzenie jest idealnie trafne — rzeczywistość na polu
               jest bardziej skomplikowana niż najlepszy model.

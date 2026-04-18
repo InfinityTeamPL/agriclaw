@@ -158,7 +158,7 @@ export function DeployAgentWizard({ farmId, farmName }: Props) {
       <div>
         <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <Bot className="w-6 h-6 text-emerald-600" />
-          Uruchom agenta AI
+          Uruchom AgroAgenta
         </h1>
         <p className="text-sm text-gray-500 mt-1">
           Agent AgriClaw Advisor dla {farmName}. Własny serwer, własne dane, własny model.
@@ -171,7 +171,7 @@ export function DeployAgentWizard({ farmId, farmName }: Props) {
         <section className="bg-white border border-gray-200 rounded-xl p-4 sm:p-6 space-y-4">
           <div className="flex items-center gap-2">
             <Cpu className="w-4 h-4 text-emerald-600" />
-            <h2 className="font-semibold text-gray-900">Krok 1. Wybierz model AI</h2>
+            <h2 className="font-semibold text-gray-900">Krok 1. Wybierz silnik</h2>
           </div>
           <p className="text-sm text-gray-500">
             Claude Sonnet to zalecany domyślny model — dobry balans ceny i jakości. Modele premium dają
@@ -293,7 +293,7 @@ export function DeployAgentWizard({ farmId, farmName }: Props) {
           </div>
           <dl className="text-sm space-y-2">
             <Row label="Gospodarstwo" value={farmName} />
-            <Row label="Model AI" value={`${selectedModel?.icon ?? ''} ${selectedModel?.name ?? model}`} />
+            <Row label="Silnik" value={`${selectedModel?.icon ?? ''} ${selectedModel?.name ?? model}`} />
             <Row label="Kanał" value={CHANNELS.find((c) => c.id === channel)?.label ?? channel} />
             <Row label="Template" value="AgriClaw Advisor (agri-advisor)" />
             <Row label="Skille" value="agri-fields, agri-satellite, agri-weather, agri-notify" />

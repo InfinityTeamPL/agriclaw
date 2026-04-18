@@ -110,7 +110,7 @@ const TEMPLATE_DEFINITIONS: Omit<AgentTemplate, "name" | "toConfig" | "avatarUrl
   {
     id: "personal-assistant",
     icon: "🧠",
-    tagline: "Twój osobisty asystent AI",
+    tagline: "Twój osobisty asystent",
     category: "Produktywność",
     description:
       "Zarządza zadaniami, szuka informacji, pisze maile, organizuje kalendarz. Uniwersalny asystent do codziennej pracy.",
@@ -176,7 +176,7 @@ const TEMPLATE_DEFINITIONS: Omit<AgentTemplate, "name" | "toConfig" | "avatarUrl
   {
     id: "data-analyst",
     icon: "📊",
-    tagline: "Analityk danych AI",
+    tagline: "Analityk danych",
     category: "Finanse",
     description:
       "Analizuje CSV/Excel, tworzy wykresy, generuje raporty. Idealny do raportowania finansowego i KPI.",

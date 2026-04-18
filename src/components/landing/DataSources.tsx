@@ -32,7 +32,7 @@ const ITEMS = [
   },
   {
     icon: Brain,
-    title: 'Własny agent AI',
+    title: 'Twój AgroAgent',
     desc: 'Model pracuje na Twoich danych i tylko na nich. Rada jest konkretna, nie podręcznikowa.',
   },
   {

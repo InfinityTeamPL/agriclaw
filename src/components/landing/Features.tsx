@@ -26,7 +26,7 @@ const FEATURES = [
   },
   {
     icon: Brain,
-    title: 'Twój agent AI',
+    title: 'Twój AgroAgent',
     body:
       'Agent pamięta historię Twojego pola przez 2+ sezony. Uczy się Twojego gospodarstwa, nie cudzych.',
     tone: 'violet',
