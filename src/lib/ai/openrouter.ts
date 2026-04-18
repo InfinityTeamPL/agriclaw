@@ -27,20 +27,17 @@ export type VisionModel =
   | 'google/gemma-3-27b-it:free'
   | 'google/gemini-2.0-flash-exp:free';
 
-// Fallback chain zgodnie z preferencją usera:
-// 1. Najpierw darmowe :free (Gemma 4 31B > 26B > Qwen > Llama > Gemini)
-// 2. Potem płatne (Gemma 4 31B paid > 26B paid) jako safety net
-//
-// Dla agronomicznej diagnozy zdjęć Gemma 4 31B Dense zazwyczaj wygrywa
-// (więcej parametrów = precyzyjniejsze rozpoznawanie chorób liści).
-// Qwen 2.5 VL 72B jest ogólnie topowym vision modelem — też dobry backup.
+// Fallback chain — preferujemy najmocniejszy vision model jako pierwszy:
+// Qwen 2.5 VL 72B często wygrywa w benchmarkach vision (DocVQA, MMBench),
+// lepiej od Gemmy rozpoznaje subtelne zmiany na liściach i strukturę tkanki.
+// Darmowe pierwsze, paid jako safety net.
 const VISION_FALLBACK_CHAIN: VisionModel[] = [
-  'google/gemma-4-31b-it:free', // preferowany darmowy
-  'google/gemma-4-26b-a4b-it:free', // mniejszy, ale też solidny
-  'qwen/qwen-2.5-vl-72b-instruct:free', // non-Google, inny upstream = różne rate limity
+  'qwen/qwen-2.5-vl-72b-instruct:free', // TOP vision — szczegółowa diagnoza
+  'google/gemma-4-31b-it:free', // Gemma 4 31B Dense backup
+  'google/gemma-4-26b-a4b-it:free', // Gemma 4 26B MoE szybki backup
   'meta-llama/llama-3.2-11b-vision-instruct:free',
   'google/gemini-2.0-flash-exp:free',
-  'google/gemma-4-31b-it', // paid fallback (bez rate limitu)
+  'google/gemma-4-31b-it', // paid fallback
   'google/gemma-4-26b-a4b-it', // paid fallback mniejszy
 ];
 
@@ -81,7 +78,7 @@ export interface OpenRouterCompletionOptions {
 export class OpenRouterClient {
   constructor(
     private readonly apiKey: string = process.env.OPENROUTER_API_KEY ?? '',
-    private readonly defaultModel: VisionModel = 'google/gemma-4-31b-it:free',
+    private readonly defaultModel: VisionModel = 'qwen/qwen-2.5-vl-72b-instruct:free',
   ) {
     if (!apiKey) {
       throw new Error('OpenRouterClient: brak OPENROUTER_API_KEY');
