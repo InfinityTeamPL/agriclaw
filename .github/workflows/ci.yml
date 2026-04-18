@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: agriclaw
+          POSTGRES_PASSWORD: agriclaw
+          POSTGRES_DB: agriclaw
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U agriclaw -d agriclaw"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DATABASE_URL: postgresql://agriclaw:agriclaw@localhost:5432/agriclaw?schema=public
+      DATABASE_URL_UNPOOLED: postgresql://agriclaw:agriclaw@localhost:5432/agriclaw?schema=public
+      NEXTAUTH_SECRET: ci-secret-32-chars-aaaaaaaaaaaaaaaaaa
+      NEXTAUTH_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Prisma generate + push
+        run: |
+          npx prisma generate
+          npx prisma db push --accept-data-loss
+
+      - name: TypeScript
+        run: npx tsc --noEmit
+
+      - name: Vitest
+        run: npx vitest run
+
+      - name: Next build
+        run: npm run build
