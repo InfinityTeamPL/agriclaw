@@ -51,7 +51,31 @@
   * {
     @apply border-border;
   }
+  html {
+    /* Rezerwujemy szerokość dla scrollbara — zapobiega skakaniu layout
+       gdy scrollbar pojawia się/znika (np. przy zmianie strony z/bez overflow). */
+    scrollbar-gutter: stable;
+    /* Zawsze pokazuj scrollbar — stabilna szerokość viewport na wszystkich stronach */
+    overflow-y: scroll;
+    /* Wyłączamy CSS anchor — to on powoduje przeskakiwanie gdy element
+       nad viewportem zmienia wysokość (np. obraz się ładuje). */
+    overflow-anchor: none;
+  }
   body {
     @apply bg-background text-foreground;
+    /* Uniemożliwiamy horizontal scroll — motion animations mogą chwilowo
+       wypchnąć poza viewport podczas mount. */
+    overflow-x: clip;
+  }
+  /* Redukcja ruchu dla użytkowników z `prefers-reduced-motion` */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
