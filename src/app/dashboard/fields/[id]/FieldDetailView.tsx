@@ -29,7 +29,7 @@ import {
   formatHa,
   severityStyle,
 } from '@/lib/ui/format';
-import { FieldHeatmap } from '@/components/dashboard/FieldHeatmap';
+import { FieldLayerMap } from '@/components/dashboard/FieldLayerMap';
 import { Sparkline } from '@/components/dashboard/Sparkline';
 import { MultiIndexPanel } from '@/components/dashboard/MultiIndexPanel';
 import { SprayTimer } from '@/components/dashboard/SprayTimer';
@@ -189,10 +189,10 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           className="rounded-3xl overflow-hidden bg-white/70 backdrop-blur-md border border-white/60 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.3)]"
         >
-          <FieldHeatmap
+          <FieldLayerMap
+            fieldId={field.id}
             polygon={field.polygon}
             centroid={field.centroid}
-            ndviMean={latest?.mean ?? null}
             className="relative w-full h-[420px] sm:h-[520px] lg:h-[620px]"
           />
         </motion.div>

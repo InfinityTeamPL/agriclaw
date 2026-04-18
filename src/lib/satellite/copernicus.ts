@@ -84,6 +84,54 @@ function evaluatePixel(s) {
   ];
 }`;
 
+// Generator evalscript dla kolorowych heatmap — mapuje wartość indeksu na RGB.
+function buildColorRampEvalscript(layer: 'ndvi' | 'ndre' | 'ndwi' | 'savi'): string {
+  const configs = {
+    ndvi: {
+      bands: '["B04", "B08", "dataMask"]',
+      formula: 'const v = (s.B08 - s.B04) / (s.B08 + s.B04);',
+      stops:
+        '[[-0.2, [127,29,29]], [0.1, [220,38,38]], [0.25, [249,115,22]], [0.4, [250,204,21]], [0.55, [132,204,22]], [0.7, [34,197,94]], [0.85, [20,83,45]]]',
+    },
+    ndre: {
+      bands: '["B05", "B08", "dataMask"]',
+      formula: 'const v = (s.B08 - s.B05) / (s.B08 + s.B05);',
+      stops:
+        '[[0, [220,38,38]], [0.15, [249,115,22]], [0.25, [250,204,21]], [0.35, [132,204,22]], [0.45, [20,83,45]]]',
+    },
+    ndwi: {
+      bands: '["B08", "B11", "dataMask"]',
+      formula: 'const v = (s.B08 - s.B11) / (s.B08 + s.B11);',
+      stops:
+        '[[-0.2, [220,38,38]], [0, [250,204,21]], [0.15, [56,189,248]], [0.35, [30,64,175]]]',
+    },
+    savi: {
+      bands: '["B04", "B08", "dataMask"]',
+      formula: 'const L = 0.5; const v = ((s.B08 - s.B04) / (s.B08 + s.B04 + L)) * (1 + L);',
+      stops:
+        '[[-0.2, [127,29,29]], [0.1, [220,38,38]], [0.3, [249,115,22]], [0.5, [250,204,21]], [0.7, [132,204,22]], [0.85, [20,83,45]]]',
+    },
+  };
+  const c = configs[layer];
+  return `//VERSION=3
+function setup() { return { input: ${c.bands}, output: { bands: 4, sampleType: "UINT8" } }; }
+function evaluatePixel(s) {
+  if (s.dataMask === 0) return [0,0,0,0];
+  ${c.formula}
+  const stops = ${c.stops};
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (v <= stops[i+1][0]) {
+      const t = Math.max(0, Math.min(1, (v - stops[i][0]) / (stops[i+1][0] - stops[i][0])));
+      const [r1,g1,b1] = stops[i][1];
+      const [r2,g2,b2] = stops[i+1][1];
+      return [r1+(r2-r1)*t, g1+(g2-g1)*t, b1+(b2-b1)*t, 210];
+    }
+  }
+  const [r,g,b] = stops[stops.length-1][1];
+  return [r, g, b, 210];
+}`;
+}
+
 export class CopernicusClient {
   private token: string | null = null;
   private tokenExpiresAt = 0;
@@ -249,6 +297,57 @@ export class CopernicusClient {
     if (!res.ok) {
       throw new Error(`CDSE process failed: ${res.status} ${await res.text()}`);
     }
+    return res.arrayBuffer();
+  }
+
+  /**
+   * Zwraca kolorową heatmapę PNG dla warstwy (NDVI/NDRE/NDWI/SAVI/truecolor).
+   * Używane jako nakładka na mapie MapLibre przez image source.
+   */
+  async fetchColorRampPng(
+    polygon: GeoJSON.Polygon,
+    layer: 'ndvi' | 'ndre' | 'ndwi' | 'savi' | 'truecolor',
+    dateFrom: string,
+    dateTo: string,
+    opts: { width?: number; height?: number; maxCloudCoverage?: number } = {},
+  ): Promise<ArrayBuffer> {
+    const rampScripts: Record<string, string> = {
+      ndvi: buildColorRampEvalscript('ndvi'),
+      ndre: buildColorRampEvalscript('ndre'),
+      ndwi: buildColorRampEvalscript('ndwi'),
+      savi: buildColorRampEvalscript('savi'),
+      truecolor: TRUE_COLOR_EVALSCRIPT,
+    };
+    const token = await this.getToken();
+    const payload = {
+      input: {
+        bounds: {
+          geometry: polygon,
+          properties: { crs: 'http://www.opengis.net/def/crs/OGC/1.3/CRS84' },
+        },
+        data: [
+          {
+            type: 'sentinel-2-l2a',
+            dataFilter: {
+              timeRange: { from: `${dateFrom}T00:00:00Z`, to: `${dateTo}T23:59:59Z` },
+              maxCloudCoverage: opts.maxCloudCoverage ?? 30,
+            },
+          },
+        ],
+      },
+      output: {
+        width: opts.width ?? 1024,
+        height: opts.height ?? 1024,
+        responses: [{ identifier: 'default', format: { type: 'image/png' } }],
+      },
+      evalscript: rampScripts[layer],
+    };
+    const res = await fetch(PROCESS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`CDSE PNG ${layer} failed: ${res.status} ${await res.text()}`);
     return res.arrayBuffer();
   }
 
