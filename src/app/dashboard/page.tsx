@@ -4,6 +4,7 @@
 
 import { requireFarm } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
+import { evaluateCompliance } from '@/lib/compliance';
 import { DashboardHomeClient } from './DashboardHomeClient';
 
 export const dynamic = 'force-dynamic';
@@ -69,6 +70,32 @@ export default async function DashboardHome() {
   const activeAlerts = recentRecs.filter((r) => r.severity !== 'none').length;
   const latestReading = readings[0];
 
+  // Compliance — mini score do pokazania w dashboard home
+  const treatmentCounts = fieldIds.length
+    ? await prisma.treatment.groupBy({
+        by: ['fieldId'],
+        where: {
+          fieldId: { in: fieldIds },
+          performedAt: { gte: new Date(new Date().getFullYear(), 0, 1) },
+        },
+        _count: true,
+      })
+    : [];
+  const treatmentCountByField = new Map(
+    treatmentCounts.map((t) => [t.fieldId, t._count]),
+  );
+  const complianceReport = evaluateCompliance({
+    totalHectares: totalHa,
+    fields: fields.map((f) => ({
+      id: f.id,
+      name: f.name,
+      crop: f.crop,
+      areaHectares: Number(f.area_hectares),
+      treatmentsCountThisSeason: treatmentCountByField.get(f.id) ?? 0,
+      lastTreatmentAt: null,
+    })),
+  });
+
   const fieldsForClient = fields.map((f) => {
     const history = ndviByField.get(f.id) ?? [];
     const latest = history[0];
@@ -106,6 +133,9 @@ export default async function DashboardHome() {
         totalHa,
         activeAlerts,
         lastAnalysisAt: latestReading?.observedAt.toISOString() ?? null,
+        complianceScore: complianceReport.score,
+        complianceFails: complianceReport.failCount,
+        complianceWarns: complianceReport.warnCount,
       }}
       recentRecs={recentRecs.map((r) => ({
         id: r.id,
