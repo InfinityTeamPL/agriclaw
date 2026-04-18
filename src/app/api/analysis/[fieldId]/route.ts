@@ -4,10 +4,11 @@ import { prisma } from '@/lib/prisma';
 import { getCopernicusClient, extractMultiIndexValues } from '@/lib/satellite/copernicus';
 import { classifyNdvi, describeNdvi } from '@/lib/satellite/ndvi';
 import { computeAllIndices, interpretNdre, interpretNdwi, interpretSavi } from '@/lib/satellite/indices';
-import { fetchWeatherForecast } from '@/lib/satellite/weather';
+import { fetchWeatherForecast, fetchSprayForecast } from '@/lib/satellite/weather';
 import { fetchSmapSoilMoisture } from '@/lib/satellite/smap';
 import { generateRecommendation } from '@/lib/recommendations';
 import { generateMockNdvi, isCopernicusConfigured } from '@/lib/satellite/ndvi-mock';
+import { assessDiseaseRisks } from '@/lib/disease-models';
 
 export async function POST(
   _req: NextRequest,
@@ -41,10 +42,11 @@ export async function POST(
   const today = new Date().toISOString().slice(0, 10);
   const fourteenDaysAgo = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10);
 
-  // Równolegle: pogoda + SMAP (NDVI osobno niżej, z fallbackiem)
-  const [weather, smap] = await Promise.allSettled([
+  // Równolegle: pogoda + SMAP + hourly do disease models
+  const [weather, smap, sprayForecast] = await Promise.allSettled([
     fetchWeatherForecast(field.centroid_lat, field.centroid_lon, 7),
     fetchSmapSoilMoisture(field.centroid_lat, field.centroid_lon),
+    fetchSprayForecast(field.centroid_lat, field.centroid_lon),
   ]);
 
   // 4 indeksy Sentinel-2 (NDVI, NDRE, NDWI, SAVI) w jednym zapytaniu do CDSE.
@@ -165,6 +167,31 @@ export async function POST(
     },
   });
 
+  // Disease-specific risk assessment (Septoria/Fusarium/rdza/Phytophthora/mączniak/Alternaria/Phoma)
+  const diseaseRisks =
+    sprayForecast.status === 'fulfilled' && weather.status === 'fulfilled'
+      ? assessDiseaseRisks({
+          crop: field.crop,
+          hourly: sprayForecast.value.hourly,
+          daily: weatherSummary.daily,
+          ndviMean: indices.ndvi.mean,
+          ndviPrevious: previousReading?.ndviMean,
+        })
+      : [];
+
+  // Zapisz disease recommendations z wysokim ryzykiem
+  for (const risk of diseaseRisks.filter((r) => r.risk === 'high')) {
+    await prisma.recommendation.create({
+      data: {
+        fieldId: field.id,
+        severity: 'high',
+        title: risk.disease,
+        message: risk.reason,
+        action: risk.action,
+      },
+    });
+  }
+
   return NextResponse.json({
     fieldId: field.id,
     observedAt: reading.observedAt.toISOString(),
@@ -212,6 +239,7 @@ export async function POST(
       droughtRiskLevel: weatherSummary.droughtRiskLevel,
     } : null,
     soilMoisture: smap.status === 'fulfilled' && smap.value ? smap.value : null,
+    diseaseRisks,
     recommendation: {
       id: savedRec.id,
       severity: recommendation.severity,
