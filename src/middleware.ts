@@ -15,5 +15,6 @@ export const config = {
     '/api/user',
     '/api/weather/:path*',
     '/api/scouting/:path*',
+    '/api/import/:path*',
   ],
 };
