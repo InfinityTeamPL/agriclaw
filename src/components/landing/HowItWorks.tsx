@@ -12,8 +12,8 @@ const STEPS = [
   {
     n: '02',
     icon: Satellite,
-    title: 'Satelita robi robotę',
-    body: 'Co 2-3 dni Sentinel-2, SMAP i Open-Meteo sprawdzają Twoje pole. Liczymy NDVI, wilgotność gleby, prognozę.',
+    title: 'AgroAgent robi robotę',
+    body: 'Co 2-3 dni AgroAgent sprawdza Twoje pole z góry. Liczy zdrowie roślin, wilgotność gleby, prognozę.',
   },
   {
     n: '03',
