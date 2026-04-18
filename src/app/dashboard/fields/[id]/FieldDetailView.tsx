@@ -37,6 +37,7 @@ import { Sparkline } from '@/components/dashboard/Sparkline';
 import { MultiIndexPanel } from '@/components/dashboard/MultiIndexPanel';
 import { SprayTimer } from '@/components/dashboard/SprayTimer';
 import { FrostAlert } from '@/components/dashboard/FrostAlert';
+import { HeatAlert } from '@/components/dashboard/HeatAlert';
 import { NitrogenCalculator } from '@/components/dashboard/NitrogenCalculator';
 import { WaterBalance } from '@/components/dashboard/WaterBalance';
 import { DiseaseRiskPanel } from '@/components/dashboard/DiseaseRiskPanel';
@@ -192,6 +193,9 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
 
       {/* Frost alert — prognoza przymrozków 10 nocy, krytyczne w kwietniu */}
       <FrostAlert fieldId={field.id} />
+
+      {/* Heat stress — prognoza upałów 10 dni, krytyczne latem (czerwiec-sierpień) */}
+      <HeatAlert fieldId={field.id} />
 
       {/* Kalkulator azotu — kg N/ha z NDRE + BBCH + area = zł oszczędności */}
       <NitrogenCalculator fieldId={field.id} />
