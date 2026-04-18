@@ -11,8 +11,10 @@
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 // Vision-capable modele na OpenRouter (stan kwiecień 2026).
-// Gemma 4 26B A4B (MoE) jest dostępna jako `google/gemma-4-26b-a4b-it:free`.
+// Gemma 4 26B A4B (MoE) — preferujemy paid wersję (bez :free) bo nie ma rate limitu.
+// Koszt ~$0.001-0.01 per zdjęcie = grosz polski, za stabilność pełną warto.
 export type VisionModel =
+  | 'google/gemma-4-26b-a4b-it'
   | 'google/gemma-4-26b-a4b-it:free'
   | 'meta-llama/llama-3.2-11b-vision-instruct:free'
   | 'meta-llama/llama-3.2-90b-vision-instruct:free'
@@ -20,14 +22,14 @@ export type VisionModel =
   | 'google/gemma-3-27b-it:free'
   | 'google/gemini-2.0-flash-exp:free';
 
-// Fallback chain — mix darmowych (szybkie, ale rate-limited) i płatnych (stabilne).
-// OpenRouter rate limits na :free endpointach są agresywne (429 upstream od Google AI Studio).
-// Płatne opcje kosztują <$0.001/zdjęcie ale zawsze działają.
+// Fallback chain — priorytet: Gemma 4 paid (stabilna) → :free (gdy kredyty wyczerpane)
+// → Llama / Qwen / Gemini free jako ostateczność.
 const VISION_FALLBACK_CHAIN: VisionModel[] = [
-  'google/gemma-4-26b-a4b-it:free', // preferowany — Gemma 4 MoE
+  'google/gemma-4-26b-a4b-it', // paid, bez rate-limitu
+  'google/gemma-4-26b-a4b-it:free', // darmowa — ale Google AI Studio rate limits
   'meta-llama/llama-3.2-11b-vision-instruct:free',
   'qwen/qwen-2.5-vl-72b-instruct:free',
-  'google/gemini-2.0-flash-exp:free', // Gemini Flash
+  'google/gemini-2.0-flash-exp:free',
 ];
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -67,7 +69,7 @@ export interface OpenRouterCompletionOptions {
 export class OpenRouterClient {
   constructor(
     private readonly apiKey: string = process.env.OPENROUTER_API_KEY ?? '',
-    private readonly defaultModel: VisionModel = 'google/gemma-4-26b-a4b-it:free',
+    private readonly defaultModel: VisionModel = 'google/gemma-4-26b-a4b-it',
   ) {
     if (!apiKey) {
       throw new Error('OpenRouterClient: brak OPENROUTER_API_KEY');
