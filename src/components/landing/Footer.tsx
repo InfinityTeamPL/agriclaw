@@ -13,7 +13,7 @@ export function Footer() {
               <span className="font-bold text-white text-lg">AgriClaw</span>
             </div>
             <p className="text-sm max-w-md">
-              Open-source AI agronom z danymi z kosmosu. Budowane przez Infinity Team na silniku OpenClaw.
+              Super tech dla rolników. Twój cyfrowy agronom z danymi z kosmosu. Budowane przez Infinity Team na silniku AgroAgent.
             </p>
           </div>
 

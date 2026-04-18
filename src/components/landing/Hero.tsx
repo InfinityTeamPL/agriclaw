@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Radio } from 'lucide-react';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import { SatelliteScanner } from './SatelliteScanner';
 
 export function Hero() {
@@ -26,20 +26,20 @@ export function Hero() {
           {/* ────── Lewo: tekst ────── */}
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 ring-1 ring-emerald-200 px-3 py-1.5 mb-6">
-              <Radio className="w-3.5 h-3.5 text-emerald-600" />
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
               <span className="text-xs font-mono uppercase tracking-wider text-emerald-800">
-                OpenClaw Agri · live z satelity
+                W fazie testów z pierwszymi rolnikami
               </span>
             </div>
 
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 leading-[1.05]">
-              AI agronom,
+              Twój cyfrowy
               <br />
-              który wie
+              agronom.
               <br />
               <span className="relative inline-block">
                 <span className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 bg-clip-text text-transparent">
-                  co robić jutro.
+                  O krok przed pogodą.
                 </span>
                 <svg
                   viewBox="0 0 200 12"
@@ -58,9 +58,13 @@ export function Hero() {
             </h1>
 
             <p className="mt-6 text-lg sm:text-xl text-gray-600 max-w-xl leading-relaxed">
-              Satelita + pogoda + Twoja historia pola →
+              Obraz z góry + pogoda + historia Twojego pola →
               <span className="text-gray-900 font-medium"> konkretna rada po polsku</span>.
               WhatsApp: „pole 3 pryskaj jutro 5:30". Tyle.
+            </p>
+
+            <p className="mt-4 text-base text-gray-500 max-w-xl">
+              Dla gospodarstw 20–500 ha. Pszenica, kukurydza, rzepak, burak, ziemniaki — cokolwiek rośnie.
             </p>
 
             <div className="mt-10 flex flex-col sm:flex-row gap-3">
@@ -82,15 +86,15 @@ export function Hero() {
             <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-gray-500">
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                Darmowe dane ESA + NASA
+                Gotowe w 60 sekund
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                Bez karty, bez kontraktu
+                Zero instalacji
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                Po polsku natywnie
+                Działa w telefonie
               </div>
             </div>
           </div>

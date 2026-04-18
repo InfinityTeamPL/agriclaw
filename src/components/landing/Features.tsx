@@ -26,23 +26,23 @@ const FEATURES = [
   },
   {
     icon: Brain,
-    title: 'Agent OpenClaw',
+    title: 'Twój AgroAgent',
     body:
-      'Własny agent AI (Claude, GPT, Gemma) na Twojej wirtualce. Pamięta historię pola 2+ sezony.',
+      'Silnik AgroAgent działa na Twojej maszynie. Pamięta historię pola 2+ sezony i uczy się Twojego gospodarstwa.',
     tone: 'violet',
   },
   {
     icon: MessageSquareText,
     title: 'WhatsApp + głos',
     body:
-      'Piszesz „co z polem 3?" — agent odpowiada po polsku. Nie ma progu wejścia, nie ma klikania.',
+      'Piszesz „co z polem 3?" — AgroAgent odpowiada po polsku. Nie ma progu wejścia, nie ma klikania.',
     tone: 'amber',
   },
   {
     icon: WifiOff,
-    title: 'Działa offline',
+    title: 'Działa bez zasięgu',
     body:
-      'PWA z cache. W polu bez zasięgu otwierasz ostatnią analizę. Gemma 4 2B działa lokalnie.',
+      'W polu bez sygnału otwierasz ostatnią analizę. Wskazówki są pod ręką, nawet gdy telefon nie łapie.',
     tone: 'rose',
   },
   {

@@ -7,7 +7,7 @@ const STEPS = [
     n: '01',
     icon: MapPin,
     title: 'Zaznacz pole',
-    body: 'Wpisujesz adres gospodarstwa, AI pokazuje Ci mapę satelitarną. Klikasz na swoje pole — granica sama się rysuje.',
+    body: 'Wpisujesz adres gospodarstwa, AgroAgent pokazuje Ci mapę z góry. Klikasz na swoje pole — granica sama się rysuje.',
   },
   {
     n: '02',

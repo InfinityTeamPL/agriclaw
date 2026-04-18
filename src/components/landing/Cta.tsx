@@ -19,7 +19,7 @@ export function Cta() {
         </div>
 
         <h2 className="text-4xl sm:text-6xl font-bold tracking-tight mb-6">
-          Twoje pole. Twój agent. Twój czas.
+          Twoje pole. Twój AgroAgent. Twój czas.
         </h2>
         <p className="text-lg sm:text-xl text-white/90 max-w-2xl mx-auto mb-10">
           Zobaczysz pierwszy NDVI w 90 sekund od rejestracji.

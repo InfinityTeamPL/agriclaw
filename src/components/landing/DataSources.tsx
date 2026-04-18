@@ -1,12 +1,45 @@
 'use client';
 
-const SOURCES = [
-  { name: 'Sentinel-2', by: 'ESA', tag: 'Copernicus', desc: 'NDVI, 10 m, co 5 dni' },
-  { name: 'Sentinel-1', by: 'ESA', tag: 'SAR', desc: 'Radar przez chmury' },
-  { name: 'SMAP', by: 'NASA', tag: 'L3', desc: 'Wilgotność gleby' },
-  { name: 'Open-Meteo', by: 'open-meteo.com', tag: 'ECMWF', desc: 'Pogoda + ET0' },
-  { name: 'OpenStreetMap', by: 'OSM', tag: 'geocode', desc: 'Adresy i mapy' },
-  { name: 'OpenClaw', by: 'clawlabs.pro', tag: 'AI agent', desc: 'Własny agent AI' },
+import {
+  Satellite,
+  Radar,
+  Droplets,
+  CloudSun,
+  Brain,
+  History,
+} from 'lucide-react';
+
+const ITEMS = [
+  {
+    icon: Satellite,
+    title: 'Obraz satelitarny 10 m',
+    desc: 'Widok pola z góry co kilka dni. Kolory pokazują gdzie plon rośnie, a gdzie coś go dusi.',
+  },
+  {
+    icon: Radar,
+    title: 'Radar przez chmury',
+    desc: 'Kiedy niebo jest zasłonięte, przebijamy się inaczej. Nie musisz czekać na dobrą pogodę.',
+  },
+  {
+    icon: Droplets,
+    title: 'Wilgotność gleby',
+    desc: 'Osobna warstwa dla każdego pola. Wiesz gdzie jest sucho, zanim liście zaczną schnąć.',
+  },
+  {
+    icon: CloudSun,
+    title: 'Prognoza + parowanie',
+    desc: 'Nie „jutro 22°C", tylko ile wody Twoje pole naprawdę straci — dziś, jutro, za tydzień.',
+  },
+  {
+    icon: Brain,
+    title: 'Własny agent AI',
+    desc: 'Model pracuje na Twoich danych i tylko na nich. Rada jest konkretna, nie podręcznikowa.',
+  },
+  {
+    icon: History,
+    title: 'Pełna historia pola',
+    desc: 'Każde zdjęcie, każda decyzja, każdy oprysk — zapamiętane. Na tym budujemy rekomendacje.',
+  },
 ];
 
 export function DataSources() {
@@ -16,33 +49,31 @@ export function DataSources() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
         <div className="mb-12 text-center">
           <span className="inline-block text-xs font-mono uppercase tracking-widest text-emerald-300 bg-emerald-500/10 rounded-full px-3 py-1 mb-4 ring-1 ring-emerald-400/20">
-            100% darmowe źródła
+            Co dostajesz pod maską
           </span>
           <h2 className="text-3xl sm:text-5xl font-bold tracking-tight">
-            Dane publiczne. Prywatne tylko co o Tobie wiemy —
+            Sześć warstw pracujących razem —
             <br className="hidden sm:block" />
-            <span className="text-emerald-300">czyli nic poza pozycją pól.</span>
+            <span className="text-emerald-300">Ty widzisz tylko gotową odpowiedź.</span>
           </h2>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {SOURCES.map((s) => (
-            <div
-              key={s.name}
-              className="rounded-2xl bg-white/5 backdrop-blur-sm ring-1 ring-white/10 p-5 hover:bg-white/10 transition"
-            >
-              <div className="flex items-baseline justify-between mb-2">
-                <span className="font-bold text-lg">{s.name}</span>
-                <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-300">
-                  {s.tag}
-                </span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {ITEMS.map((s) => {
+            const Icon = s.icon;
+            return (
+              <div
+                key={s.title}
+                className="rounded-2xl bg-white/5 backdrop-blur-sm ring-1 ring-white/10 p-6 hover:bg-white/10 hover:ring-emerald-400/30 transition"
+              >
+                <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-emerald-500/15 ring-1 ring-emerald-400/20 mb-4">
+                  <Icon className="w-5 h-5 text-emerald-300" />
+                </div>
+                <div className="font-bold text-lg mb-2">{s.title}</div>
+                <div className="text-sm text-white/70 leading-relaxed">{s.desc}</div>
               </div>
-              <div className="text-[11px] font-mono text-white/50 uppercase tracking-wider mb-3">
-                {s.by}
-              </div>
-              <div className="text-sm text-white/80">{s.desc}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
