@@ -1354,4 +1354,262 @@ function evaluatePixel(s) {
 
 ---
 
+*End of main body. Appendices continue below.*
+
+---
+
+## Appendix D — Deep-Dive Comparisons
+
+### D.1 Sentinel-2 vs PlanetScope vs Satellogic — side-by-side for a 100 ha Polish wheat farm
+
+| Dimension | Sentinel-2 | PlanetScope | Satellogic |
+|---|---|---|---|
+| Cost / year | $0 | ~$200-400 (on 100 ha HUM pkg, prorated) | Effectively $400/image × 3-4 tasked acquisitions = $1.2-1.6 k |
+| Resolution | 10 m (20 m red-edge) | 3 m | 70 cm |
+| Revisit | 5 d | 1 d | On-demand (1-3 d tasked) |
+| Bands | 13 | 8 | 4 + pan |
+| Red-edge | 3 bands (B5, B6, B7) | 1 band | Limited |
+| Typical images per season (Mar-Oct) | 20-25 usable (cloud filter) | 90-120 usable | 3-5 tasked |
+| Use case fit | Season-long trend | Real-time stress response | Premium inspection moments |
+
+**Interpretation:** Sentinel-2 remains the **trend engine**; PlanetScope fills the **daily response** gap; Satellogic is the **surgical tool** at key stages (pre-planting, canopy closure, pre-harvest).
+
+### D.2 SAR deep-dive — what Sentinel-1 can't do that commercial can
+
+- **Revisit:** Sentinel-1C at 6 d globally, 3 d in Europe. Insurance-grade change detection often needs hours, not days.
+- **Resolution:** Sentinel-1 IW at 10 m vs. ICEYE/Capella at 25-50 cm Spot. A fallen 2-m-diameter silo is invisible at S-1; visible at commercial SAR.
+- **Polarisation:** Sentinel-1 has VV+VH; commercial SAR offers multi-pol (HH, VH, HV) on demand for better scattering analysis.
+- **Incidence angle flexibility:** Commercial can pick incidence angle on demand (good for detecting specific crop canopies). Sentinel-1 fixed track.
+
+### D.3 Hyperspectral vs multispectral for nutrient detection
+
+| Indicator | Sentinel-2 capability | Hyperspectral capability |
+|---|---|---|
+| Nitrogen status | NDRE (B5/B8), CIgreen | Bands @ 710, 755, 805 nm (sharp red-edge slope) — 30 % better accuracy |
+| Chlorophyll | B5, B6, B7 | Bands @ 670, 690, 740 nm direct |
+| Water content | NDMI (B8/B11) | Liquid water absorption 970, 1200, 1450, 1940 nm |
+| Organic carbon | SWIR B11/B12 proxy | 2200, 2250 nm lignin/cellulose absorption — direct |
+| Disease/pathogen | Broad NDVI drop | Specific absorption features (early, pre-visual) |
+
+Research consistently shows hyperspectral outperforms multispectral by 15-40 % for specific biochemical targets.
+
+---
+
+## Appendix E — Polish market sizing context (as of April 2026)
+
+- **Number of farms in Poland:** ~1.3 million farms (GUS). ~300 k are commercial (> 10 ha).
+- **UAA:** ~14.6 M ha total utilised agricultural area.
+- **CAP payments 2023-2027 envelope:** ~€25 B direct + €12 B rural development.
+- **Digitalisation:** ARiMR eWniosekPlus adoption > 98 % since 2022 (mandatory).
+- **Broadband in rural areas:** > 85 % households with 100 Mbps (KPO programme).
+- **Mobile data:** LTE/5G coverage > 98 % populated areas; RTK networks (ASG-EUPOS) free to licensed users.
+- **Typical Polish farm income:** €25 k-80 k/year for 50-200 ha farm. Addressable SaaS spend: €300-2000/year per farm.
+
+**Insight:** Farmers at 50-300 ha are the AgriClaw sweet spot. At 500+ ha, they likely already use xarvio or FieldView; at < 20 ha, value perception is low. Aim for €500-1,200 ARR per farm initially.
+
+---
+
+## Appendix F — Known-unknowns & open questions for Q2 2026
+
+1. **Planet Partner Program vs UP42 re-seller** — which gives better unit economics at 5k farms? Need a financial model.
+2. **Hydrosat availability in Poland** — currently their reference customers are ES, IT, IN, US, LATAM. Need to confirm operational coverage in 52° N latitude and Oct-Feb utility.
+3. **Pixxel commercial terms** — contact sales for EU-AOI tasking pricing; negotiate minimum order.
+4. **ARiMR API partnership** — can we get read-only API access to eWniosekPlus parcels (with farmer consent token)? Involves Min. Rolnictwa.
+5. **Sentinel Hub lock-in risk post Planet acquisition** — continuity plan if Planet changes pricing / API. OpenEO is the portable fallback.
+6. **GDPR & data-residency for non-EU providers** — Maxar/Planet/Satellogic are US. Add DPA clauses; consider EU-only fallback.
+7. **Drone regulatory (EASA A1/A2/A3):** Farmers must be certified; AgriClaw should provide a compliance guide.
+
+---
+
+## Appendix G — Evaluation checklist for a new data source
+
+Before integrating any new source into AgriClaw, score it:
+
+- [ ] Is the data licence compatible with SaaS redistribution?
+- [ ] Is there a STAC endpoint? If not, can we build a normaliser in ≤ 2 weeks?
+- [ ] Does the API support async batch & polygon-clip or must we download full tiles?
+- [ ] What is the cost per ha for a 100 ha farm over 12 months?
+- [ ] Revisit: does it add coverage our existing stack lacks?
+- [ ] Cloud/weather independence?
+- [ ] Coverage over Poland & CEE specifically?
+- [ ] Data volume per month (storage cost)?
+- [ ] Does the provider have an SLA? What's their historical uptime?
+- [ ] Does customer support cover Europe TZ?
+- [ ] Is the provider VC-funded, profitable, or at risk of shutdown?
+- [ ] Does it integrate with Prithvi / Clay / SAM for ML?
+
+At least 9 of 12 should be green to proceed.
+
+---
+
+## Appendix H — Environmental & carbon-accounting angle (2026+)
+
+European farmers are increasingly required to report carbon intensity (Scope 3 for food buyers; CSRD for 2026+). Satellite data powers:
+
+- **Soil organic carbon (SOC)** — hyperspectral SWIR absorption (Pixxel, Wyvern, PRISMA) + modelling (e.g. Cool Farm Tool).
+- **Methane emissions from livestock** — Sentinel-5P TROPOMI, Tanager-1, GHGSat, CO2M (2026).
+- **Forest sequestration** — GEDI lidar, NISAR L-SAR, Prithvi-EO Carbon head.
+- **Land-use change baselines** — Landsat time-series (back to 1985).
+- **Biodiversity (EUDR compliance)** — ESA WorldCover, Dynamic World, drone RGB.
+
+**AgriClaw product idea:** "Carbon-Ready Farm" — an add-on layer generating an ESG report monthly, pulling from Hydrosat (irrigation), Pixxel (SOC), Sentinel-2 (land-use stability), Sentinel-5P (methane intensity).
+
+---
+
+## Appendix I — Technical integration effort estimates
+
+Relative weeks of one senior platform engineer.
+
+| Source | STAC | Auth | Tiles | Analytics | Total (weeks) |
+|---|---|---|---|---|---|
+| PlanetScope (direct API) | 2 | 1 | 2 | 3 | **8** |
+| PlanetScope via UP42 | 1 | 0.5 | 1 | 1 | **3.5** |
+| GUGiK ortho + LiDAR | 0.5 | 0 | 1 | 1 | **2.5** |
+| ARiMR eWniosek GeoJSON import | 0 | 0 | 0 | 1 | **1** |
+| Hydrosat IrriWatch | 1 | 0.5 | 0.5 | 2 | **4** |
+| ICEYE SAR persistent | 1 | 0.5 | 1 | 3 | **5.5** |
+| Umbra Open + commercial | 1 | 0.5 | 1 | 2 | **4.5** |
+| Pixxel hyperspectral | 1.5 | 0.5 | 1 | 4 | **7** |
+| Landsat TIRS for thermal baseline | 0.5 | 0 | 0.5 | 1 | **2** |
+| Copernicus DEM overlay | 0.5 | 0 | 0.5 | 0.5 | **1.5** |
+| IMGW weather API cache | 0 | 0 | 0 | 2 | **2** |
+| IUNG soil layer | 0.5 | 0 | 0.5 | 0.5 | **1.5** |
+
+Capacity planning: 2 engineers full-time, Q2-Q4 2026 ≈ 78 engineer-weeks available. Budget 20 % buffer → 62 deliverable weeks → comfortably covers all 5 P0/P1/P2 recommendations.
+
+---
+
+## Appendix J — Historical context: why 2026 is a unique inflection
+
+The commercial EO industry is at an inflection point due to four compounding shifts in 2024-2026:
+
+1. **Rideshare cadence normalised.** SpaceX Transporter missions (now ~quarterly at 100+ smallsats each) dropped cost-to-orbit from $40 k/kg (2015) to $5 k/kg (2025). Small EO startups ship constellations in months.
+2. **CMOS sensor density crossed the hyperspectral threshold.** Pushbroom spectrometers with 200+ bands fit in 12U CubeSats in 2024-2025 (Pixxel, Wyvern).
+3. **Foundation models generalised.** Prithvi, Clay, and SAM have pushed zero-shot field-segmentation IoU from ~0.6 (2022) to 0.86 (2025-2026), meaning new markets like Poland can be onboarded without building country-specific labelled datasets.
+4. **EU regulation drove demand.** CAP AMS (Sentinel-1/2 based) in 2023, CSRD in 2024-2025, EUDR in 2025, SUR in 2026-2027 all require satellite-verified compliance.
+
+This convergence means that **2026 is the year to ship the premium agri-analytics stack in CEE** — competitors won't have time to catch up if we execute the 5-recommendation roadmap decisively.
+
+---
+
+## Appendix K — FAQ: which satellite for which question?
+
+| Question a farmer asks | Best data source(s) |
+|---|---|
+| "How's my wheat doing this week?" | PlanetScope NDVI (3 m daily) or Sentinel-2 (5 d) |
+| "Did my neighbour plough the buffer strip?" | GUGiK 25 cm ortho (latest year), Sentinel-1 SAR backscatter |
+| "Was there hail damage last night?" | ICEYE/Capella SAR < 12 h revisit or Mavic 3M flight next morning |
+| "How much nitrogen does this field need?" | Hyperspectral (Pixxel/Wyvern) + soil samples + IUNG soil map |
+| "Should I irrigate tomorrow?" | Hydrosat ET + IMGW forecast + SMAP regional |
+| "How much carbon is my soil storing?" | Hyperspectral SOC model + Landsat time-series |
+| "Is my grassland cut before the CAP deadline?" | Sentinel-1 mowing detection + ARiMR AMS check |
+| "What crop was on this field last year?" | Sentinel-2 time-series + Prithvi crop head + ARiMR historical |
+| "How much did my yield drop due to drought?" | Sentinel-3 OLCI + MODIS + Landsat LAI modelling |
+| "Can I plant here?" | Copernicus DEM + IUNG soil + IMGW climate + Natura 2000 overlay |
+
+---
+
+## Appendix L — Data lake architecture reference (target Q4 2026)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    AgriClaw Data Lake (AWS eu-central-1)    │
+├─────────────────────────────────────────────────────────────┤
+│ S3 bucket layout:                                           │
+│   raw/sentinel-2/{date}/{tile}/...                          │
+│   raw/planetscope/{date}/{scene}/...                        │
+│   raw/hydrosat/{date}/{tile}/...                            │
+│   raw/pixxel/{date}/{scene}/...                             │
+│   raw/umbra-open-data/...                                   │
+│   raw/gugik/ortho/{year}/{voivodship}/...                   │
+│   ard/{source}/{date}/{aoi}/... (COG, analysis-ready)       │
+│   zarr/parcels/{parcel_id}/ndvi.zarr                        │
+│   vectors/parcels.geoparquet                                │
+│   vectors/events.geoparquet                                 │
+│   stac/catalog.json (root) + pgstac DB                      │
+├─────────────────────────────────────────────────────────────┤
+│ Compute:                                                    │
+│   AWS Batch + Dask on EKS for ingestion & processing        │
+│   TiTiler-PgSTAC for tile serving                           │
+│   Lambda-based thumbnailer                                  │
+│   Modal / RunPod for GPU inference (Prithvi/SAM)            │
+│   CloudFront CDN for ortho/tile caching                     │
+├─────────────────────────────────────────────────────────────┤
+│ Serving to Next.js app:                                     │
+│   tRPC API → PostGIS + S3 presigned                         │
+│   MapLibre GL tiles from CloudFront                         │
+│   NDVI/NDRE computed server-side via evalscript             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+Stack: AWS + Kubernetes + Dask + DuckDB + PostGIS + TiTiler + pgstac. Cost target: < $0.05 per farm per month raster storage + compute at 10 k farms, excluding 3rd-party data subscriptions.
+
+---
+
+## Appendix M — Competitive intelligence snapshot (April 2026)
+
+| Competitor | Data sources used | Differentiator | Gap vs AgriClaw |
+|---|---|---|---|
+| **Taranis** (US/IL) | PlanetScope, aerial, drone | AI leaf-level scouting | High cost; drone-heavy |
+| **xarvio Field Manager** (BASF) | Sentinel-2, Landsat, weather | Agronomic models; chem recommendations | Tied to BASF product catalogue |
+| **Climate FieldView** (Bayer) | PlanetScope, Sentinel, on-farm sensors | Planter/combine integration | N. America-first; weak in EU |
+| **OneSoil** (PL/LT) | Sentinel-2 | Crop classification for all of Europe | Free tier = freemium hook; limited paid features |
+| **Agremo** | Sentinel-2, drones | Cheap; MS-friendly UI | Shallow analytics |
+| **EOS Data Analytics** (Crop Monitoring) | Sentinel, Landsat, PlanetScope | Global; robust API | Competitive price; not PL-focused |
+| **CropX** (IL) | On-ground probes + satellite | Soil sensor hardware | Hardware-heavy, not SaaS-pure |
+| **Farmonaut** (IN) | Sentinel-2, Landsat, AI | Cheap; global; multi-language | Thin UI; limited customer success in EU |
+
+**Where AgriClaw wins:**
+- GUGiK 25 cm ortho integration = unique Polish ground-truth.
+- Hydrosat ET + Pixxel hyperspectral = premium upsell nobody in PL does yet.
+- Polish-first UX + ARiMR eWniosek integration.
+- Modern stack (Next.js, STAC, COG) vs legacy desktop tools.
+
+---
+
+## Appendix N — Go-to-market positioning for each new source
+
+| Source | Pricing anchor (to farmer) | Positioning |
+|---|---|---|
+| PlanetScope daily | +€15/ha/year | "See your fields every day" |
+| GUGiK ortho | included | "Your farm in photographic detail" |
+| Hydrosat ET | +€8/ha/year | "Irrigate only what needs water" |
+| SAR (ICEYE/Umbra) | +€5/ha/year | "No more cloudy weeks" |
+| Pixxel hyperspectral | +€20/ha on-demand 2×/year | "Know your nutrients before you spray" |
+
+Target: €50-80/ha/year gross for "AgriClaw Pro" tier (vs €15-25/ha for "AgriClaw Basic" = Sentinel-2 only).
+
+---
+
+## Appendix O — Security & compliance notes
+
+- **EU data-residency:** Store all farmer PII + ARiMR-derived parcels in eu-central-1 (Frankfurt) or eu-north-1.
+- **Planet / Maxar DPAs:** Standard contractual clauses; check if imagery containing farms counts as "personal data" under GDPR (possibly, if combined with farmer identity).
+- **Sentinel data:** No PII concerns.
+- **GUGiK:** Public data; attribution required.
+- **Copernicus licence:** Attribution "Contains modified Copernicus Sentinel data [Year] / Copernicus Service information [Year]".
+- **NIS2:** As a digital service to agriculture (medium entity), NIS2 compliance from Oct 2024 — needs ISO 27001 path.
+- **ISO 27001:** Recommended for enterprise B2B sales.
+- **SOC 2 Type II:** Target for US/non-EU customers if we expand.
+
+---
+
+## Appendix P — Data-volume estimates (per farm / per month)
+
+| Source | Avg. monthly volume (10 ha farm) | Compressed COG |
+|---|---|---|
+| Sentinel-2 L2A (2 scenes 10 ha clipped) | 25 MB | 8 MB |
+| Sentinel-1 GRD (5 scenes 10 ha clipped) | 40 MB | 15 MB |
+| PlanetScope daily (20 scenes 10 ha clip) | 100 MB | 35 MB |
+| GUGiK ortho 25 cm (static per farm) | 150 MB once | 50 MB once |
+| DEM (static per farm) | 1 MB once | < 1 MB |
+| Hydrosat daily ET (70 m, tiny footprint) | 5 MB | 2 MB |
+| SAR tasking 1 image/quarter | 30 MB/scene | 10 MB |
+| Hyperspectral on-demand 4/year | 200 MB/scene | 60 MB |
+
+At 10 k farms × 100 MB/mo hot + 200 MB cold = ~3 TB hot monthly. With CDN caching, egress < $500/month on AWS.
+
+---
+
 *End of AgriClaw Satellite & Aerial Data Catalog — April 2026. Next revision: July 2026 (post Q2 integrations).*
+
