@@ -29,7 +29,7 @@ export async function POST(
            ST_X(ST_Centroid(f.polygon)) AS centroid_lon
     FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
-    WHERE f.id = ${params.fieldId}::uuid AND fa.user_id = ${user.id}::uuid
+    WHERE f.id = ${params.fieldId} AND fa.user_id = ${user.id}
   `;
 
   const field = rows[0];

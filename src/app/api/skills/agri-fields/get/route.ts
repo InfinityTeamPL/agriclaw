@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
            ST_Y(ST_Centroid(polygon)) AS centroid_lat,
            ST_X(ST_Centroid(polygon)) AS centroid_lon
     FROM "fields"
-    WHERE id = ${fieldId}::uuid AND farm_id = ${auth.farmId}::uuid
+    WHERE id = ${fieldId} AND farm_id = ${auth.farmId}
   `;
 
   const field = rows[0];

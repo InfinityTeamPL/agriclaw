@@ -1,16 +1,20 @@
 import type { Metadata, Viewport } from 'next';
 import { Toaster } from 'sonner';
+import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'AgriClaw — AI dla rolników',
+  title: 'AgriClaw — cyfrowy agronom dla rolnika',
   description:
-    'Agent AI + satelity (NDVI, wilgotność gleby, pogoda) → konkretna rada kiedy pryskać, nawozić, zbierać. Po polsku, przez WhatsApp.',
-  manifest: '/manifest.json',
+    'Twój cyfrowy agronom. Skan pola z góry + konkretna rada przez WhatsApp. Po polsku, w telefonie, bez instalacji.',
+  manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'AgriClaw',
+  },
+  icons: {
+    apple: '/icons/icon-192.png',
   },
 };
 
@@ -28,9 +32,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pl">
+      <head>
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <meta name="apple-mobile-web-app-title" content="AgriClaw" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+      </head>
       <body className="min-h-screen bg-background text-foreground antialiased">
         {children}
         <Toaster position="top-right" richColors />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

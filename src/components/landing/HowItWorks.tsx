@@ -7,13 +7,13 @@ const STEPS = [
     n: '01',
     icon: MapPin,
     title: 'Zaznacz pole',
-    body: 'Wpisujesz adres gospodarstwa, AgroAgent pokazuje Ci mapę z góry. Klikasz na swoje pole — granica sama się rysuje.',
+    body: 'Wpisujesz adres gospodarstwa, agent pokazuje Ci mapę z góry. Klikasz na swoje pole — granica sama się rysuje.',
   },
   {
     n: '02',
     icon: Satellite,
-    title: 'AgroAgent robi robotę',
-    body: 'Co 2-3 dni AgroAgent sprawdza Twoje pole z góry. Liczy zdrowie roślin, wilgotność gleby, prognozę.',
+    title: 'Agent robi robotę',
+    body: 'Co 2-3 dni agent sprawdza Twoje pole z góry. Liczy zdrowie roślin, wilgotność gleby, prognozę.',
   },
   {
     n: '03',

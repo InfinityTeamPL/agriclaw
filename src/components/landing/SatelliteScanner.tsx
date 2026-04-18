@@ -84,7 +84,7 @@ export function SatelliteScanner() {
             transformOrigin: 'center bottom',
           }}
         >
-          {/* siatka NDVI */}
+          {/* siatka pól */}
           <div
             className="absolute inset-2 grid gap-[3px]"
             style={{

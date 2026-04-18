@@ -32,8 +32,8 @@ const ITEMS = [
   },
   {
     icon: Brain,
-    title: 'Własny AgroAgent',
-    desc: 'Silnik AgroAgent pracuje na Twoich danych i tylko na nich. Rada jest konkretna, nie podręcznikowa.',
+    title: 'Własny agent AI',
+    desc: 'Model pracuje na Twoich danych i tylko na nich. Rada jest konkretna, nie podręcznikowa.',
   },
   {
     icon: History,

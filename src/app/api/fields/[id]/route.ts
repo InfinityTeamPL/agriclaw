@@ -7,7 +7,7 @@ async function ensureOwnership(userId: string, fieldId: string) {
   const rows = await prisma.$queryRaw<Array<{ id: string; farm_id: string }>>`
     SELECT f.id, f.farm_id FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
-    WHERE f.id = ${fieldId}::uuid AND fa.user_id = ${userId}::uuid
+    WHERE f.id = ${fieldId} AND fa.user_id = ${userId}
   `;
   return rows[0] ?? null;
 }
@@ -33,7 +33,7 @@ export async function GET(
   >`
     SELECT id, farm_id, name, crop, area_hectares, created_at,
            ST_AsGeoJSON(polygon)::text AS polygon
-    FROM "fields" WHERE id = ${params.id}::uuid
+    FROM "fields" WHERE id = ${params.id}
   `;
   const field = rows[0];
   if (!field) return NextResponse.json({ error: 'Not found' }, { status: 404 });

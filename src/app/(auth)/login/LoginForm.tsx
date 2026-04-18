@@ -49,7 +49,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
             </div>
           </Link>
           <h1 className="text-2xl font-bold pt-2">Zaloguj się</h1>
-          <p className="text-sm text-gray-500">AI agronom dla Twojego gospodarstwa</p>
+          <p className="text-sm text-gray-500">Twój cyfrowy agronom</p>
         </div>
 
         {googleEnabled && (

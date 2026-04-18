@@ -6,50 +6,50 @@ import {
   Brain,
   MessageSquareText,
   WifiOff,
-  ShieldCheck,
+  Settings2,
 } from 'lucide-react';
 
 const FEATURES = [
   {
     icon: Wheat,
-    title: 'Dane Sentinel-2',
+    title: 'Obraz z góry',
     body:
-      'NDVI co 5 dni w 10 m rozdzielczości. Widzisz czy pole jest zdrowe, chore, czy po prostu suche.',
+      'Widok pola w 10 m rozdzielczości, odświeżany co kilka dni. Widzisz czy pole jest zdrowe, chore, czy po prostu suche.',
     tone: 'emerald',
   },
   {
     icon: CloudRain,
-    title: 'Prognoza + ET0',
+    title: 'Prognoza parowania',
     body:
-      'Open-Meteo z parowaniem FAO. Wiesz ile wody pole straci jutro i pojutrze, nie tylko ile ma dziś.',
+      'Nie tylko „ile spadnie deszczu". Liczymy ile wody pole straci jutro i pojutrze, nie tylko ile ma dziś.',
     tone: 'sky',
   },
   {
     icon: Brain,
-    title: 'Twój AgroAgent',
+    title: 'Twój agent AI',
     body:
-      'Silnik AgroAgent działa na Twojej maszynie. Pamięta historię pola 2+ sezony i uczy się Twojego gospodarstwa.',
+      'Agent pamięta historię Twojego pola przez 2+ sezony. Uczy się Twojego gospodarstwa, nie cudzych.',
     tone: 'violet',
   },
   {
     icon: MessageSquareText,
     title: 'WhatsApp + głos',
     body:
-      'Piszesz „co z polem 3?" — AgroAgent odpowiada po polsku. Nie ma progu wejścia, nie ma klikania.',
+      'Piszesz „co z polem 3?" — agent odpowiada po polsku. Nie ma progu wejścia, nie ma klikania.',
     tone: 'amber',
   },
   {
     icon: WifiOff,
-    title: 'Działa bez zasięgu',
+    title: 'Działa offline',
     body:
-      'W polu bez sygnału otwierasz ostatnią analizę. Wskazówki są pod ręką, nawet gdy telefon nie łapie.',
+      'W polu bez zasięgu otwierasz ostatnią analizę. Dane pobierają się z powrotem, gdy wróci internet.',
     tone: 'rose',
   },
   {
-    icon: ShieldCheck,
-    title: 'Open source, Twój klucz',
+    icon: Settings2,
+    title: 'Ty decydujesz',
     body:
-      'Apache-2 license. Możesz wziąć swoje dane i odejść. Zero vendor lock-in, zero tajemnic.',
+      'Zmieniasz plan, zatrzymujesz się, eksportujesz dane. Zawsze po Twojej stronie.',
     tone: 'slate',
   },
 ];

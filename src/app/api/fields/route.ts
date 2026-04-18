@@ -22,7 +22,7 @@ export async function GET() {
            ST_AsGeoJSON(f.polygon)::text AS polygon
     FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
-    WHERE fa.user_id = ${user.id}::uuid
+    WHERE fa.user_id = ${user.id}
     ORDER BY f.created_at DESC
   `;
 
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     INSERT INTO "fields" (id, farm_id, name, crop, area_hectares, polygon, created_at, updated_at)
     VALUES (
       gen_random_uuid(),
-      ${farmId}::uuid,
+      ${farmId},
       ${name},
       ${crop},
       ${areaHectares},

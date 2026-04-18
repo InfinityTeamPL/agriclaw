@@ -77,7 +77,7 @@ async function main() {
       INSERT INTO "fields" (id, farm_id, name, crop, area_hectares, polygon, created_at, updated_at)
       VALUES (
         gen_random_uuid(),
-        ${farm.id}::uuid,
+        ${farm.id},
         'Pole za stodołą',
         'wheat',
         5.12,

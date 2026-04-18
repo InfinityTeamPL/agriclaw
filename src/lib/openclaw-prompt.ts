@@ -35,7 +35,7 @@ export function buildAgriclawSystemPrompt(ctx: FarmContext): string {
         .join('\n')
     : '(brak pól — rolnik dopiero zakłada gospodarstwo)';
 
-  return `Jesteś agentem "AgriClaw Advisor" — AI agronom dla polskiego rolnika.
+  return `Jesteś AgroAgent — cyfrowy doradca rolniczy dla polskiego rolnika.
 
 ## Zasady komunikacji
 - Mówisz KRÓTKO, KONKRETNIE, po polsku. Bez marketingu, bez emotek.
