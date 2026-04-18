@@ -1,7 +1,11 @@
 // Shared MapLibre style configs dla AgriClaw.
-// - satelliteStyle: ESRI World Imagery (darmowe, bez klucza, globalne pokrycie)
-// - hybridStyle: ESRI satelita + etykiety OSM na wierzchu
+// - satelliteStyle: Sentinel-2 Cloudless (EOX WMTS) + ESRI fallback na high-zoom
+// - hybridStyle: Sentinel-2 + etykiety OSM na wierzchu (tak jak Copernicus Browser)
 // - basicStyle: fallback road map (OpenFreeMap Liberty)
+//
+// S2 Cloudless jest bezchmurnym mozaikiem Sentinel-2 aktualizowanym co sezon.
+// Tego samego używa Copernicus Browser i SentinelHub EO Browser.
+// Zoom 0-14 → S2, zoom 14-19 → ESRI (S2 Cloudless ma max_zoom=14).
 
 import type { StyleSpecification } from 'maplibre-gl';
 
@@ -9,19 +13,36 @@ const ATTRIBUTION_ESRI =
   '&copy; <a href="https://www.esri.com/">Esri</a>, Maxar, Earthstar Geographics';
 const ATTRIBUTION_OSM =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+const ATTRIBUTION_S2 =
+  '<a href="https://s2maps.eu">Sentinel-2 cloudless</a> by <a href="https://eox.at/">EOX IT Services GmbH</a>';
+
+// Sentinel-2 Cloudless WMTS (EOX)
+const S2_CLOUDLESS_TILES = [
+  'https://s2maps-tiles.eu/wmts?layer=s2cloudless-2024_3857&style=default&tilematrixset=g&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image%2Fjpeg&TileMatrix={z}&TileCol={x}&TileRow={y}',
+];
+
+const ESRI_IMAGERY_TILES = [
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+];
 
 /**
- * Czysty widok z góry (satelita) — tym domyślnie pokazujemy pola.
+ * Czysty widok satelitarny — Sentinel-2 Cloudless do zoom 14, ESRI wyżej.
+ * Zoom 14 = ~1 km widoczne, potem ESRI daje pojedyncze pole.
  */
 export const satelliteStyle: StyleSpecification = {
   version: 8,
   glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
   sources: {
+    s2: {
+      type: 'raster',
+      tiles: S2_CLOUDLESS_TILES,
+      tileSize: 256,
+      maxzoom: 14,
+      attribution: ATTRIBUTION_S2,
+    },
     esri: {
       type: 'raster',
-      tiles: [
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      ],
+      tiles: ESRI_IMAGERY_TILES,
       tileSize: 256,
       maxzoom: 19,
       attribution: ATTRIBUTION_ESRI,
@@ -35,22 +56,37 @@ export const satelliteStyle: StyleSpecification = {
       minzoom: 0,
       maxzoom: 22,
     },
+    {
+      id: 's2-cloudless',
+      type: 'raster',
+      source: 's2',
+      minzoom: 0,
+      maxzoom: 14,
+      paint: {
+        'raster-fade-duration': 200,
+      },
+    },
   ],
 };
 
 /**
- * Satelita + etykiety (miejscowości, drogi) — do onboardingu / nawigacji.
- * CartoDB Positron labels only (transparent background).
+ * Hybrid: Sentinel-2 + ESRI dla wysokich zoomów + etykiety OSM.
+ * Używamy tego wszędzie w aplikacji (onboarding, pola, analiza).
  */
 export const hybridStyle: StyleSpecification = {
   version: 8,
   glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
   sources: {
+    s2: {
+      type: 'raster',
+      tiles: S2_CLOUDLESS_TILES,
+      tileSize: 256,
+      maxzoom: 14,
+      attribution: ATTRIBUTION_S2,
+    },
     esri: {
       type: 'raster',
-      tiles: [
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      ],
+      tiles: ESRI_IMAGERY_TILES,
       tileSize: 256,
       maxzoom: 19,
       attribution: ATTRIBUTION_ESRI,
@@ -63,6 +99,7 @@ export const hybridStyle: StyleSpecification = {
         'https://cartodb-basemaps-c.global.ssl.fastly.net/light_only_labels/{z}/{x}/{y}.png',
       ],
       tileSize: 256,
+      maxzoom: 19,
       attribution: ATTRIBUTION_OSM,
     },
   },
@@ -75,13 +112,23 @@ export const hybridStyle: StyleSpecification = {
       maxzoom: 22,
     },
     {
+      id: 's2-cloudless',
+      type: 'raster',
+      source: 's2',
+      minzoom: 0,
+      maxzoom: 14,
+      paint: {
+        'raster-fade-duration': 200,
+      },
+    },
+    {
       id: 'osm-labels',
       type: 'raster',
       source: 'labels',
-      minzoom: 4,
+      minzoom: 6,
       maxzoom: 22,
       paint: {
-        'raster-opacity': 0.85,
+        'raster-opacity': 0.75,
       },
     },
   ],
