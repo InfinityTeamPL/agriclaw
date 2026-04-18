@@ -20,13 +20,17 @@ export type VisionModel =
   | 'google/gemma-3-27b-it:free'
   | 'google/gemini-2.0-flash-exp:free';
 
-// Fallback chain — priorytet: Gemma 4 → Llama Vision → Qwen VL → Gemini.
+// Fallback chain — mix darmowych (szybkie, ale rate-limited) i płatnych (stabilne).
+// OpenRouter rate limits na :free endpointach są agresywne (429 upstream od Google AI Studio).
+// Płatne opcje kosztują <$0.001/zdjęcie ale zawsze działają.
 const VISION_FALLBACK_CHAIN: VisionModel[] = [
-  'google/gemma-4-26b-a4b-it:free',
+  'google/gemma-4-26b-a4b-it:free', // preferowany — Gemma 4 MoE
   'meta-llama/llama-3.2-11b-vision-instruct:free',
   'qwen/qwen-2.5-vl-72b-instruct:free',
-  'google/gemini-2.0-flash-exp:free',
+  'google/gemini-2.0-flash-exp:free', // Gemini Flash
 ];
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export interface OpenRouterMessage {
   role: 'system' | 'user' | 'assistant';
@@ -103,31 +107,41 @@ export class OpenRouterClient {
 
   async completion(opts: OpenRouterCompletionOptions): Promise<string> {
     const preferredModel = opts.model ?? this.defaultModel;
-    const tryFallback = opts.fallback !== false; // domyślnie true
+    const tryFallback = opts.fallback !== false;
 
-    // Pierwsza próba: preferowany model
-    try {
-      return await this.completionSingle(preferredModel, opts);
-    } catch (err) {
-      if (!tryFallback) throw err;
-      const errMsg = String(err);
-      console.warn(`[OpenRouter] ${preferredModel} failed: ${errMsg}. Trying fallback chain…`);
+    const candidates = tryFallback
+      ? [preferredModel, ...VISION_FALLBACK_CHAIN.filter((m) => m !== preferredModel)]
+      : [preferredModel];
 
-      // Fallback chain — próbujemy kolejne modele (pomijając ten który już padł)
-      const chain = VISION_FALLBACK_CHAIN.filter((m) => m !== preferredModel);
-      for (const fallbackModel of chain) {
-        try {
-          return await this.completionSingle(fallbackModel, opts);
-        } catch (fbErr) {
-          console.warn(`[OpenRouter] fallback ${fallbackModel} failed: ${fbErr}`);
+    const errors: string[] = [];
+
+    for (let i = 0; i < candidates.length; i++) {
+      const model = candidates[i];
+      try {
+        const result = await this.completionSingle(model, opts);
+        if (i > 0) {
+          console.info(`[OpenRouter] Udało się na fallback #${i}: ${model}`);
+        }
+        return result;
+      } catch (err) {
+        const msg = String(err);
+        errors.push(`${model}: ${msg.slice(0, 150)}`);
+        const isRateLimit = msg.includes('429') || msg.includes('rate-limit');
+        // Jeśli 429, daj upstream odsapnąć — exponential backoff
+        if (isRateLimit && i < candidates.length - 1) {
+          const delay = 1000 * Math.pow(2, i); // 1s, 2s, 4s...
+          console.warn(`[OpenRouter] ${model} rate-limited, odczekuję ${delay}ms przed fallbackiem`);
+          await sleep(delay);
         }
       }
-
-      // Nic nie zadziałało — zgłoś pierwszy błąd
-      throw new Error(
-        `OpenRouter: wszystkie modele zawiodły. Ostatni błąd: ${errMsg}`,
-      );
     }
+
+    throw new Error(
+      `Wszystkie darmowe modele OpenRouter są chwilowo zajęte (rate limit). ` +
+        `Spróbuj ponownie za 30-60 sekund, albo dodaj własny klucz Google AI Studio ` +
+        `w ustawieniach OpenRouter (openrouter.ai/settings/integrations) żeby nie dzielić limitów. ` +
+        `Szczegóły: ${errors.slice(0, 2).join(' | ')}`,
+    );
   }
 
   /**
