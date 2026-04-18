@@ -17,8 +17,10 @@ const ATTRIBUTION_S2 =
   '<a href="https://s2maps.eu">Sentinel-2 cloudless</a> by <a href="https://eox.at/">EOX IT Services GmbH</a>';
 
 // Sentinel-2 Cloudless WMTS (EOX)
+// `tiles.maps.eox.at` to publiczny endpoint, layer `s2cloudless_3857` bierze najnowszy rok.
+// Format REST: /wmts/1.0.0/{layer}/default/g/{z}/{y}/{x}.jpg (WMTS TileRow/TileCol order)
 const S2_CLOUDLESS_TILES = [
-  'https://s2maps-tiles.eu/wmts?layer=s2cloudless-2024_3857&style=default&tilematrixset=g&Service=WMTS&Request=GetTile&Version=1.0.0&Format=image%2Fjpeg&TileMatrix={z}&TileCol={x}&TileRow={y}',
+  'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless_3857/default/g/{z}/{y}/{x}.jpg',
 ];
 
 const ESRI_IMAGERY_TILES = [
