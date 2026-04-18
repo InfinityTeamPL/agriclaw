@@ -32,6 +32,7 @@ import {
 import { FieldHeatmap } from '@/components/dashboard/FieldHeatmap';
 import { Sparkline } from '@/components/dashboard/Sparkline';
 import { MultiIndexPanel } from '@/components/dashboard/MultiIndexPanel';
+import { SprayTimer } from '@/components/dashboard/SprayTimer';
 
 interface Field {
   id: string;
@@ -175,6 +176,9 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
       </motion.div>
 
       {running && <AnalysisProgress />}
+
+      {/* Spray Timer — okno oprysku 72h */}
+      <SprayTimer fieldId={field.id} />
 
       {/* Split view */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-5">
