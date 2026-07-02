@@ -31,8 +31,12 @@ export async function GET(req: NextRequest) {
 
   const results = { checked: 0, healthy: 0, unhealthy: 0, recovered: 0 };
 
-  for (const agent of agents) {
-    if (!agent.serverIp) continue;
+  // Health-checki równolegle w partiach — sekwencyjnie 15+ martwych agentów ×
+  // timeout kładło się poza maxDuration (120 s). Liczniki mutowane bezpiecznie
+  // (JS single-thread, inkrementacja nie przeplata się z await).
+  const CONCURRENCY = 10;
+  async function checkAgent(agent: (typeof agents)[number]): Promise<void> {
+    if (!agent.serverIp) return;
     const client = new OpenClawClient(
       agent.serverIp,
       agent.gatewayPort,
@@ -80,6 +84,10 @@ export async function GET(req: NextRequest) {
       }
       results.unhealthy++;
     }
+  }
+
+  for (let i = 0; i < agents.length; i += CONCURRENCY) {
+    await Promise.allSettled(agents.slice(i, i + CONCURRENCY).map(checkAgent));
   }
 
   return NextResponse.json(results);

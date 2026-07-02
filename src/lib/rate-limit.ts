@@ -85,8 +85,14 @@ export async function rateLimitByIpAsync(
     "unknown";
 
   if (redisLimiter) {
-    const result = await redisLimiter.limit(`ip:${ip}`);
-    return { ok: result.success, remaining: result.remaining };
+    try {
+      const result = await redisLimiter.limit(`ip:${ip}`);
+      return { ok: result.success, remaining: result.remaining };
+    } catch {
+      // Awaria Upstash (sieć/limit) NIE MOŻE blokować rejestracji/logowania.
+      // Fail-open na limiter w pamięci — degradacja, nie odmowa usługi (500).
+      return memoryRateLimit(`ip:${ip}`, maxRequests, windowMs);
+    }
   }
 
   return memoryRateLimit(`ip:${ip}`, maxRequests, windowMs);

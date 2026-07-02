@@ -57,6 +57,13 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
     exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 
   const handleSignOut = () => {
+    // Wyczyść cache SW z ewentualnych pozostałości przed wylogowaniem —
+    // chroni dane gospodarstwa na współdzielonym urządzeniu.
+    try {
+      navigator.serviceWorker?.controller?.postMessage({ type: 'CLEAR_RUNTIME_CACHE' });
+    } catch {
+      /* SW niedostępny — nic nie szkodzi */
+    }
     signOut({ callbackUrl: '/' });
   };
 

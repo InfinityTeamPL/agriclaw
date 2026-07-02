@@ -16,7 +16,10 @@ export async function POST(
   { params }: { params: { id: string } },
 ) {
   const { user } = await requireAuth();
-  const years = Math.max(1, Math.min(10, parseInt(req.nextUrl.searchParams.get('years') ?? '5', 10)));
+  // Guard na ?years=abc → parseInt daje NaN, które przenikało do dat i dawało
+  // Invalid Date → 500 z Prisma. Nieparsowalne / poza zakresem → domyślne 5 lat.
+  const yearsRaw = parseInt(req.nextUrl.searchParams.get('years') ?? '5', 10);
+  const years = Number.isFinite(yearsRaw) ? Math.max(1, Math.min(10, yearsRaw)) : 5;
 
   if (!isCopernicusConfigured()) {
     return NextResponse.json(

@@ -5,10 +5,16 @@
    - Dla nawigacji: network, a kiedy brak sieci → cached `/offline`.
 */
 
-const VERSION = 'v1';
+const VERSION = 'v2';
 const STATIC_CACHE = `agriclaw-static-${VERSION}`;
 const RUNTIME_CACHE = `agriclaw-runtime-${VERSION}`;
 const OFFLINE_URL = '/offline';
+
+// Ścieżki prywatne (za logowaniem) — NIE wolno ich cache'ować. Na współdzielonym
+// telefonie po wylogowaniu ktoś inny mógłby offline zobaczyć dane gospodarstwa.
+function isPrivatePath(pathname) {
+  return pathname.startsWith('/dashboard') || pathname.startsWith('/onboarding');
+}
 
 const PRECACHE_URLS = [
   '/',
@@ -52,6 +58,14 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// Czyszczenie cache na żądanie klienta (wywoływane przy wylogowaniu) — usuwa
+// wszelkie pozostałości nawigacji publicznych/stale danych z tego urządzenia.
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'CLEAR_RUNTIME_CACHE') {
+    event.waitUntil(caches.delete(RUNTIME_CACHE));
+  }
+});
+
 function isStaticAsset(url) {
   return (
     url.pathname.startsWith('/_next/static/') ||
@@ -79,9 +93,12 @@ self.addEventListener('fetch', (event) => {
       (async () => {
         try {
           const fresh = await fetch(req);
-          // cache ostatnią udaną nawigację
-          const cache = await caches.open(RUNTIME_CACHE);
-          cache.put(req, fresh.clone()).catch(() => {});
+          // Cache TYLKO stron publicznych. Prywatne (/dashboard, /onboarding)
+          // zawierają dane rolnika — nigdy do cache.
+          if (!isPrivatePath(url.pathname)) {
+            const cache = await caches.open(RUNTIME_CACHE);
+            cache.put(req, fresh.clone()).catch(() => {});
+          }
           return fresh;
         } catch {
           const cached = await caches.match(req);
@@ -119,20 +136,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // API — network-first, fallback do cache
+  // API — network-only. NIE cache'ujemy odpowiedzi API: prawie wszystkie są
+  // uwierzytelnione (dane gospodarstwa) i nie mogą przetrwać wylogowania na
+  // współdzielonym urządzeniu. Offline → jasny błąd, bez podawania nieświeżych
+  // cudzych danych.
   if (isApi(url)) {
     event.respondWith(
       (async () => {
         try {
-          const res = await fetch(req);
-          if (res.ok) {
-            const cache = await caches.open(RUNTIME_CACHE);
-            cache.put(req, res.clone()).catch(() => {});
-          }
-          return res;
+          return await fetch(req);
         } catch {
-          const cached = await caches.match(req);
-          if (cached) return cached;
           return new Response(
             JSON.stringify({ error: 'offline', cached: false }),
             {
