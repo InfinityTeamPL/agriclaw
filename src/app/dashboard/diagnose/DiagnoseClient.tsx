@@ -1,8 +1,10 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Camera, Loader2, AlertCircle, CheckCircle2, Upload, X } from 'lucide-react';
+import { Camera, AlertCircle, CheckCircle2, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { ScanLine } from '@/components/brand/ScanLine';
+import { NdviKeyline } from '@/components/brand/NdviKeyline';
 
 interface FieldOpt {
   id: string;
@@ -94,21 +96,22 @@ export function DiagnoseClient({ fields }: Props) {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-          <Camera className="w-8 h-8 text-emerald-700" />
+        <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground flex items-center gap-3">
+          <Camera className="w-8 h-8 text-primary" />
           Diagnoza z kamery
         </h1>
-        <p className="text-gray-500 mt-1">
+        <p className="text-muted-foreground mt-1">
           Zrób zdjęcie liścia, łodygi albo chwastu. AgroAgent rozpozna co to i podpowie co zrobić.
         </p>
       </div>
 
-      <div className="rounded-2xl bg-white border border-gray-200 p-5 space-y-4">
+      <div className="relative rounded-lg bg-card border border-border shadow-card p-5 space-y-4 overflow-hidden">
+        <NdviKeyline className="absolute inset-x-0 top-0" height={3} />
         {!imageData && (
-          <div className="border-2 border-dashed border-gray-300 rounded-xl p-10 text-center">
-            <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-700 font-medium mb-1">Wybierz lub zrób zdjęcie</p>
-            <p className="text-gray-500 text-sm mb-4">JPG, PNG, max 10 MB</p>
+          <div className="border border-dashed border-border rounded-md p-10 text-center">
+            <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-foreground font-medium mb-1">Wybierz lub zrób zdjęcie</p>
+            <p className="hud-label mb-4">JPG · PNG · MAX 10 MB</p>
             <input
               ref={fileRef}
               type="file"
@@ -122,7 +125,7 @@ export function DiagnoseClient({ fields }: Props) {
             />
             <button
               onClick={() => fileRef.current?.click()}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white font-medium rounded-xl hover:bg-emerald-700"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground font-medium rounded-md hover:brightness-110 transition"
             >
               <Camera className="w-4 h-4" />
               Otwórz kamerę / wybierz plik
@@ -135,26 +138,26 @@ export function DiagnoseClient({ fields }: Props) {
             <img
               src={imageData}
               alt="Do diagnozy"
-              className="w-full max-h-[400px] object-contain rounded-xl border border-gray-200"
+              className="w-full max-h-[400px] object-contain rounded-md border border-border"
             />
             <button
               onClick={clearImage}
-              className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center shadow-md hover:bg-white"
+              className="absolute top-2 right-2 w-8 h-8 rounded-md bg-card border border-border flex items-center justify-center shadow-card hover:border-foreground/30 transition"
             >
-              <X className="w-4 h-4 text-gray-700" />
+              <X className="w-4 h-4 text-foreground" />
             </button>
           </div>
         )}
 
         {fields.length > 0 && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="hud-label block mb-1">
               Pole (opcjonalnie — pomaga w diagnozie)
             </label>
             <select
               value={fieldId}
               onChange={(e) => setFieldId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+              className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-card text-foreground"
             >
               <option value="">Nie wybieraj</option>
               {fields.map((f) => (
@@ -167,7 +170,7 @@ export function DiagnoseClient({ fields }: Props) {
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="hud-label block mb-1">
             Opis (opcjonalnie)
           </label>
           <textarea
@@ -175,18 +178,18 @@ export function DiagnoseClient({ fields }: Props) {
             onChange={(e) => setNote(e.target.value)}
             rows={2}
             placeholder="np. liście żółte od tygodnia, głównie brzeg pola"
-            className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+            className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring resize-none bg-card text-foreground"
           />
         </div>
 
         <button
           onClick={submit}
           disabled={!imageData || loading}
-          className="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 text-white font-semibold py-3 rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          className="w-full inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-semibold py-3 rounded-md hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed transition"
         >
           {loading ? (
             <>
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <ScanLine className="w-5 h-5" />
               Analizuję...
             </>
           ) : (
@@ -199,11 +202,13 @@ export function DiagnoseClient({ fields }: Props) {
       </div>
 
       {error && (
-        <div className="rounded-2xl bg-red-50 border border-red-200 p-5 flex gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+        <div className="rounded-lg bg-signal-drought/10 border border-signal-drought/30 p-5 flex gap-3">
+          <AlertCircle className="w-5 h-5 text-signal-drought flex-shrink-0 mt-0.5" />
           <div>
-            <div className="font-semibold text-red-900 mb-1">Nie udało się zdiagnozować</div>
-            <div className="text-sm text-red-700">{error}</div>
+            <div className="font-display font-semibold tracking-tight text-foreground mb-1">
+              Nie udało się zdiagnozować
+            </div>
+            <div className="text-sm text-muted-foreground">{error}</div>
           </div>
         </div>
       )}
@@ -214,34 +219,36 @@ export function DiagnoseClient({ fields }: Props) {
 }
 
 function DiagnosisView({ result }: { result: DiagnosisResult }) {
+  // Kolory funkcjonalne — sygnały pilności rekomendacji (dane)
   const urgencyStyle: Record<string, string> = {
-    pilne: 'bg-red-50 border-red-200 text-red-900',
-    w_ciagu_tygodnia: 'bg-amber-50 border-amber-200 text-amber-900',
-    monitoruj: 'bg-emerald-50 border-emerald-200 text-emerald-900',
+    pilne: 'bg-signal-drought/10 border-signal-drought/30 text-foreground',
+    w_ciagu_tygodnia: 'bg-signal-heat/10 border-signal-heat/30 text-foreground',
+    monitoruj: 'bg-signal-healthy/10 border-signal-healthy/30 text-foreground',
   };
   const urgencyLabel: Record<string, string> = {
     pilne: 'Pilne',
     w_ciagu_tygodnia: 'W ciągu tygodnia',
     monitoruj: 'Monitoruj',
   };
+  // Kolory funkcjonalne — poziom pewności diagnozy (dane)
   const pewnoscColor: Record<string, string> = {
-    wysoka: 'bg-emerald-100 text-emerald-800',
-    średnia: 'bg-amber-100 text-amber-800',
-    niska: 'bg-gray-100 text-gray-700',
+    wysoka: 'bg-signal-healthy/15 text-signal-healthy',
+    średnia: 'bg-signal-heat/15 text-signal-heat',
+    niska: 'bg-muted text-muted-foreground',
   };
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl bg-white border border-gray-200 p-6 space-y-4">
+      <div className="rounded-lg bg-card border border-border shadow-card p-6 space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <div className="text-xs font-mono uppercase tracking-wider text-emerald-700 mb-1">
-              Diagnoza
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900">{result.diagnoza}</h2>
+            <div className="hud-label mb-1">Diagnoza</div>
+            <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground">
+              {result.diagnoza}
+            </h2>
           </div>
           <span
-            className={`text-xs font-medium px-2.5 py-1 rounded-full ${pewnoscColor[result.pewnosc] ?? 'bg-gray-100 text-gray-700'}`}
+            className={`text-xs font-mono tabular font-medium px-2.5 py-1 rounded-md ${pewnoscColor[result.pewnosc] ?? 'bg-muted text-muted-foreground'}`}
           >
             Pewność: {result.pewnosc}
           </span>
@@ -249,13 +256,11 @@ function DiagnosisView({ result }: { result: DiagnosisResult }) {
 
         {result.objawy && result.objawy.length > 0 && (
           <div>
-            <div className="text-xs font-mono uppercase tracking-wider text-gray-500 mb-2">
-              Objawy
-            </div>
+            <div className="hud-label mb-2">Objawy</div>
             <ul className="space-y-1">
               {result.objawy.map((o, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                  <CheckCircle2 className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                <li key={i} className="flex items-start gap-2 text-sm text-foreground">
+                  <CheckCircle2 className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                   {o}
                 </li>
               ))}
@@ -264,40 +269,40 @@ function DiagnosisView({ result }: { result: DiagnosisResult }) {
         )}
 
         {result.porada_dodatkowa && (
-          <p className="text-sm text-gray-600 italic">{result.porada_dodatkowa}</p>
+          <p className="text-sm text-muted-foreground italic">{result.porada_dodatkowa}</p>
         )}
       </div>
 
       {result.rekomendacja && (
         <div
-          className={`rounded-2xl border p-6 space-y-4 ${urgencyStyle[result.rekomendacja.pilnosc] ?? 'bg-gray-50 border-gray-200'}`}
+          className={`rounded-lg border p-6 space-y-4 ${urgencyStyle[result.rekomendacja.pilnosc] ?? 'bg-card border-border'}`}
         >
           <div className="flex items-center justify-between">
-            <div className="text-xs font-mono uppercase tracking-wider">Rekomendacja</div>
-            <span className="text-xs font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/70">
+            <div className="hud-label">Rekomendacja</div>
+            <span className="hud-label px-2.5 py-1 rounded-md border border-border bg-card">
               {urgencyLabel[result.rekomendacja.pilnosc] ?? result.rekomendacja.pilnosc}
             </span>
           </div>
 
-          <p className="font-semibold text-lg">{result.rekomendacja.akcja}</p>
+          <p className="font-display font-semibold tracking-tight text-lg text-foreground">
+            {result.rekomendacja.akcja}
+          </p>
 
           {result.rekomendacja.srodki && result.rekomendacja.srodki.length > 0 && (
             <div className="space-y-2">
-              <div className="text-xs font-mono uppercase tracking-wider opacity-70">
-                Sugerowane środki
-              </div>
+              <div className="hud-label">Sugerowane środki</div>
               {result.rekomendacja.srodki.map((s, i) => (
                 <div
                   key={i}
-                  className="rounded-xl bg-white/60 backdrop-blur-sm p-3 flex items-start justify-between gap-2"
+                  className="rounded-md bg-card border border-border p-3 flex items-start justify-between gap-2"
                 >
                   <div>
-                    <div className="font-semibold text-sm">{s.substancja_czynna}</div>
-                    <div className="text-xs opacity-70">
+                    <div className="font-semibold text-sm text-foreground">{s.substancja_czynna}</div>
+                    <div className="text-xs text-muted-foreground">
                       {s.typ} · {s.przyklad_handlowy}
                     </div>
                   </div>
-                  <div className="text-xs font-mono font-semibold whitespace-nowrap">
+                  <div className="text-xs font-mono tabular font-semibold whitespace-nowrap text-foreground">
                     {s.dawka}
                   </div>
                 </div>
@@ -306,9 +311,9 @@ function DiagnosisView({ result }: { result: DiagnosisResult }) {
           )}
 
           {result.rekomendacja.okno_oprysku && (
-            <div className="text-sm">
+            <div className="text-sm text-foreground">
               <span className="font-medium">Okno oprysku:</span>{' '}
-              {result.rekomendacja.okno_oprysku}
+              <span className="font-mono tabular">{result.rekomendacja.okno_oprysku}</span>
             </div>
           )}
         </div>

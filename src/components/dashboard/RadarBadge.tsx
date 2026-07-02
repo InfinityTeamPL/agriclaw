@@ -5,8 +5,9 @@
 // Wykrywa wyleganie (spadek VH o >3 dB) i zalania (wzrost VH + niski VV).
 
 import { useState } from 'react';
-import { Waves, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Waves, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ScanLine } from '@/components/brand/ScanLine';
 
 interface RadarResponse {
   fieldId: string;
@@ -24,18 +25,20 @@ interface RadarResponse {
   note: string;
 }
 
+// Kolory statusu = sygnały agronomiczne (dane): zdrowie=zieleń, info=frost/niebieski,
+// ostrzeżenie=heat/amber, alarm=drought/oxide. Progi/logika bez zmian.
 const severityClass: Record<RadarResponse['interpretation']['severity'], string> = {
-  none: 'bg-emerald-50 border-emerald-200 text-emerald-900',
-  low: 'bg-sky-50 border-sky-200 text-sky-900',
-  medium: 'bg-amber-50 border-amber-200 text-amber-900',
-  high: 'bg-red-50 border-red-200 text-red-900',
+  none: 'border-signal-healthy/30 bg-signal-healthy/5 text-foreground',
+  low: 'border-signal-frost/30 bg-signal-frost/5 text-foreground',
+  medium: 'border-signal-heat/30 bg-signal-heat/5 text-foreground',
+  high: 'border-signal-drought/40 bg-signal-drought/5 text-foreground',
 };
 
 const severityIconColor: Record<RadarResponse['interpretation']['severity'], string> = {
-  none: 'text-emerald-600',
-  low: 'text-sky-600',
-  medium: 'text-amber-600',
-  high: 'text-red-600',
+  none: 'text-signal-healthy',
+  low: 'text-signal-frost',
+  medium: 'text-signal-heat',
+  high: 'text-signal-drought',
 };
 
 export function RadarBadge({ fieldId }: { fieldId: string }) {
@@ -65,9 +68,13 @@ export function RadarBadge({ fieldId }: { fieldId: string }) {
       <button
         onClick={check}
         disabled={loading}
-        className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl border border-indigo-200 bg-indigo-50/50 hover:bg-indigo-50 text-indigo-900 transition"
+        className="relative w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-md border border-border bg-card text-foreground font-medium hover:border-foreground/30 transition disabled:opacity-70"
       >
-        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Waves className="w-4 h-4" />}
+        {loading ? (
+          <ScanLine className="w-4 h-4" />
+        ) : (
+          <Waves className="w-4 h-4 text-primary" />
+        )}
         {loading
           ? 'Sentinel-1 radar pobiera ostatnie przejście...'
           : 'Sprawdź pole radarem (widzi przez chmury)'}
@@ -81,35 +88,33 @@ export function RadarBadge({ fieldId }: { fieldId: string }) {
   const iconColor = severityIconColor[sev];
 
   return (
-    <div className={`rounded-2xl border p-4 space-y-3 ${severityClass[sev]}`}>
+    <div className={`rounded-lg border p-4 space-y-3 shadow-card ${severityClass[sev]}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
-          <IconSev className={`w-5 h-5 ${iconColor}`} />
+          <IconSev className={`w-5 h-5 shrink-0 ${iconColor}`} />
           <div>
-            <div className="text-xs uppercase tracking-wider opacity-70 font-semibold">
-              Sentinel-1 SAR · radar
-            </div>
-            <div className="text-lg font-semibold">
+            <div className="hud-label">Sentinel-1 SAR · radar</div>
+            <div className="font-display text-lg font-semibold tracking-tight">
               {interpretation.diagnosis}
             </div>
           </div>
         </div>
-        <div className="text-right text-[10px] font-mono opacity-70 shrink-0">
+        <div className="text-right text-[10px] font-mono tabular text-muted-foreground shrink-0">
           VV {radar.vv.mean.toFixed(1)} dB<br />
           VH {radar.vh.mean.toFixed(1)} dB<br />
           RVI {radar.rvi.mean.toFixed(2)}
         </div>
       </div>
-      <p className="text-sm opacity-90 leading-relaxed">{interpretation.details}</p>
-      <div className="rounded-xl bg-white/60 backdrop-blur-sm p-2.5 text-[11px] leading-relaxed">
-        <b>Jak czytać:</b> VV (vertical-vertical) odbiciem od powierzchni gleby/łanu; VH (vertical-horizontal) od struktur pionowych jak źdźbła/liście. Spadek VH = rośliny położone. RVI 0..1 — wyższy = więcej biomasy.
+      <p className="text-sm text-muted-foreground leading-relaxed">{interpretation.details}</p>
+      <div className="rounded-md border border-border bg-card p-2.5 text-[11px] text-muted-foreground leading-relaxed">
+        <b className="text-foreground">Jak czytać:</b> VV (vertical-vertical) odbiciem od powierzchni gleby/łanu; VH (vertical-horizontal) od struktur pionowych jak źdźbła/liście. Spadek VH = rośliny położone. RVI 0..1 — wyższy = więcej biomasy.
       </div>
       <button
         onClick={() => {
           setData(null);
           check();
         }}
-        className="text-[10px] underline opacity-60 hover:opacity-100"
+        className="hud-label underline underline-offset-2 hover:text-foreground transition"
       >
         Sprawdź ponownie
       </button>

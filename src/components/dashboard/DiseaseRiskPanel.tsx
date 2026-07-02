@@ -11,7 +11,6 @@ import {
   ShieldAlert,
   Droplets,
   AlertOctagon,
-  Sparkles,
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
@@ -40,10 +39,30 @@ interface Props {
   fieldId: string;
 }
 
-const riskMeta: Record<Risk, { bg: string; label: string; ring: string; text: string }> = {
-  high: { bg: 'bg-red-600', label: 'Wysokie', ring: 'ring-red-200', text: 'text-red-700' },
-  medium: { bg: 'bg-amber-500', label: 'Średnie', ring: 'ring-amber-200', text: 'text-amber-700' },
-  low: { bg: 'bg-emerald-500', label: 'Niskie', ring: 'ring-emerald-200', text: 'text-emerald-700' },
+// Kolory funkcjonalne (dane): mapowanie poziomu ryzyka na sygnały agronomiczne.
+// high = oxide/susza (alert), medium = amber/upał, low = zieleń zdrowia.
+const riskMeta: Record<
+  Risk,
+  { badge: string; label: string; ring: string; tint: string }
+> = {
+  high: {
+    badge: 'bg-signal-drought',
+    label: 'Wysokie',
+    ring: 'ring-signal-drought/25',
+    tint: 'bg-signal-drought/5 border-signal-drought/30 text-signal-drought',
+  },
+  medium: {
+    badge: 'bg-signal-heat',
+    label: 'Średnie',
+    ring: 'ring-signal-heat/25',
+    tint: 'bg-signal-heat/5 border-signal-heat/30 text-signal-heat',
+  },
+  low: {
+    badge: 'bg-signal-healthy',
+    label: 'Niskie',
+    ring: 'ring-signal-healthy/25',
+    tint: 'bg-signal-healthy/5 border-signal-healthy/30 text-signal-healthy',
+  },
 };
 
 // Przyporządkuj ikonę po nazwie choroby
@@ -51,7 +70,7 @@ function iconFor(disease: string) {
   if (/fusarium|fuzarioz|phytophthora|zaraza/i.test(disease)) return AlertOctagon;
   if (/septoria|septorioz|phoma/i.test(disease)) return ShieldAlert;
   if (/rdza|mączniak|alternaria/i.test(disease)) return Bug;
-  return Sparkles;
+  return Bug;
 }
 
 export function DiseaseRiskPanel({ fieldId }: Props) {
@@ -87,8 +106,8 @@ export function DiseaseRiskPanel({ fieldId }: Props) {
 
   if (loading) {
     return (
-      <div className="rounded-3xl bg-white border border-gray-200 p-5 flex items-center gap-3 text-sm text-gray-500">
-        <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
+      <div className="rounded-lg bg-card border border-border p-5 flex items-center gap-3 text-sm text-muted-foreground shadow-card">
+        <Loader2 className="w-4 h-4 animate-spin text-primary" />
         Liczę ryzyko chorób (7 modeli grzybowych × BBCH)…
       </div>
     );
@@ -96,7 +115,7 @@ export function DiseaseRiskPanel({ fieldId }: Props) {
 
   if (error) {
     return (
-      <div className="rounded-3xl bg-purple-50 border border-purple-200 p-4 text-sm text-purple-900">
+      <div className="rounded-lg bg-card border border-border p-4 text-sm text-muted-foreground shadow-card">
         Ryzyko chorób niedostępne: {error}
       </div>
     );
@@ -110,15 +129,15 @@ export function DiseaseRiskPanel({ fieldId }: Props) {
   // Jeśli nic realnego — pokaż zielony banner "brak zagrożeń"
   if (realRisks.length === 0) {
     return (
-      <div className="rounded-3xl bg-gradient-to-br from-emerald-50 to-white border border-emerald-200 p-4 flex items-start gap-3">
-        <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+      <div className="rounded-lg bg-card border border-border p-4 flex items-start gap-3 shadow-card">
+        <div className="w-9 h-9 rounded-lg bg-signal-healthy/10 text-signal-healthy border border-signal-healthy/30 flex items-center justify-center shrink-0">
           <ShieldAlert className="w-4 h-4" />
         </div>
         <div className="flex-1">
-          <div className="font-semibold text-emerald-900 text-sm">
+          <div className="font-display font-semibold tracking-tight text-foreground text-sm">
             Brak zagrożeń grzybowych
           </div>
-          <div className="text-xs text-emerald-700 mt-0.5">
+          <div className="text-xs text-muted-foreground mt-0.5">
             Warunki pogodowe nie sprzyjają chorobom w ciągu najbliższych 72 godzin. Monitoruj dalej — sprawdzamy co godzinę z Open-Meteo.
           </div>
         </div>
@@ -132,8 +151,8 @@ export function DiseaseRiskPanel({ fieldId }: Props) {
   return (
     <div
       className={cn(
-        'rounded-xl border p-5 space-y-3',
-        hasHigh ? 'bg-white border-red-200' : 'bg-white border-amber-200',
+        'rounded-lg border p-5 space-y-3 bg-card shadow-card',
+        hasHigh ? 'border-signal-drought/40' : 'border-signal-heat/40',
       )}
     >
       <div className="flex items-start gap-3">
@@ -141,21 +160,27 @@ export function DiseaseRiskPanel({ fieldId }: Props) {
           className={cn(
             'w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border',
             hasHigh
-              ? 'bg-red-50 text-red-700 border-red-200'
-              : 'bg-amber-50 text-amber-700 border-amber-200',
+              ? 'bg-signal-drought/5 text-signal-drought border-signal-drought/30'
+              : 'bg-signal-heat/5 text-signal-heat border-signal-heat/30',
           )}
         >
           <Bug className="w-4 h-4" />
         </div>
         <div className="flex-1">
-          <div className="font-semibold text-gray-900">
+          <div className="font-display font-semibold tracking-tight text-foreground">
             {hasHigh
               ? `Wysokie ryzyko chorób (${highRisk.length})`
               : `Podwyższone ryzyko chorób (${realRisks.length})`}
           </div>
-          <div className="text-xs text-gray-500 mt-0.5">
+          <div className="hud-label mt-1">
             Na podstawie pogody 72h + BBCH{' '}
-            {data.bbch !== null ? `(${data.bbch} · ${data.bbchLabel})` : ''}
+            {data.bbch !== null ? (
+              <span className="tabular normal-case">
+                ({data.bbch} · {data.bbchLabel})
+              </span>
+            ) : (
+              ''
+            )}
           </div>
         </div>
       </div>
@@ -170,7 +195,7 @@ export function DiseaseRiskPanel({ fieldId }: Props) {
             <div
               key={key}
               className={cn(
-                'rounded-2xl border bg-white ring-1 transition',
+                'rounded-md border border-border bg-card ring-1 transition',
                 meta.ring,
               )}
             >
@@ -181,53 +206,51 @@ export function DiseaseRiskPanel({ fieldId }: Props) {
               >
                 <div
                   className={cn(
-                    'w-8 h-8 rounded-lg text-white flex items-center justify-center shrink-0',
-                    meta.bg,
+                    'w-8 h-8 rounded-md text-white flex items-center justify-center shrink-0',
+                    meta.badge,
                   )}
                 >
                   <Icon className="w-4 h-4" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-gray-900 text-sm">
+                    <span className="font-semibold text-foreground text-sm">
                       {r.disease}
                     </span>
                     <span
                       className={cn(
                         'text-[10px] px-2 py-0.5 rounded-full font-semibold text-white',
-                        meta.bg,
+                        meta.badge,
                       )}
                     >
-                      {meta.label} · score {r.score}
+                      {meta.label} · score <span className="tabular">{r.score}</span>
                     </span>
                   </div>
-                  <div className="text-xs text-gray-500 truncate mt-0.5">
+                  <div className="text-xs text-muted-foreground truncate mt-0.5">
                     {r.reason}
                   </div>
                 </div>
                 {expanded ? (
-                  <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" />
+                  <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
                 ) : (
-                  <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+                  <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
                 )}
               </button>
 
               {expanded && (
                 <div className="px-3 pb-3 space-y-2">
-                  <div className="text-sm text-gray-700 leading-relaxed">
+                  <div className="text-sm text-foreground leading-relaxed">
                     <span className="font-semibold">Dlaczego: </span>
                     {r.reason}
                   </div>
                   <div
                     className={cn(
-                      'rounded-xl border p-3 text-sm leading-relaxed flex gap-2',
-                      r.risk === 'high'
-                        ? 'bg-red-50 border-red-200 text-red-900'
-                        : 'bg-amber-50 border-amber-200 text-amber-900',
+                      'rounded-md border p-3 text-sm leading-relaxed flex gap-2',
+                      meta.tint,
                     )}
                   >
                     <Droplets className="w-4 h-4 shrink-0 mt-0.5" />
-                    <div>
+                    <div className="text-foreground">
                       <span className="font-semibold">Co zrobić: </span>
                       {r.action}
                     </div>
@@ -239,7 +262,7 @@ export function DiseaseRiskPanel({ fieldId }: Props) {
         })}
       </div>
 
-      <div className="flex items-center justify-between text-[10px] text-gray-400 pt-1 border-t border-gray-100">
+      <div className="flex items-center justify-between hud-label pt-2 border-t border-border">
         <span>Open-Meteo 72h hourly + 7-dniowa prognoza dzienna</span>
         <span>7 modeli: Septoria / Fusarium / Rdza / Mączniak / Phytophthora / Alternaria / Phoma</span>
       </div>
