@@ -5,7 +5,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { deriveBbchStatus, defaultSowingDate, type Crop } from '@/lib/bbch';
-import { calculateNitrogen } from '@/lib/nitrogen';
+import { calculateNitrogen, buildSeasonalNitrogenPlan } from '@/lib/nitrogen';
+import { fetchWithTimeout } from '@/lib/satellite/http';
 
 const OPEN_METEO_HISTORY = 'https://archive-api.open-meteo.com/v1/archive';
 const OPEN_METEO_FORECAST = 'https://api.open-meteo.com/v1/forecast';
@@ -51,7 +52,7 @@ export async function GET(
 
   try {
     const histUrl = `${OPEN_METEO_HISTORY}?latitude=${field.lat}&longitude=${field.lon}&start_date=${sowingStr}&end_date=${today}&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
-    const res = await fetch(histUrl);
+    const res = await fetchWithTimeout(histUrl, { timeoutMs: 15_000, retries: 1 });
     if (res.ok) {
       const data = (await res.json()) as {
         daily?: { time: string[]; temperature_2m_max: number[]; temperature_2m_min: number[] };
@@ -72,7 +73,7 @@ export async function GET(
 
   try {
     const forecastUrl = `${OPEN_METEO_FORECAST}?latitude=${field.lat}&longitude=${field.lon}&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=3&past_days=3`;
-    const res = await fetch(forecastUrl);
+    const res = await fetchWithTimeout(forecastUrl, { timeoutMs: 15_000, retries: 1 });
     if (res.ok) {
       const data = (await res.json()) as {
         daily?: { time: string[]; temperature_2m_max: number[]; temperature_2m_min: number[] };
@@ -116,6 +117,9 @@ export async function GET(
     );
   }
 
+  // Plan sezonowy N1/N2/N3 + zgodność z Programem azotanowym (ARiMR)
+  const seasonPlan = buildSeasonalNitrogenPlan(crop, field.area);
+
   return NextResponse.json({
     fieldId: field.id,
     fieldName: field.name,
@@ -125,5 +129,6 @@ export async function GET(
     areaHectares: field.area,
     lastNdreObservedAt: latestReading?.observedAt ?? null,
     recommendation,
+    seasonPlan,
   });
 }

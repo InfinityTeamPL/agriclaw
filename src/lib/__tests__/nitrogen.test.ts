@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateNitrogen } from '../nitrogen';
+import { calculateNitrogen, buildSeasonalNitrogenPlan } from '../nitrogen';
 
 describe('calculateNitrogen', () => {
   it('rekomenduje N1 40-50 kg/ha dla pszenicy przy optymalnym NDRE', () => {
@@ -111,5 +111,34 @@ describe('calculateNitrogen', () => {
     expect(r!.adjustmentPct).toBe(0);
     expect(r!.doseKgNPerHa).toBe(r!.baselineKgNPerHa);
     expect(r!.reasoning).toMatch(/brak|książkow/i);
+  });
+});
+
+describe('buildSeasonalNitrogenPlan', () => {
+  it('sumuje trzy okna N i liczy total dla pola', () => {
+    const plan = buildSeasonalNitrogenPlan('wheat', 10);
+    expect(plan).not.toBeNull();
+    expect(plan!.windows).toHaveLength(3);
+    // pszenica: 50 + 70 + 30 = 150 kg N/ha
+    expect(plan!.seasonalKgNPerHa).toBe(150);
+    expect(plan!.seasonalTotalKgN).toBe(1500);
+  });
+
+  it('nie przekracza limitu dla pszenicy (150 ≤ 200)', () => {
+    const plan = buildSeasonalNitrogenPlan('wheat', 5);
+    expect(plan!.exceedsLimit).toBe(false);
+    expect(plan!.complianceNote).toMatch(/mieści się/i);
+  });
+
+  it('flaguje przekroczenie limitu Programu azotanowego', () => {
+    // rzepak: 90 + 70 + 40 = 200 ≤ 240 (nie przekracza) — sprawdzamy że limit istnieje
+    const plan = buildSeasonalNitrogenPlan('rapeseed', 8);
+    expect(plan!.maxSeasonalKgNPerHa).toBeGreaterThan(0);
+    expect(typeof plan!.exceedsLimit).toBe('boolean');
+    expect(plan!.disclaimer).toMatch(/program(em)? działań azotanowych/i);
+  });
+
+  it('zwraca null dla uprawy bez profilu', () => {
+    expect(buildSeasonalNitrogenPlan('other', 5)).toBeNull();
   });
 });

@@ -234,6 +234,87 @@ export interface NInput {
   pricePerKgN?: number;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Plan azotowy na sezon + zgodność z Programem azotanowym (ARiMR / dyrektywa
+// azotanowa). Orientacyjne maksymalne dawki N kg/ha/rok — MUSZĄ być zweryfikowane
+// z aktualnym Rozporządzeniem (Program działań azotanowych), bo zależą od plonu,
+// typu gleby i formy nawozu. Traktuj jako wstępny sygnał ostrzegawczy, nie poradę prawną.
+const MAX_SEASONAL_N_PER_HA: Partial<Record<Crop, number>> = {
+  wheat: 200,
+  barley: 160,
+  rye: 150,
+  oats: 140,
+  rapeseed: 240,
+  corn: 200,
+  potato: 220,
+  sugarbeet: 180,
+};
+
+export interface NPlanWindow {
+  window: Exclude<NApplicationWindow, 'out-of-window'>;
+  windowLabel: string;
+  bbchRange: [number, number];
+  baselineKgNPerHa: number;
+}
+
+export interface NSeasonPlan {
+  crop: Crop;
+  areaHectares: number;
+  windows: NPlanWindow[];
+  /** Suma dawek książkowych N na sezon (kg N/ha). */
+  seasonalKgNPerHa: number;
+  /** Suma dla całego pola (kg N). */
+  seasonalTotalKgN: number;
+  /** Orientacyjny limit z Programu azotanowego (kg N/ha) — do weryfikacji. */
+  maxSeasonalKgNPerHa: number;
+  /** Czy plan przekracza orientacyjny limit. */
+  exceedsLimit: boolean;
+  /** Ostrzeżenie/uwaga compliance (PL). */
+  complianceNote: string;
+  disclaimer: string;
+}
+
+/**
+ * Buduje sezonowy plan nawożenia azotem (N1/N2/N3) dla uprawy i sprawdza go
+ * względem orientacyjnego limitu Programu azotanowego. To flagowa funkcja pod
+ * kontrolę ARiMR — sygnalizuje przekroczenie zanim rolnik przekroczy dawkę.
+ */
+export function buildSeasonalNitrogenPlan(
+  crop: Crop,
+  areaHectares: number,
+): NSeasonPlan | null {
+  const profile = PROFILES[crop];
+  if (!profile) return null;
+
+  const windows: NPlanWindow[] = [
+    { window: 'N1-start', windowLabel: windowLabelFor(crop, 'N1-start'), bbchRange: profile.n1Window, baselineKgNPerHa: profile.baselineN1 },
+    { window: 'N2-flag-leaf', windowLabel: windowLabelFor(crop, 'N2-flag-leaf'), bbchRange: profile.n2Window, baselineKgNPerHa: profile.baselineN2 },
+    { window: 'N3-foliar', windowLabel: windowLabelFor(crop, 'N3-foliar'), bbchRange: profile.n3Window, baselineKgNPerHa: profile.baselineN3 },
+  ];
+
+  const seasonalKgNPerHa = windows.reduce((s, w) => s + w.baselineKgNPerHa, 0);
+  const seasonalTotalKgN = Math.round(seasonalKgNPerHa * areaHectares);
+  const maxSeasonalKgNPerHa = MAX_SEASONAL_N_PER_HA[crop] ?? 0;
+  const exceedsLimit = maxSeasonalKgNPerHa > 0 && seasonalKgNPerHa > maxSeasonalKgNPerHa;
+
+  const complianceNote = exceedsLimit
+    ? `⚠️ Suma planu ${seasonalKgNPerHa} kg N/ha przekracza orientacyjny limit ${maxSeasonalKgNPerHa} kg N/ha. Zredukuj dawki lub udokumentuj wyższą potrzebę pokarmową (bilans azotu).`
+    : `Suma planu ${seasonalKgNPerHa} kg N/ha mieści się w orientacyjnym limicie ${maxSeasonalKgNPerHa} kg N/ha.`;
+
+  return {
+    crop,
+    areaHectares,
+    windows,
+    seasonalKgNPerHa,
+    seasonalTotalKgN,
+    maxSeasonalKgNPerHa,
+    exceedsLimit,
+    complianceNote,
+    disclaimer:
+      'Limit orientacyjny — zweryfikuj z aktualnym Programem działań azotanowych (zależy od plonu, gleby i formy nawozu). To nie jest porada prawna.',
+  };
+}
+
 export function calculateNitrogen(input: NInput): NRecommendation | null {
   const profile = PROFILES[input.crop];
   if (!profile) return null;
