@@ -1,27 +1,31 @@
 import Link from 'next/link';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { NdviKeyline } from '@/components/brand/NdviKeyline';
 
 export function Cta() {
   return (
-    <section className="relative py-24 bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500 overflow-hidden">
-      {/* ornamenty */}
-      <div className="absolute inset-0 opacity-20">
-        <div
-          className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-white/20 blur-3xl"
-        />
-        <div className="absolute -bottom-20 -left-20 w-96 h-96 rounded-full bg-emerald-800/40 blur-3xl" />
+    <section className="relative py-24 overflow-hidden">
+      {/* Tło: siatka kartograficzna zamiast dekoracyjnych blobów */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-secondary" />
+        <div className="absolute inset-0 cadastral-grid opacity-60 [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
       </div>
 
-      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center text-white">
-        <div className="inline-flex items-center gap-2 rounded-full bg-white/15 backdrop-blur-md px-4 py-1.5 ring-1 ring-white/25 mb-6">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span className="text-xs font-medium tracking-wide">Beta · darmowo dla pierwszych 100 rolników</span>
+      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 text-center">
+        {/* Eyebrow jako odczyt HUD — nie badge ze Sparkles */}
+        <div className="inline-flex items-center gap-2.5 border border-border bg-card px-3 py-1.5 rounded-md mb-7">
+          <span className="w-1.5 h-1.5 rounded-full bg-signal-healthy" />
+          <span className="hud-label">Beta · darmowo dla pierwszych 100 rolników</span>
         </div>
 
-        <h2 className="text-4xl sm:text-6xl font-bold tracking-tight mb-6">
-          Twoje pole. Twój agent. Twój czas.
+        <h2 className="font-display text-4xl sm:text-6xl font-semibold tracking-tight text-foreground mb-6">
+          <span className="relative inline-block pb-3">
+            Twoje pole. Twój agent. Twój czas.
+            {/* Rampa NDVI zamiast gradientu — sygnatura marki */}
+            <NdviKeyline className="absolute -bottom-0.5 left-0" height={4} />
+          </span>
         </h2>
-        <p className="text-lg sm:text-xl text-white/90 max-w-2xl mx-auto mb-10">
+        <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
           Zobaczysz pierwszą analizę pola w 90 sekund od rejestracji.
           Bez karty, bez kontraktu, bez sprzedawcy.
         </p>
@@ -29,14 +33,14 @@ export function Cta() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href="/signup"
-            className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-emerald-700 rounded-2xl font-bold text-lg hover:bg-emerald-50 shadow-xl hover:shadow-2xl transition-all"
+            className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-primary text-primary-foreground rounded-md font-semibold text-lg shadow-card hover:brightness-110 transition-all"
           >
             Zacznij bezpłatnie
             <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
           </Link>
           <Link
             href="/login"
-            className="inline-flex items-center justify-center px-8 py-4 bg-white/10 backdrop-blur-md text-white rounded-2xl font-bold text-lg hover:bg-white/20 ring-1 ring-white/25 transition"
+            className="inline-flex items-center justify-center px-8 py-4 bg-card text-foreground rounded-md font-semibold text-lg border border-border hover:border-foreground/30 transition"
           >
             Mam już konto
           </Link>

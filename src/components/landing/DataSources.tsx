@@ -8,6 +8,7 @@ import {
   Brain,
   History,
 } from 'lucide-react';
+import { NdviKeyline } from '@/components/brand/NdviKeyline';
 
 const ITEMS = [
   {
@@ -44,17 +45,25 @@ const ITEMS = [
 
 export function DataSources() {
   return (
-    <section className="py-20 bg-emerald-950 text-white overflow-hidden relative">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(16,185,129,0.15),transparent_60%)]" />
+    <section className="relative py-20 overflow-hidden bg-secondary">
+      {/* Tło: siatka kartograficzna zamiast dekoracyjnego radialnego blobu */}
+      <div className="absolute inset-0 cadastral-grid opacity-60 [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)]" />
+
       <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
         <div className="mb-12 text-center">
-          <span className="inline-block text-xs font-mono uppercase tracking-widest text-emerald-300 bg-emerald-500/10 rounded-full px-3 py-1 mb-4 ring-1 ring-emerald-400/20">
-            Co dostajesz pod maską
-          </span>
-          <h2 className="text-3xl sm:text-5xl font-bold tracking-tight">
+          {/* Eyebrow jako odczyt HUD — nie badge z pillem */}
+          <div className="inline-flex items-center gap-2 mb-5">
+            <span className="w-1.5 h-1.5 rounded-full bg-signal-healthy" />
+            <span className="hud-label">Co dostajesz pod maską</span>
+          </div>
+          <h2 className="font-display text-3xl sm:text-5xl font-semibold tracking-tight text-foreground">
             Sześć warstw pracujących razem —
             <br className="hidden sm:block" />
-            <span className="text-emerald-300">Ty widzisz tylko gotową odpowiedź.</span>
+            <span className="relative inline-block pb-3 text-foreground">
+              Ty widzisz tylko gotową odpowiedź.
+              {/* Rampa NDVI jako sygnatura marki, zamiast gradient-textu */}
+              <NdviKeyline className="absolute -bottom-0.5 left-0" height={4} />
+            </span>
           </h2>
         </div>
 
@@ -64,13 +73,15 @@ export function DataSources() {
             return (
               <div
                 key={s.title}
-                className="rounded-2xl bg-white/5 backdrop-blur-sm ring-1 ring-white/10 p-6 hover:bg-white/10 hover:ring-emerald-400/30 transition"
+                className="rounded-lg bg-card border border-border p-6 shadow-card hover:border-foreground/30 transition-colors"
               >
-                <div className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-emerald-500/15 ring-1 ring-emerald-400/20 mb-4">
-                  <Icon className="w-5 h-5 text-emerald-300" />
+                <div className="inline-flex items-center justify-center w-11 h-11 rounded-md bg-secondary border border-border mb-4">
+                  <Icon className="w-5 h-5 text-primary" />
                 </div>
-                <div className="font-bold text-lg mb-2">{s.title}</div>
-                <div className="text-sm text-white/70 leading-relaxed">{s.desc}</div>
+                <div className="font-display font-semibold text-lg tracking-tight text-foreground mb-2">
+                  {s.title}
+                </div>
+                <div className="text-sm text-muted-foreground leading-relaxed">{s.desc}</div>
               </div>
             );
           })}

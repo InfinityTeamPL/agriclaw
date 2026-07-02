@@ -8,6 +8,7 @@ import {
   WifiOff,
   Settings2,
 } from 'lucide-react';
+import { NdviKeyline } from '@/components/brand/NdviKeyline';
 
 const FEATURES = [
   {
@@ -15,66 +16,74 @@ const FEATURES = [
     title: 'Obraz z góry',
     body:
       'Widok pola w 10 m rozdzielczości, odświeżany co kilka dni. Widzisz czy pole jest zdrowe, chore, czy po prostu suche.',
-    tone: 'emerald',
+    tone: 'healthy',
   },
   {
     icon: CloudRain,
     title: 'Prognoza parowania',
     body:
       'Nie tylko „ile spadnie deszczu". Liczymy ile wody pole straci jutro i pojutrze, nie tylko ile ma dziś.',
-    tone: 'sky',
+    tone: 'frost',
   },
   {
     icon: Brain,
     title: 'Twój AgroAgent',
     body:
       'Agent pamięta historię Twojego pola przez 2+ sezony. Uczy się Twojego gospodarstwa, nie cudzych.',
-    tone: 'violet',
+    tone: 'disease',
   },
   {
     icon: MessageSquareText,
     title: 'WhatsApp + głos',
     body:
       'Piszesz „co z polem 3?" — agent odpowiada po polsku. Nie ma progu wejścia, nie ma klikania.',
-    tone: 'amber',
+    tone: 'heat',
   },
   {
     icon: WifiOff,
     title: 'Działa offline',
     body:
       'W polu bez zasięgu otwierasz ostatnią analizę. Dane pobierają się z powrotem, gdy wróci internet.',
-    tone: 'rose',
+    tone: 'drought',
   },
   {
     icon: Settings2,
     title: 'Ty decydujesz',
     body:
       'Zmieniasz plan, zatrzymujesz się, eksportujesz dane. Zawsze po Twojej stronie.',
-    tone: 'slate',
+    tone: 'foreground',
   },
 ];
 
-const toneClass: Record<string, { bg: string; ring: string; text: string }> = {
-  emerald: { bg: 'bg-emerald-50', ring: 'ring-emerald-100', text: 'text-emerald-700' },
-  sky: { bg: 'bg-sky-50', ring: 'ring-sky-100', text: 'text-sky-700' },
-  violet: { bg: 'bg-violet-50', ring: 'ring-violet-100', text: 'text-violet-700' },
-  amber: { bg: 'bg-amber-50', ring: 'ring-amber-100', text: 'text-amber-700' },
-  rose: { bg: 'bg-rose-50', ring: 'ring-rose-100', text: 'text-rose-700' },
-  slate: { bg: 'bg-slate-50', ring: 'ring-slate-100', text: 'text-slate-700' },
+// Sygnały agronomiczne — te same kolory co dane (spójne z rampą NDVI)
+const toneClass: Record<string, string> = {
+  healthy: 'text-signal-healthy',
+  frost: 'text-signal-frost',
+  disease: 'text-signal-disease',
+  heat: 'text-signal-heat',
+  drought: 'text-signal-drought',
+  foreground: 'text-foreground',
 };
 
 export function Features() {
   return (
-    <section className="py-24 bg-gradient-to-b from-white to-emerald-50/40">
+    <section className="relative py-24 bg-background">
+      {/* Tło: siatka kartograficzna zamiast gradientu */}
+      <div className="absolute inset-0 -z-10 cadastral-grid opacity-50 [mask-image:radial-gradient(ellipse_at_center,black,transparent_80%)]" />
+
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="mb-16 max-w-2xl">
-          <span className="inline-block text-xs font-mono uppercase tracking-widest text-emerald-700 bg-emerald-50 rounded-full px-3 py-1 mb-4">
-            Co dostajesz
-          </span>
-          <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-gray-900">
+          <div className="inline-flex items-center gap-2 mb-4">
+            <span className="w-1.5 h-1.5 rounded-full bg-signal-healthy" />
+            <span className="hud-label">Co dostajesz</span>
+          </div>
+          <h2 className="font-display text-3xl sm:text-5xl font-semibold tracking-tight text-foreground">
             Nie kolejny dashboard.
             <br />
-            <span className="text-emerald-600">Konkretna rada, kiedy trzeba.</span>
+            <span className="relative inline-block pb-2">
+              Konkretna rada, kiedy trzeba.
+              <NdviKeyline className="absolute -bottom-0.5 left-0" height={4} />
+            </span>
           </h2>
         </div>
 
@@ -85,15 +94,15 @@ export function Features() {
             return (
               <div
                 key={f.title}
-                className="group rounded-3xl bg-white p-6 ring-1 ring-gray-200 hover:ring-emerald-300 hover:shadow-lg transition-all"
+                className="group rounded-lg bg-card p-6 border border-border hover:border-foreground/25 shadow-card hover:shadow-pop transition-all"
               >
-                <div
-                  className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl ${tone.bg} ring-1 ${tone.ring} mb-4`}
-                >
-                  <Icon className={`w-6 h-6 ${tone.text}`} />
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-md bg-secondary border border-border mb-4">
+                  <Icon className={`w-6 h-6 ${tone}`} />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">{f.title}</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">{f.body}</p>
+                <h3 className="font-display text-lg font-semibold tracking-tight text-foreground mb-2">
+                  {f.title}
+                </h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{f.body}</p>
               </div>
             );
           })}

@@ -1,7 +1,15 @@
 # Feature Matrix — 10 Platform Precision-Agriculture vs AgriClaw
 
-**Research date:** 2026-04-18
+**Research date:** 2026-04-18 · **Zaktualizowano:** 2026-07-02 (kolumna ACW zgodna z kodem po audycie)
 **Scope:** John Deere Operations Center, Climate FieldView (Bayer), EOSDA Crop Monitoring, OneSoil, Taranis, xarvio FIELD MANAGER (BASF), SatAgro (PL), AGRIVI, eAgronom, CropIn + AgriClaw (my stan).
+
+> Aktualizacja 2026-07: kolumna ACW pokazywała „N" dla wielu funkcji już zaimplementowanych.
+> Zweryfikowane w kodzie/na produkcji jako działające: Sentinel-1 radar SAR, Landsat thermal,
+> Planet 3m, historyczne obrazy + backfill do 10 lat, alerty przymrozek/upał, modele chorobowe,
+> spray window, scouting foto+GPS, księga polowa + eksport CSV/PDF (IJHARS), compliance GAEC,
+> kalkulator azotu, bilans wodny, import działek GUGiK ULDK, foto-diagnoza AI, maska chmur SCL.
+> Nadal brak (luki): VRA/ISOXML export, plan nawozowy ARiMR, urzędowa baza ŚOR MRiRW, pełny
+> offline PWA (IndexedDB), pełny inbound WhatsApp webhook, auto-detekcja pól, własne stacje IoT.
 
 Legenda:
 - Y = funkcja dostępna w standardzie (Free/Basic lub higher tier)
@@ -26,11 +34,12 @@ Kolumny: **JD** = John Deere Ops Center · **FV** = Climate FieldView · **EOS**
 | GNDVI | N | N | N | N | N | N | N | N | N | N | N |
 | LAI (Leaf Area Index) | N | N | N | N | Y (drone-derived) | Y | N | N | N | Y | N |
 | True-color RGB imagery | P | Y | Y | Y | Y (leaf-level) | Y | Y | P | P | Y | **Y** |
-| High-res imagery (Planet/Maxar, ≤3m) | A | N | P | P | Y (drone 0.3mm) | P | P (Premium) | P | N | P | N |
-| Sentinel-1 radar SAR (przez chmury) | N | N | N | N | N | N | N | N | N | N | N |
+| High-res imagery (Planet/Maxar, ≤3m) | A | N | P | P | Y (drone 0.3mm) | P | P (Premium) | P | N | P | **Y (Planet 3m PSScene)** |
+| Sentinel-1 radar SAR (przez chmury) | N | N | N | N | N | N | N | N | N | N | **Y (przewaga)** |
 | Hyperspectral | N | N | N | N | N | N | N | N | N | N | N |
-| Thermal imaging | N | N | N | N | N | N | N | N | N | N | N |
-| Historyczne obrazy (multi-season) | Y | P | Y (5 lat) | Y (>6 mies) | Y (lifetime Elite+) | Y | Y (od 2002 r.) | Y | Y | Y | P (design: in schema) |
+| Thermal imaging | N | N | N | N | N | N | N | N | N | N | **Y (Landsat 8/9, gdy dostęp)** |
+| Maska chmur per-piksel (SCL) | ? | ? | Y | ? | Y | Y | Y | ? | ? | Y | **Y (SCL + leastCC)** |
+| Historyczne obrazy (multi-season) | Y | P | Y (5 lat) | Y (>6 mies) | Y (lifetime Elite+) | Y | Y (od 2002 r.) | Y | Y | Y | **Y (backfill do 10 lat)** |
 
 ## 2. Weather & Meteorology
 
@@ -38,13 +47,13 @@ Kolumny: **JD** = John Deere Ops Center · **FV** = Climate FieldView · **EOS**
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | Prognoza pogody (7-14 dni) | P | Y | Y (14 dni) | Y | Y | Y | Y | Y | Y (?) | Y | **Y (Open-Meteo 7d)** |
 | ET0 (evapotranspiration FAO) | N | N | Y | N | N | Y | N | N | N | N | **Y** |
-| Historyczne dane meteo | P | P | Y (od 1979) | Y | Y | Y | Y (od 2002) | Y | Y | Y | N |
+| Historyczne dane meteo | P | P | Y (od 1979) | Y | Y | Y | Y (od 2002) | Y | Y | Y | Y (Open-Meteo archive) |
 | Integracja z IMGW/DWD/ECMWF | A | A | Y (ECMWF) | ? | N | Y (DWD) | Y (IMGW+) | A | A | ? | Y (Open-Meteo = ECMWF) |
 | Własne stacje meteo (IoT) | Y | A | Y | N | N | Y | Y (Premium) | Y | Y (telematyka) | Y | N |
-| Alerty o suszy | P | Y | Y | Y | Y | Y | Y | Y | N | Y | **Y (rule-based)** |
-| Alerty o przymrozku | N | N | Y | N | N | Y | Y | Y | N | Y | N |
-| Alerty o chorobach (model) | A (partners) | Y (Climate FieldView Advantage) | Y (risk maps) | N | Y (AI detection) | **Y (BBCH + disease models)** | Y (alarmy) | Y (pest alerts) | N | Y | Partial (rule-based grzyb) |
-| Hourly spray window | P | Y | N | N | N | **Y (spray timer)** | N | Y | N | Y | N |
+| Alerty o suszy | P | Y | Y | Y | Y | Y | Y | Y | N | Y | **Y (rule-based, faza-aware)** |
+| Alerty o przymrozku | N | N | Y | N | N | Y | Y | Y | N | Y | **Y (frost.ts + alert)** |
+| Alerty o chorobach (model) | A (partners) | Y | Y (risk maps) | N | Y (AI detection) | **Y (BBCH + disease models)** | Y (alarmy) | Y (pest alerts) | N | Y | **Y (7 modeli chorobowych)** |
+| Hourly spray window | P | Y | N | N | N | **Y (spray timer)** | N | Y | N | Y | **Y (spray-window scoring)** |
 
 ## 3. Field Management
 
@@ -54,10 +63,10 @@ Kolumny: **JD** = John Deere Ops Center · **FV** = Climate FieldView · **EOS**
 | Auto-detect pola z satelity | N | N | Y | **Y (57 krajów)** | N | Y | N | N | N | Y | N |
 | Import granic (ISOXML/SHP) | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | N |
 | Eksport granic (ISOXML/SHP) | Y | Y | Y | Y | N | Y | Y | Y | Y | Y | N |
-| Scouting / field notes z GPS | Y | Y (pins) | Y | Y (offline) | Y | Y (Scouting Trips) | Y | Y | Y | Y | N |
-| Scouting offline (telefon w polu) | Y | P | Y | Y | P | Y | Y | Y | Y | Y | PWA stub (sw.js, brak pełnego offline) |
-| Foto w polu z notatką | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | N |
-| Historia pola (multi-season) | Y | Y | Y (5 lat) | Y | Y | Y | Y (od 2002) | Y | Y | Y | P (schema ready) |
+| Scouting / field notes z GPS | Y | Y (pins) | Y | Y (offline) | Y | Y (Scouting Trips) | Y | Y | Y | Y | **Y (scouting + GPS)** |
+| Scouting offline (telefon w polu) | Y | P | Y | Y | P | Y | Y | Y | Y | Y | P (PWA sw.js; brak pełnego IndexedDB) |
+| Foto w polu z notatką | Y | Y | Y | Y | Y | Y | Y | Y | Y | Y | **Y (foto base64; TODO Blob)** |
+| Historia pola (multi-season) | Y | Y | Y (5 lat) | Y | Y | Y | Y (od 2002) | Y | Y | Y | **Y (NDVI history + backfill)** |
 
 ## 4. Prescription / Variable Rate
 
