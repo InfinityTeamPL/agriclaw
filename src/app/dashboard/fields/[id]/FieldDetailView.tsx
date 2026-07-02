@@ -117,13 +117,19 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
     toast.info('Uruchamiam analizę satelitarną. To może potrwać 10–30 sekund.');
     try {
       const res = await fetch(`/api/analysis/${field.id}`, { method: 'POST' });
+      const data = await res.json().catch(() => null);
       if (!res.ok) {
-        const data = await res.json().catch(() => null);
         toast.error(
           typeof data?.error === 'string'
             ? data.error
             : 'Analiza nie powiodła się. Spróbuj ponownie.',
         );
+        setRunning(false);
+        return;
+      }
+      // Brak bezchmurnego zdjęcia (200 + status) — to NIE sukces, nie odświeżaj.
+      if (data?.status === 'no_clear_imagery') {
+        toast.warning(data.message ?? 'Brak bezchmurnego zdjęcia w ostatnich 14 dniach.');
         setRunning(false);
         return;
       }

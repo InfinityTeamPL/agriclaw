@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
         text: { body: parsed.data.message },
       }),
       timeoutMs: 15_000,
-      retries: 1,
+      retries: 0, // POST /messages nieidempotentny — bez retry, by nie dublować wiadomości
     },
   );
 

@@ -236,7 +236,9 @@ export function FieldsList({ items }: { items: FieldListItem[] }) {
 }
 
 function FieldGridCard({ field }: { field: FieldListItem }) {
-  const ndviColor = field.ndviMean !== null ? ndviColorHex(field.ndviMean) : 'hsl(var(--muted-foreground))';
+  // Fallback MUSI być hexem — PolygonThumb używa koloru w atrybutach SVG i buduje
+  // z niego id gradientu; CSS var()/nawiasy/spacje psują render (niewidoczna miniatura).
+  const ndviColor = field.ndviMean !== null ? ndviColorHex(field.ndviMean) : '#64748b';
   const cls = field.ndviMean !== null ? classifyNdvi(field.ndviMean) : null;
   const classLabel: Record<string, string> = {
     bare: 'goła ziemia',

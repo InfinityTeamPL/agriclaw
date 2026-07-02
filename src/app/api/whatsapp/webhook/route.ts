@@ -109,12 +109,23 @@ async function handleInbound(msg: InboundMessage): Promise<void> {
   const digits = phoneDigits(msg.from);
   const last9 = digits.slice(-9);
 
-  // Znajdź użytkownika po numerze (dopasowanie po końcówce 9 cyfr).
+  // Wymagamy pełnego krajowego numeru (9 cyfr) — inaczej endsWith na krótkim/pustym
+  // ciągu mógłby dopasować CUDZE konto. Krótkie numery (shortcode) ignorujemy.
+  if (last9.length < 9) {
+    console.warn('WhatsApp: numer nadawcy za krótki do dopasowania, pomijam.');
+    return;
+  }
+
+  // Znajdź użytkownika po numerze (dopasowanie po końcówce 9 cyfr krajowych).
   const users = await prisma.user.findMany({
     where: { phoneNumber: { not: null } },
     select: { id: true, phoneNumber: true },
   });
-  const user = users.find((u) => u.phoneNumber && phoneDigits(u.phoneNumber).endsWith(last9));
+  const matches = users.filter(
+    (u) => u.phoneNumber && phoneDigits(u.phoneNumber).slice(-9) === last9,
+  );
+  // Dokładnie jedno dopasowanie — przy niejednoznaczności nie routujemy do nikogo.
+  const user = matches.length === 1 ? matches[0] : null;
 
   if (!user) {
     await sendWhatsappText(
@@ -204,12 +215,14 @@ async function sendWhatsappText(to: string, text: string): Promise<void> {
   }
   // WhatsApp limit tekstu to 4096 znaków.
   const body = text.slice(0, 4096);
+  // retries:0 — POST /messages NIE jest idempotentny; retry przy timeoucie po
+  // udanej dostawie wysłałby duplikat do rolnika.
   const res = await fetchWithTimeout(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'text', text: { body } }),
     timeoutMs: 15_000,
-    retries: 1,
+    retries: 0,
   });
   if (!res.ok) {
     console.error('WhatsApp send failed:', res.status, await res.text().catch(() => ''));
