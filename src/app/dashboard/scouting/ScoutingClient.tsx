@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cropLabel, formatDateTimePL } from '@/lib/ui/format';
+import { downscaleImageFile } from '@/lib/ui/image';
 
 interface FieldOpt {
   id: string;
@@ -242,14 +243,18 @@ function AddScoutingModal({
     );
   };
 
-  const handlePhoto = (file: File) => {
-    if (file.size > 8 * 1024 * 1024) {
-      toast.error('Zdjęcie większe niż 8 MB');
+  const handlePhoto = async (file: File) => {
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('Zdjęcie większe niż 20 MB');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => setPhoto(reader.result as string);
-    reader.readAsDataURL(file);
+    try {
+      // Downscale przed zapisaniem — chroni przed limitem body Vercela (4.5 MB)
+      // i przed pęcznieniem tabeli scoutingu (base64 w kolumnie Text).
+      setPhoto(await downscaleImageFile(file));
+    } catch {
+      toast.error('Nie udało się przetworzyć zdjęcia. Spróbuj inne.');
+    }
   };
 
   const submit = async () => {

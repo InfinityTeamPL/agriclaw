@@ -5,6 +5,7 @@ import { Camera, AlertCircle, CheckCircle2, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScanLine } from '@/components/brand/ScanLine';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
+import { downscaleImageFile } from '@/lib/ui/image';
 
 interface FieldOpt {
   id: string;
@@ -44,18 +45,21 @@ export function DiagnoseClient({ fields }: Props) {
   const [result, setResult] = useState<DiagnosisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleFile = (file: File) => {
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error('Zdjęcie większe niż 10 MB');
+  const handleFile = async (file: File) => {
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('Zdjęcie większe niż 20 MB');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setImageData(reader.result as string);
+    try {
+      // Downscale przed wysyłką — inaczej duże zdjęcie z telefonu przekracza
+      // limit body Vercela (4.5 MB) i POST /api/diagnose pada.
+      const downscaled = await downscaleImageFile(file);
+      setImageData(downscaled);
       setResult(null);
       setError(null);
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      toast.error('Nie udało się przetworzyć zdjęcia. Spróbuj inne.');
+    }
   };
 
   const submit = async () => {
