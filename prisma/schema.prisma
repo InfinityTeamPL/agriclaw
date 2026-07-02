@@ -89,6 +89,10 @@ model Field {
   polygon      Unsupported("geometry(Polygon, 4326)")
   crop         String // wheat, corn, rapeseed, barley, potato, other
   areaHectares Float                                  @map("area_hectares")
+  // Soft delete — usunięcie pola NIE MOŻE kasować księgi polowej (treatments),
+  // która jest obowiązkiem prawnym (Dz.U. 2022 poz. 2453, kontrola IJHARS).
+  // deletedAt != null → pole ukryte w UI, ale zabiegi i historia zachowane.
+  deletedAt    DateTime?                              @map("deleted_at")
   createdAt    DateTime                               @default(now()) @map("created_at")
   updatedAt    DateTime                               @updatedAt @map("updated_at")
 
@@ -100,6 +104,7 @@ model Field {
   scoutings        Scouting[]
 
   @@index([farmId])
+  @@index([farmId, deletedAt])
   @@map("fields")
 }
 

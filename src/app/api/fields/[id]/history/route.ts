@@ -17,7 +17,7 @@ export async function GET(
   const rows = await prisma.$queryRaw<Array<{ id: string; crop: string }>>`
     SELECT f.id, f.crop FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
-    WHERE f.id = ${params.id} AND fa.user_id = ${user.id}
+    WHERE f.id = ${params.id} AND fa.user_id = ${user.id} AND f.deleted_at IS NULL
     LIMIT 1
   `;
   if (rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });

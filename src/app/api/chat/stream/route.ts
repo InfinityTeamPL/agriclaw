@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   const farm = await prisma.farm.findFirst({
     where: { id: farmId, userId: user.id },
     include: {
-      fields: { select: { id: true, name: true, crop: true, areaHectares: true } },
+      fields: { where: { deletedAt: null }, select: { id: true, name: true, crop: true, areaHectares: true } },
       agents: {
         where: { status: 'READY' },
         orderBy: { createdAt: 'asc' },

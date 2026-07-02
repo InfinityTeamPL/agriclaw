@@ -27,7 +27,7 @@ export default async function FieldsPage() {
     SELECT f.id, f.name, f.crop, f.area_hectares, f.created_at,
            ST_AsGeoJSON(f.polygon)::text AS polygon
     FROM "fields" f
-    WHERE f.farm_id = ${farm.id}
+    WHERE f.farm_id = ${farm.id} AND f.deleted_at IS NULL
     ORDER BY f.created_at DESC
   `;
 

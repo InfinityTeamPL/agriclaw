@@ -7,7 +7,7 @@ async function ensureOwnership(userId: string, fieldId: string) {
   const rows = await prisma.$queryRaw<Array<{ id: string; farm_id: string }>>`
     SELECT f.id, f.farm_id FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
-    WHERE f.id = ${fieldId} AND fa.user_id = ${userId}
+    WHERE f.id = ${fieldId} AND fa.user_id = ${userId} AND f.deleted_at IS NULL
   `;
   return rows[0] ?? null;
 }
@@ -33,7 +33,7 @@ export async function GET(
   >`
     SELECT id, farm_id, name, crop, area_hectares, created_at,
            ST_AsGeoJSON(polygon)::text AS polygon
-    FROM "fields" WHERE id = ${params.id}
+    FROM "fields" WHERE id = ${params.id} AND deleted_at IS NULL
   `;
   const field = rows[0];
   if (!field) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -98,6 +98,20 @@ export async function DELETE(
   const { user } = await requireAuth();
   const ownership = await ensureOwnership(user.id, params.id);
   if (!ownership) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  // Soft delete gdy pole ma zabiegi w księdze polowej — kasowanie kaskadowe
+  // zniszczyłoby prawnie wymagany e-rejestr (IJHARS). Bez zabiegów: twarde
+  // usunięcie (czyste, np. pole dodane przez pomyłkę).
+  const treatmentCount = await prisma.treatment.count({
+    where: { fieldId: params.id },
+  });
+  if (treatmentCount > 0) {
+    await prisma.field.update({
+      where: { id: params.id },
+      data: { deletedAt: new Date() },
+    });
+    return NextResponse.json({ ok: true, softDeleted: true, treatmentsPreserved: treatmentCount });
+  }
 
   await prisma.field.delete({ where: { id: params.id } });
   return NextResponse.json({ ok: true });

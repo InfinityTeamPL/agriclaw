@@ -22,7 +22,7 @@ async function ensureFieldOwnership(userId: string, fieldId: string) {
   const rows = await prisma.$queryRaw<Array<{ id: string }>>`
     SELECT f.id FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
-    WHERE f.id = ${fieldId} AND fa.user_id = ${userId}
+    WHERE f.id = ${fieldId} AND fa.user_id = ${userId} AND f.deleted_at IS NULL
     LIMIT 1
   `;
   return rows.length > 0;

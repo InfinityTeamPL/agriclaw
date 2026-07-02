@@ -16,7 +16,7 @@ export default async function CompliancePage() {
 
   // Pobierz pola + zabiegi w tym sezonie
   const fields = await prisma.field.findMany({
-    where: { farmId: farm.id },
+    where: { farmId: farm.id, deletedAt: null },
     select: {
       id: true,
       name: true,

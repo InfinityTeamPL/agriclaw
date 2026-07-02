@@ -22,7 +22,7 @@ export async function GET() {
            ST_AsGeoJSON(f.polygon)::text AS polygon
     FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
-    WHERE fa.user_id = ${user.id}
+    WHERE fa.user_id = ${user.id} AND f.deleted_at IS NULL
     ORDER BY f.created_at DESC
   `;
 

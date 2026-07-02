@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
     const field = await prisma.field.findFirst({
       where: {
         id: parsed.data.fieldId,
+        deletedAt: null,
         farm: { userId: user.id },
       },
       select: { name: true, crop: true },

@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
            ST_X(ST_Centroid(f.polygon)) AS centroid_lon
     FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
-    WHERE fa.suspended = FALSE
+    WHERE fa.suspended = FALSE AND f.deleted_at IS NULL
   `;
 
   const cdse = getCopernicusClient();

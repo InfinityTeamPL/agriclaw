@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   // wołający mógłby wstrzyknąć rekomendację do CUDZEGO pola (IDOR na zapis). Audyt 2.2.
   if (parsed.data.field_id) {
     const field = await prisma.field.findFirst({
-      where: { id: parsed.data.field_id, farmId: farm.id },
+      where: { id: parsed.data.field_id, farmId: farm.id, deletedAt: null },
       select: { id: true },
     });
     if (!field) {

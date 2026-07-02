@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   if (!fieldId) return NextResponse.json({ error: 'field_id required' }, { status: 400 });
 
   const field = await prisma.field.findFirst({
-    where: { id: fieldId, farmId: auth.farmId },
+    where: { id: fieldId, farmId: auth.farmId, deletedAt: null },
     select: { id: true, name: true, crop: true },
   });
   if (!field) return NextResponse.json({ error: 'Field not found' }, { status: 404 });

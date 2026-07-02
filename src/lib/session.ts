@@ -31,7 +31,7 @@ export const requireFarm = cache(async function requireFarm() {
   const farm = await prisma.farm.findFirst({
     where: { userId: user.id, suspended: false },
     include: {
-      fields: { orderBy: { createdAt: 'asc' } },
+      fields: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' } },
       agents: { where: { status: { not: 'DELETED' } } },
     },
     orderBy: { createdAt: 'asc' },

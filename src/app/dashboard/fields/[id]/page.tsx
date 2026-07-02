@@ -41,7 +41,7 @@ export default async function FieldDetailPage({
            ST_Y(ST_Centroid(f.polygon)) AS centroid_lat,
            ST_X(ST_Centroid(f.polygon)) AS centroid_lon
     FROM "fields" f
-    WHERE f.id = ${fieldId} AND f.farm_id = ${farm.id}
+    WHERE f.id = ${fieldId} AND f.farm_id = ${farm.id} AND f.deleted_at IS NULL
     LIMIT 1
   `;
   const row = rows[0];

@@ -138,7 +138,7 @@ async function handleInbound(msg: InboundMessage): Promise<void> {
   const farm = await prisma.farm.findFirst({
     where: { userId: user.id, suspended: false },
     include: {
-      fields: { select: { id: true, name: true, crop: true, areaHectares: true } },
+      fields: { where: { deletedAt: null }, select: { id: true, name: true, crop: true, areaHectares: true } },
       agents: { where: { status: 'READY' }, orderBy: { createdAt: 'asc' }, take: 1 },
     },
     orderBy: { createdAt: 'asc' },
