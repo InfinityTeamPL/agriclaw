@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { verifySkillAuth } from '@/lib/skill-auth';
+import { fetchWithTimeout } from '@/lib/satellite/http';
 
 const bodySchema = z.object({
   message: z.string().min(1).max(1600),
@@ -40,11 +41,23 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  // Jeśli field_id → zapisz też jako Recommendation history
+  // Jeśli field_id → zapisz też jako Recommendation history.
+  // WAŻNE: weryfikujemy, że pole należy do farmy z tokenu (auth.farmId), inaczej
+  // wołający mógłby wstrzyknąć rekomendację do CUDZEGO pola (IDOR na zapis). Audyt 2.2.
   if (parsed.data.field_id) {
+    const field = await prisma.field.findFirst({
+      where: { id: parsed.data.field_id, farmId: farm.id },
+      select: { id: true },
+    });
+    if (!field) {
+      return NextResponse.json(
+        { error: 'Field not found in this farm' },
+        { status: 404 },
+      );
+    }
     await prisma.recommendation.create({
       data: {
-        fieldId: parsed.data.field_id,
+        fieldId: field.id,
         severity: 'medium',
         title: 'Alert od agenta',
         message: parsed.data.message,
@@ -70,7 +83,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Real send przez Meta Cloud API
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `https://graph.facebook.com/v21.0/${whatsappPhoneId}/messages`,
     {
       method: 'POST',
@@ -84,6 +97,8 @@ export async function POST(req: NextRequest) {
         type: 'text',
         text: { body: parsed.data.message },
       }),
+      timeoutMs: 15_000,
+      retries: 1,
     },
   );
 

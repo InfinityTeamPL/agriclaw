@@ -275,14 +275,14 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
 
           {/* Right cluster */}
           <div className="flex items-center gap-2">
-            <button
-              type="button"
+            <Link
+              href="/dashboard"
               className="hidden sm:inline-flex relative items-center justify-center w-10 h-10 rounded-2xl text-gray-600 hover:bg-white/70 hover:text-emerald-700 transition"
-              aria-label="Powiadomienia"
+              aria-label="Alerty i pilne sygnały"
+              title="Alerty i pilne sygnały"
             >
               <Bell className="w-[18px] h-[18px]" />
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" />
-            </button>
+            </Link>
 
             {/* Profile menu */}
             <div className="relative" ref={profileRef}>

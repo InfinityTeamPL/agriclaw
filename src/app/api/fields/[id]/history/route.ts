@@ -22,8 +22,10 @@ export async function GET(
   `;
   if (rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  // Wykluczamy odczyty mock (source='mock') — historia/trendy mają pokazywać
+  // wyłącznie realne pomiary satelitarne (patrz audyt 2.3).
   const readings = await prisma.ndviReading.findMany({
-    where: { fieldId: params.id },
+    where: { fieldId: params.id, source: { not: 'mock' } },
     orderBy: { observedAt: 'asc' },
     take: 500,
   });

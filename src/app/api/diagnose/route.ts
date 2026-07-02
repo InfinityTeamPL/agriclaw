@@ -134,6 +134,24 @@ Unikaj generycznych rad typu "stosuj fungicyd". Podaj KONKRET: substancja czynna
     );
   }
 
+  // Walidacja treści: pusta {} albo brak kluczowego pola `diagnoza` to NIE sukces
+  // (model odpowiedział niczym). Wcześniej zwracaliśmy ok:true z diagnosis:{}. Audyt (live).
+  if (
+    !diagnosis ||
+    typeof diagnosis !== 'object' ||
+    Object.keys(diagnosis).length === 0 ||
+    !diagnosis.diagnoza
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          'AgroAgent nie rozpoznał zawartości zdjęcia. Zrób ostrzejsze zbliżenie liścia (20-30 cm) w dobrym świetle i spróbuj ponownie.',
+        rawResponse: rawResponse.slice(0, 300),
+      },
+      { status: 502 },
+    );
+  }
+
   // Log event
   const farmSelect = await prisma.farm.findFirst({
     where: { userId: user.id },

@@ -6,20 +6,28 @@
 // Docs: https://documentation.dataspace.copernicus.eu/APIs/SentinelHub/Process.html
 
 import { fromArrayBuffer } from 'geotiff';
+import { fetchWithTimeout } from './http';
 
 const TOKEN_URL =
   'https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token';
 const PROCESS_URL = 'https://sh.dataspace.copernicus.eu/api/v1/process';
 
+// Per-pikselowa maska chmur z pasma Scene Classification (SCL) Sentinel-2 L2A.
+// Odrzucane klasy: 3 = cień chmury, 8 = chmura (średnie prawdopodobieństwo),
+// 9 = chmura (wysokie), 10 = cirrus, 11 = śnieg/lód. `dataMask` sam w sobie
+// oznacza tylko brak danych/poza footprintem — NIE chmury. Bez tego chmury nad
+// polem trafiają do średniej NDVI i fałszują wynik (patrz audyt 1.2).
+const SCL_CLOUD_TEST = 's.SCL===3||s.SCL===8||s.SCL===9||s.SCL===10||s.SCL===11';
+
 const NDVI_EVALSCRIPT = `//VERSION=3
 function setup() {
   return {
-    input: ["B04", "B08", "dataMask"],
+    input: ["B04", "B08", "SCL", "dataMask"],
     output: { bands: 1, sampleType: "FLOAT32" }
   };
 }
 function evaluatePixel(s) {
-  if (s.dataMask === 0) return [NaN];
+  if (s.dataMask === 0 || ${SCL_CLOUD_TEST}) return [NaN];
   return [(s.B08 - s.B04) / (s.B08 + s.B04)];
 }`;
 
@@ -70,12 +78,12 @@ function evaluatePixel(s) {
 const MULTI_INDEX_EVALSCRIPT = `//VERSION=3
 function setup() {
   return {
-    input: ["B04", "B05", "B08", "B11", "dataMask"],
+    input: ["B04", "B05", "B08", "B11", "SCL", "dataMask"],
     output: { bands: 4, sampleType: "FLOAT32" }
   };
 }
 function evaluatePixel(s) {
-  if (s.dataMask === 0) return [NaN, NaN, NaN, NaN];
+  if (s.dataMask === 0 || ${SCL_CLOUD_TEST}) return [NaN, NaN, NaN, NaN];
   const ndvi = (s.B08 - s.B04) / (s.B08 + s.B04);
   const ndre = (s.B08 - s.B05) / (s.B08 + s.B05);
   const ndwi = (s.B08 - s.B11) / (s.B08 + s.B11);
@@ -106,25 +114,25 @@ function evaluatePixel(s) {
 function buildColorRampEvalscript(layer: 'ndvi' | 'ndre' | 'ndwi' | 'savi'): string {
   const configs = {
     ndvi: {
-      bands: '["B04", "B08", "dataMask"]',
+      bands: '["B04", "B08", "SCL", "dataMask"]',
       formula: 'const v = (s.B08 - s.B04) / (s.B08 + s.B04);',
       stops:
         '[[-0.2, [127,29,29]], [0.1, [220,38,38]], [0.25, [249,115,22]], [0.4, [250,204,21]], [0.55, [132,204,22]], [0.7, [34,197,94]], [0.85, [20,83,45]]]',
     },
     ndre: {
-      bands: '["B05", "B08", "dataMask"]',
+      bands: '["B05", "B08", "SCL", "dataMask"]',
       formula: 'const v = (s.B08 - s.B05) / (s.B08 + s.B05);',
       stops:
         '[[0, [220,38,38]], [0.15, [249,115,22]], [0.25, [250,204,21]], [0.35, [132,204,22]], [0.45, [20,83,45]]]',
     },
     ndwi: {
-      bands: '["B08", "B11", "dataMask"]',
+      bands: '["B08", "B11", "SCL", "dataMask"]',
       formula: 'const v = (s.B08 - s.B11) / (s.B08 + s.B11);',
       stops:
         '[[-0.2, [220,38,38]], [0, [250,204,21]], [0.15, [56,189,248]], [0.35, [30,64,175]]]',
     },
     savi: {
-      bands: '["B04", "B08", "dataMask"]',
+      bands: '["B04", "B08", "SCL", "dataMask"]',
       formula: 'const L = 0.5; const v = ((s.B08 - s.B04) / (s.B08 + s.B04 + L)) * (1 + L);',
       stops:
         '[[-0.2, [127,29,29]], [0.1, [220,38,38]], [0.3, [249,115,22]], [0.5, [250,204,21]], [0.7, [132,204,22]], [0.85, [20,83,45]]]',
@@ -134,7 +142,7 @@ function buildColorRampEvalscript(layer: 'ndvi' | 'ndre' | 'ndwi' | 'savi'): str
   return `//VERSION=3
 function setup() { return { input: ${c.bands}, output: { bands: 4, sampleType: "UINT8" } }; }
 function evaluatePixel(s) {
-  if (s.dataMask === 0) return [0,0,0,0];
+  if (s.dataMask === 0 || ${SCL_CLOUD_TEST}) return [0,0,0,0];
   ${c.formula}
   const stops = ${c.stops};
   for (let i = 0; i < stops.length - 1; i++) {
@@ -172,10 +180,12 @@ export class CopernicusClient {
       client_id: this.clientId,
       client_secret: this.clientSecret,
     });
-    const res = await fetch(TOKEN_URL, {
+    const res = await fetchWithTimeout(TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body,
+      timeoutMs: 15_000,
+      retries: 2,
     });
     if (!res.ok) {
       throw new Error(`CDSE auth failed: ${res.status} ${await res.text()}`);
@@ -244,10 +254,12 @@ export class CopernicusClient {
       },
       evalscript: LANDSAT_THERMAL_EVALSCRIPT,
     };
-    const res = await fetch(PROCESS_URL, {
+    const res = await fetchWithTimeout(PROCESS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(payload),
+      timeoutMs: 30_000,
+      retries: 2,
     });
     if (!res.ok) throw new Error(`CDSE Landsat thermal failed: ${res.status} ${await res.text()}`);
     return res.arrayBuffer();
@@ -298,13 +310,15 @@ export class CopernicusClient {
       },
       evalscript: RADAR_EVALSCRIPT,
     };
-    const res = await fetch(PROCESS_URL, {
+    const res = await fetchWithTimeout(PROCESS_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
+      timeoutMs: 30_000,
+      retries: 2,
     });
     if (!res.ok) {
       throw new Error(`CDSE S-1 failed: ${res.status} ${await res.text()}`);
@@ -335,6 +349,8 @@ export class CopernicusClient {
                 to: `${dateTo}T23:59:59Z`,
               },
               maxCloudCoverage: opts.maxCloudCoverage ?? 30,
+              // Wybierz najmniej zachmurzoną scenę z okna, nie najnowszą.
+              mosaickingOrder: 'leastCC',
             },
           },
         ],
@@ -349,13 +365,15 @@ export class CopernicusClient {
       evalscript,
     };
 
-    const res = await fetch(PROCESS_URL, {
+    const res = await fetchWithTimeout(PROCESS_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
+      timeoutMs: 30_000,
+      retries: 2,
     });
     if (!res.ok) {
       throw new Error(`CDSE process failed: ${res.status} ${await res.text()}`);
@@ -394,6 +412,7 @@ export class CopernicusClient {
             dataFilter: {
               timeRange: { from: `${dateFrom}T00:00:00Z`, to: `${dateTo}T23:59:59Z` },
               maxCloudCoverage: opts.maxCloudCoverage ?? 30,
+              mosaickingOrder: 'leastCC',
             },
           },
         ],
@@ -405,10 +424,12 @@ export class CopernicusClient {
       },
       evalscript: rampScripts[layer],
     };
-    const res = await fetch(PROCESS_URL, {
+    const res = await fetchWithTimeout(PROCESS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify(payload),
+      timeoutMs: 30_000,
+      retries: 2,
     });
     if (!res.ok) throw new Error(`CDSE PNG ${layer} failed: ${res.status} ${await res.text()}`);
     return res.arrayBuffer();
@@ -439,6 +460,7 @@ export class CopernicusClient {
                 to: `${dateTo}T23:59:59Z`,
               },
               maxCloudCoverage: opts.maxCloudCoverage ?? 20,
+              mosaickingOrder: 'leastCC',
             },
           },
         ],
@@ -451,13 +473,15 @@ export class CopernicusClient {
       evalscript: TRUE_COLOR_EVALSCRIPT,
     };
 
-    const res = await fetch(PROCESS_URL, {
+    const res = await fetchWithTimeout(PROCESS_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
+      timeoutMs: 30_000,
+      retries: 2,
     });
     if (!res.ok) {
       throw new Error(`CDSE true-color failed: ${res.status} ${await res.text()}`);
@@ -521,10 +545,21 @@ export async function extractRadarValues(
 
 /**
  * Factory z env vars. Throws jeśli brak credentials.
+ *
+ * Singleton na poziomie modułu — dzięki temu cache tokenu OAuth (this.token)
+ * przeżywa między żądaniami w ramach ciepłej lambdy, zamiast pobierać nowy token
+ * przy każdym wejściu na mapę pola (patrz audyt 2. — perf CDSE).
  */
+let cachedClient: CopernicusClient | null = null;
+let cachedClientKey = '';
+
 export function getCopernicusClient(): CopernicusClient {
-  return new CopernicusClient(
-    process.env.CDSE_CLIENT_ID ?? '',
-    process.env.CDSE_CLIENT_SECRET ?? '',
-  );
+  const id = process.env.CDSE_CLIENT_ID ?? '';
+  const secret = process.env.CDSE_CLIENT_SECRET ?? '';
+  const key = `${id}:${secret}`;
+  if (!cachedClient || cachedClientKey !== key) {
+    cachedClient = new CopernicusClient(id, secret);
+    cachedClientKey = key;
+  }
+  return cachedClient;
 }

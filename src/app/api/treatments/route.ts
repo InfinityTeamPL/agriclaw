@@ -6,10 +6,20 @@ import { z } from 'zod';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 
+// Data zabiegu: pełny ISO datetime LUB czysta data YYYY-MM-DD. Zakotwiczony regex
+// (^...$) + sprawdzenie kalendarza (Date.parse) — inaczej '2026-99-99' czy
+// '2026-07-02cokolwiek' przechodziły i wywalały Prisma nieobsłużonym 500. Audyt 2.MEDIUM.
+const dateOnlyOrIso = z
+  .string()
+  .refine(
+    (v) => (/^\d{4}-\d{2}-\d{2}$/.test(v) || !Number.isNaN(Date.parse(v))) && !Number.isNaN(Date.parse(v)),
+    'Nieprawidłowa data (oczekiwano YYYY-MM-DD lub pełnego ISO datetime)',
+  );
+
 const treatmentSchema = z.object({
   fieldId: z.string().uuid(),
-  performedAt: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}/)),
-  plannedAt: z.string().datetime().nullable().optional(),
+  performedAt: dateOnlyOrIso,
+  plannedAt: dateOnlyOrIso.nullable().optional(),
   type: z.enum(['spray', 'fertilizer', 'sowing', 'harvest', 'tillage', 'irrigation', 'mowing', 'other']),
   purpose: z.string().max(100).nullable().optional(),
   productName: z.string().min(1).max(200),

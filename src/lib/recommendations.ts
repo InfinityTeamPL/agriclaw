@@ -43,6 +43,16 @@ export function generateRecommendation(
   const cropLabel = CROP_LABELS[crop] ?? 'uprawy';
   const ndviDrop = ndviPrevious !== undefined ? ndviPrevious - ndviMean : 0;
 
+  // Okno naturalnego dojrzewania (senescencja): spadek NDVI jest wtedy NORMALNY
+  // (żółknięcie łanu), a nie objaw choroby. Zboża i rzepak dojrzewają VII-VIII;
+  // kukurydza/ziemniak/burak zostają zielone dłużej (zbiór IX-X). Bez monthOfYear
+  // guard się nie aktywuje (zachowanie zachowawcze). Patrz audyt 1.3 / 2.14.
+  const cerealLike = crop === 'wheat' || crop === 'barley' || crop === 'rapeseed';
+  const isSenescenceWindow =
+    input.monthOfYear !== undefined &&
+    cerealLike &&
+    (input.monthOfYear === 7 || input.monthOfYear === 8);
+
   // HIGH: silny stres suszowy + zła prognoza
   if (
     ndviMean < 0.35 &&
@@ -59,14 +69,25 @@ export function generateRecommendation(
     };
   }
 
-  // MEDIUM: spadek NDVI bez suszy → podejrzenie choroby
+  // Spadek NDVI w oknie dojrzewania → to senescencja, NIE choroba. Nie zalecaj ŚOR.
+  if (ndviDrop > 0.12 && daysWithoutRain < 4 && isSenescenceWindow) {
+    return {
+      severity: 'low',
+      title: 'Naturalne dojrzewanie łanu',
+      message: `NDVI spadł o ${ndviDrop.toFixed(2)}, ale to okres dojrzewania ${cropLabel} (lipiec-sierpień). Spadek to najprawdopodobniej naturalne żółknięcie łanu, nie choroba.`,
+      action:
+        'Nie ma potrzeby oprysku tylko z powodu spadku NDVI. Jeśli widzisz nietypowe plamy/przebarwienia — zrób zdjęcie (diagnoza z kamery). Planuj termin zbioru.',
+    };
+  }
+
+  // MEDIUM: spadek NDVI bez suszy poza dojrzewaniem → PODEJRZENIE choroby (do potwierdzenia)
   if (ndviDrop > 0.12 && daysWithoutRain < 4) {
     return {
       severity: 'medium',
       title: 'Możliwa choroba grzybowa',
-      message: `NDVI spadł o ${ndviDrop.toFixed(2)} w ostatnim okresie przy normalnej wilgotności. Typowy objaw infekcji ${cropLabel === 'pszenicy' ? '(rdza, mączniak)' : '(plamistość liści, fuzarioza)'}.`,
+      message: `NDVI spadł o ${ndviDrop.toFixed(2)} w ostatnim okresie przy normalnej wilgotności. Może wskazywać na infekcję ${cropLabel === 'pszenicy' ? '(rdza, mączniak, septorioza)' : '(plamistość liści, fuzarioza)'} — ale najpierw potwierdź.`,
       action:
-        'Sprawdź pole wizualnie w 2-3 miejscach. Rozważ fungicyd triazolowy profilaktycznie w ciągu 3 dni. Unikaj oprysku przy wietrze >15 km/h.',
+        'Sprawdź pole wizualnie w 2-3 miejscach lub zrób zdjęcie do diagnozy z kamery. Fungicyd stosuj TYLKO po potwierdzeniu choroby — dobór substancji zależy od uprawy i patogenu (nie stosuj „w ciemno"). Unikaj oprysku przy wietrze >15 km/h.',
     };
   }
 

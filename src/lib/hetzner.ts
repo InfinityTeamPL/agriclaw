@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from "@/lib/satellite/http";
+
 const HETZNER_API = "https://api.hetzner.cloud/v1";
 const HETZNER_TOKEN = process.env.HETZNER_API_TOKEN || "";
 
@@ -23,13 +25,15 @@ async function hetznerRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const res = await fetch(`${HETZNER_API}${endpoint}`, {
+  const res = await fetchWithTimeout(`${HETZNER_API}${endpoint}`, {
     ...options,
     headers: {
       Authorization: `Bearer ${HETZNER_TOKEN}`,
       "Content-Type": "application/json",
       ...options.headers,
     },
+    timeoutMs: 20_000,
+    retries: 1,
   });
 
   if (!res.ok) {

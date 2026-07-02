@@ -47,4 +47,32 @@ describe('generateRecommendation', () => {
     });
     expect(rec.severity).toBe('medium');
   });
+
+  it('NIE diagnozuje choroby przy spadku NDVI w oknie dojrzewania (lipiec, pszenica)', () => {
+    const rec = generateRecommendation({
+      crop: 'wheat',
+      ndviMean: 0.5,
+      ndviPrevious: 0.7,
+      daysWithoutRain: 1,
+      avgEt0Next7: 2.5,
+      monthOfYear: 7, // dojrzewanie — spadek NDVI to senescencja, nie choroba
+    });
+    expect(rec.severity).toBe('low');
+    expect(rec.title.toLowerCase()).toContain('dojrzewanie');
+    expect(rec.action.toLowerCase()).not.toContain('fungicyd triazolowy');
+  });
+
+  it('diagnozuje możliwą chorobę przy spadku NDVI poza dojrzewaniem (maj, pszenica)', () => {
+    const rec = generateRecommendation({
+      crop: 'wheat',
+      ndviMean: 0.5,
+      ndviPrevious: 0.7,
+      daysWithoutRain: 1,
+      avgEt0Next7: 2.5,
+      monthOfYear: 5, // pełnia wegetacji — podejrzenie choroby zasadne
+    });
+    expect(rec.severity).toBe('medium');
+    // Nie zaleca konkretnego środka „w ciemno"
+    expect(rec.action.toLowerCase()).toContain('potwierdzeniu');
+  });
 });

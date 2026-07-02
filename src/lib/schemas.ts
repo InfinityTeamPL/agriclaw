@@ -8,14 +8,27 @@ export const polygonSchema = z
     type: z.literal('Polygon'),
     coordinates: z
       .array(
-        z.array(z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)])),
+        z
+          .array(z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)]))
+          .max(10_000, 'Zbyt wiele punktów w pierścieniu poligonu'),
       )
-      .min(1),
+      .min(1)
+      .max(50, 'Zbyt wiele pierścieni w poligonie'),
   })
   .refine(
     (poly) => poly.coordinates[0].length >= 4,
     'Polygon musi mieć min 4 punkty (z zamknięciem)',
-  );
+  )
+  .refine((poly) => {
+    // Każdy pierścień musi być domknięty: pierwszy punkt == ostatni. Niedomknięty
+    // ring wywala ST_GeomFromGeoJSON w PostGIS (nieobsłużony 500). Audyt 2.MEDIUM.
+    return poly.coordinates.every((ring) => {
+      if (ring.length < 4) return false;
+      const first = ring[0];
+      const last = ring[ring.length - 1];
+      return first[0] === last[0] && first[1] === last[1];
+    });
+  }, 'Każdy pierścień poligonu musi być domknięty (pierwszy punkt = ostatni)');
 
 export const cropSchema = z.enum([
   'wheat',
@@ -58,7 +71,8 @@ export const chatMessageSchema = z.object({
   farmId: z.string().uuid(),
   conversationId: z.string().uuid().optional(),
   message: z.string().min(1).max(4000),
-  image: z.string().startsWith('data:image/').optional(), // opcjonalnie base64 z kamery
+  // Limit ~8 MB na base64 z kamery — chroni przed wyczerpaniem pamięci funkcji.
+  image: z.string().startsWith('data:image/').max(8_000_000).optional(),
 });
 
 export const geocodeSchema = z.object({

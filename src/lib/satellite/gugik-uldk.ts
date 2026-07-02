@@ -6,6 +6,8 @@
 //
 // Rolnik ma wszystkie numery działek w swoim wniosku JPO (ARiMR eWniosek+).
 
+import { fetchWithTimeout } from './http';
+
 const ULDK_BASE = 'https://uldk.gugik.gov.pl/';
 
 export interface ParcelResult {
@@ -28,11 +30,15 @@ export async function fetchParcelByTeryt(teryt: string): Promise<ParcelResult | 
   const cleanTeryt = teryt.trim();
   if (!cleanTeryt) return null;
 
-  // Pobierz geometrię + powierzchnię (API ULDK zwraca plain text)
-  const url = `${ULDK_BASE}?request=GetParcelById&id=${encodeURIComponent(cleanTeryt)}&result=geom_wkt,teryt`;
+  // Pobierz geometrię + powierzchnię (API ULDK zwraca plain text).
+  // srid=4326 → współrzędne w WGS84 (stopnie), inaczej ULDK zwraca EPSG:2180 (metry),
+  // których nasz parser/area/centroid nie obsługuje. Patrz audyt 2.7.
+  const url = `${ULDK_BASE}?request=GetParcelById&id=${encodeURIComponent(cleanTeryt)}&result=geom_wkt,teryt&srid=4326`;
 
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     headers: { 'User-Agent': 'AgriClaw/1.0 (contact@infinityteam.io)' },
+    timeoutMs: 12_000,
+    retries: 1,
   });
   if (!res.ok) throw new Error(`ULDK HTTP ${res.status}`);
 
@@ -40,8 +46,9 @@ export async function fetchParcelByTeryt(teryt: string): Promise<ParcelResult | 
   const lines = text.trim().split('\n');
 
   // Format odpowiedzi:
-  //   0            <- status code (0 = success)
-  //   <WKT>|<teryt>  <- dane oddzielone pionową kreską
+  //   0                             <- status code (0 = success)
+  //   SRID=4326;<WKT>|<teryt>       <- pola oddzielone pionową kreską; geom ma
+  //                                    prefiks SRID=<n>; który trzeba zdjąć.
   if (lines[0] !== '0') {
     return null;
   }
@@ -49,10 +56,10 @@ export async function fetchParcelByTeryt(teryt: string): Promise<ParcelResult | 
   const dataLine = lines[1];
   if (!dataLine) return null;
 
-  const parts = dataLine.split(';'); // ULDK separator for multi-field
-  const wktPart = parts[0].split('|')[0] || parts[0];
+  // Pola rozdzielone '|' (NIE ';' — średnik jest częścią prefiksu SRID w WKT).
+  const wktPart = dataLine.split('|')[0];
 
-  // Parse WKT POLYGON / MULTIPOLYGON
+  // Parse WKT POLYGON / MULTIPOLYGON (parseWkt zdejmuje prefiks SRID=<n>;)
   const polygon = parseWkt(wktPart);
   if (!polygon) return null;
 
@@ -75,11 +82,13 @@ export async function fetchParcelByCoords(
   lat: number,
   lon: number,
 ): Promise<ParcelResult | null> {
-  // ULDK: GetParcelByXY (WGS84)
-  const url = `${ULDK_BASE}?request=GetParcelByXY&xy=${lon},${lat},4326&result=geom_wkt,teryt`;
+  // ULDK: GetParcelByXY. xy w WGS84 (4326) + srid=4326 dla geometrii wyjściowej.
+  const url = `${ULDK_BASE}?request=GetParcelByXY&xy=${lon},${lat},4326&result=geom_wkt,teryt&srid=4326`;
 
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     headers: { 'User-Agent': 'AgriClaw/1.0 (contact@infinityteam.io)' },
+    timeoutMs: 12_000,
+    retries: 1,
   });
   if (!res.ok) return null;
 
@@ -110,8 +119,9 @@ export async function fetchParcelByCoords(
 // WKT → GeoJSON parser (minimalny dla POLYGON i MULTIPOLYGON)
 // ────────────────────────────────────────────────────────────
 
-function parseWkt(wkt: string): GeoJSON.Polygon | GeoJSON.MultiPolygon | null {
-  const trimmed = wkt.trim();
+export function parseWkt(wkt: string): GeoJSON.Polygon | GeoJSON.MultiPolygon | null {
+  // ULDK zwraca EWKT z prefiksem układu, np. "SRID=4326;POLYGON((...))" — zdejmujemy go.
+  const trimmed = wkt.trim().replace(/^SRID=\d+;/i, '').trim();
   if (trimmed.startsWith('POLYGON')) {
     return parsePolygon(trimmed);
   }

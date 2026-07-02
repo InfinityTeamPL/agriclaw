@@ -2,6 +2,7 @@
 // Jeśli agent.status === 'READY' ale gateway nie odpowiada, mark jako 'ERROR'.
 
 import { NextRequest, NextResponse } from 'next/server';
+import { timingSafeEqual } from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { OpenClawClient } from '@/lib/openclaw';
 
@@ -9,12 +10,14 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
 
 function isAuthorized(req: NextRequest): boolean {
+  // Tylko Bearer CRON_SECRET (timing-safe). Bez skrótu na x-vercel-cron (podrabialny).
   const secret = process.env.CRON_SECRET;
   if (!secret) return process.env.NODE_ENV === 'development';
   const auth = req.headers.get('authorization') || '';
-  if (auth === `Bearer ${secret}`) return true;
-  const vercelSig = req.headers.get('x-vercel-cron');
-  return Boolean(vercelSig);
+  const expected = `Bearer ${secret}`;
+  const a = Buffer.from(auth);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 export async function GET(req: NextRequest) {

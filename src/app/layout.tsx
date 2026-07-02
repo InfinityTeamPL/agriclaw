@@ -22,7 +22,8 @@ export const viewport: Viewport = {
   themeColor: '#16a34a',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
+  // NIE blokujemy powiększania (usunięto maximumScale:1) — WCAG 1.4.4. Rolnik
+  // w słońcu / w rękawicach / starszy musi móc powiększyć drobny tekst i zdjęcia.
 };
 
 export default function RootLayout({

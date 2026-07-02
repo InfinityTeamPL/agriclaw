@@ -5,6 +5,8 @@
 //
 // Docs: https://developers.planet.com/docs/apis/data/
 
+import { fetchWithTimeout } from './http';
+
 const PLANET_API = 'https://api.planet.com';
 
 export interface PlanetItem {
@@ -49,13 +51,15 @@ export async function searchPlanetItems(
   };
 
   const url = `${PLANET_API}/data/v1/quick-search?_sort=acquired+desc&_page_size=${limit}`;
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `api-key ${apiKey}`,
     },
     body: JSON.stringify(body),
+    timeoutMs: 20_000,
+    retries: 1,
   });
 
   if (!res.ok) {
@@ -92,8 +96,10 @@ export async function fetchPlanetThumbnail(
   item: PlanetItem,
 ): Promise<{ dataUrl: string; bytes: number }> {
   const url = `${item.thumbnailUrl}?width=512`;
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     headers: { Authorization: `api-key ${apiKey}` },
+    timeoutMs: 20_000,
+    retries: 1,
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');

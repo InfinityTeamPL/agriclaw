@@ -5,6 +5,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 
+/**
+ * Escapuje pojedynczą komórkę CSV:
+ * - podwaja cudzysłowy ("" wg RFC 4180) — inaczej nazwa typu `Preparat "X" 460 EC`
+ *   rozjeżdża wszystkie kolumny wiersza (dokument idzie do kontroli IJHARS/ARiMR),
+ * - usuwa CR/LF,
+ * - prefiksuje apostrofem wartości zaczynające się od = + - @ (ochrona przed CSV
+ *   formula injection w Excelu). Audyt 2.MEDIUM.
+ */
+function csvCell(value: unknown): string {
+  let s = String(value ?? '').replace(/[\r\n]+/g, ' ');
+  if (/^[=+\-@]/.test(s)) s = `'${s}`;
+  return `"${s.replace(/"/g, '""')}"`;
+}
+
 export async function GET(req: NextRequest) {
   const { user } = await requireAuth();
   const format = req.nextUrl.searchParams.get('format') ?? 'csv';
@@ -93,12 +107,12 @@ export async function GET(req: NextRequest) {
         r.weather_wind ?? '',
         r.weather_humidity ?? '',
         r.pre_harvest_interval_days ?? '',
-        (r.notes ?? '').replace(/"/g, '""').replace(/\n/g, ' '),
+        r.notes ?? '',
       ]
-        .map((v) => `"${String(v)}"`)
+        .map(csvCell)
         .join(','),
     );
-    const csv = [header.map((h) => `"${h}"`).join(','), ...rowsCsv].join('\r\n');
+    const csv = [header.map(csvCell).join(','), ...rowsCsv].join('\r\n');
     const filename = `ksiega-polowa-${new Date().toISOString().slice(0, 10)}.csv`;
     return new NextResponse('\uFEFF' + csv, {
       headers: {

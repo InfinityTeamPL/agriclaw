@@ -2,6 +2,8 @@
 // Używamy forecast + daily aggregates + ET0 (evapotranspiration FAO)
 // Docs: https://open-meteo.com/en/docs
 
+import { fetchWithTimeout } from './http';
+
 const API_URL = 'https://api.open-meteo.com/v1/forecast';
 
 export interface WeatherDaily {
@@ -165,7 +167,7 @@ export async function fetchSprayForecast(
     timezone: 'auto',
     forecast_days: '3',
   });
-  const res = await fetch(`${API_URL}?${params.toString()}`);
+  const res = await fetchWithTimeout(`${API_URL}?${params.toString()}`, { timeoutMs: 15_000, retries: 1 });
   if (!res.ok) throw new Error(`Open-Meteo spray forecast failed: ${res.status}`);
   const data = (await res.json()) as {
     hourly?: {
@@ -232,7 +234,7 @@ export async function fetchWeatherForecast(
     forecast_days: String(Math.min(Math.max(days, 1), 14)),
   });
 
-  const res = await fetch(`${API_URL}?${params.toString()}`);
+  const res = await fetchWithTimeout(`${API_URL}?${params.toString()}`, { timeoutMs: 15_000, retries: 1 });
   if (!res.ok) {
     throw new Error(`Open-Meteo failed: ${res.status}`);
   }
