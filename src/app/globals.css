@@ -4,70 +4,66 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
+    /* ─── Paleta „stacja naziemna" (techniczna, nie cream) ─────────────────
+       Baglo: chłodna niemal-biel z zielonym podtonem (papier ewidencyjny),
+       atrament humusowy, primary = spektralna zieleń z rampy NDVI. */
+    --background: 140 24% 99%;
+    --foreground: 155 28% 9%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 155 28% 9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 142 76% 36%;
-    --primary-foreground: 355 100% 100%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 142 76% 36%;
-    --radius: 0.5rem;
-  }
+    --popover-foreground: 155 28% 9%;
+    --primary: 142 62% 29%; /* spektralna zieleń #1c7a3c */
+    --primary-foreground: 140 40% 98%;
+    --secondary: 150 16% 95%;
+    --secondary-foreground: 155 25% 14%;
+    --muted: 150 14% 95%;
+    --muted-foreground: 155 10% 40%;
+    --accent: 150 16% 94%;
+    --accent-foreground: 155 25% 14%;
+    --destructive: 12 78% 44%; /* oxide / alert */
+    --destructive-foreground: 0 0% 100%;
+    --border: 150 12% 88%;
+    --input: 150 12% 86%;
+    --ring: 142 62% 29%;
+    --radius: 0.625rem;
 
-  .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 142 71% 45%;
-    --primary-foreground: 144 80% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 142 71% 45%;
+    /* ─── Sygnały agronomiczne — te same kolory co dane ────────────────── */
+    --signal-frost: 205 68% 45%; /* przymrozek — lód */
+    --signal-heat: 32 88% 48%; /* upał — amber */
+    --signal-drought: 16 82% 42%; /* susza — oxide */
+    --signal-healthy: 142 62% 38%; /* zdrowie — NDVI zieleń */
+    --signal-disease: 280 45% 45%; /* choroba — fiolet stonowany */
+
+    /* ─── Rampa NDVI (sygnatura marki) — kanoniczna, patrz lib/design ───── */
+    --ndvi-ramp: linear-gradient(
+      90deg,
+      #7f1d1d 0%, #dc2626 29%, #f97316 43%, #facc15 57%, #84cc16 71%, #16a34a 86%, #14532d 100%
+    );
+
+    /* ─── Cienie tokenowe (miękkie, techniczne — nie „glow") ───────────── */
+    --shadow-card: 0 1px 2px rgb(15 26 20 / 0.04), 0 8px 24px -16px rgb(15 26 20 / 0.18);
+    --shadow-pop: 0 12px 40px -16px rgb(15 26 20 / 0.28);
   }
 
   * {
     @apply border-border;
   }
   html {
-    /* Rezerwujemy szerokość dla scrollbara — zapobiega skakaniu layout
-       gdy scrollbar pojawia się/znika (np. przy zmianie strony z/bez overflow). */
     scrollbar-gutter: stable;
-    /* Zawsze pokazuj scrollbar — stabilna szerokość viewport na wszystkich stronach */
     overflow-y: scroll;
-    /* Wyłączamy CSS anchor — to on powoduje przeskakiwanie gdy element
-       nad viewportem zmienia wysokość (np. obraz się ładuje). */
     overflow-anchor: none;
   }
   body {
     @apply bg-background text-foreground;
-    /* Uniemożliwiamy horizontal scroll — motion animations mogą chwilowo
-       wypchnąć poza viewport podczas mount. */
     overflow-x: clip;
+    font-feature-settings: 'cv02', 'cv03', 'cv04';
   }
-  /* Redukcja ruchu dla użytkowników z `prefers-reduced-motion` */
+  /* Telemetria: liczby o stałej szerokości — wszystkie wartości NDVI/ha/daty */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -77,5 +73,52 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+}
+
+@layer components {
+  /* ─── Sygnatura: pasek rampy NDVI (keyline pod logo, górna krawędź kart) ── */
+  .ndvi-keyline {
+    background: var(--ndvi-ramp);
+  }
+
+  /* ─── Metadane HUD — uppercase mono, jak odczyt z sensora ──────────────── */
+  .hud-label {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 0.625rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* ─── Toast w stylu marki (papier + mono timestamp) ────────────────────── */
+  .agri-toast {
+    font-family: var(--font-sans), system-ui, sans-serif;
+    border-radius: var(--radius);
+    border: 1px solid hsl(var(--border));
+    box-shadow: var(--shadow-pop);
+  }
+}
+
+@layer utilities {
+  /* ─── Scan-sweep: sygnaturowy stan ładowania (linia skanu po polu) ─────── */
+  @keyframes agri-scan {
+    0% {
+      transform: translateX(-120%);
+    }
+    100% {
+      transform: translateX(120%);
+    }
+  }
+  .animate-scan {
+    animation: agri-scan 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+
+  /* Delikatna siatka kartograficzna jako tło sekcji (zamiast blobów) */
+  .cadastral-grid {
+    background-image:
+      linear-gradient(hsl(var(--foreground) / 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--foreground) / 0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
   }
 }
