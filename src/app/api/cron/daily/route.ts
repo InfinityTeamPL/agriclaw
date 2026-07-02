@@ -45,6 +45,7 @@ export async function GET(req: NextRequest) {
     fields_processed: 0,
     fields_failed: 0,
     fields_skipped_no_imagery: 0,
+    fields_deferred: 0,
     alerts_queued: 0,
     started_at: new Date().toISOString(),
   };
@@ -71,8 +72,16 @@ export async function GET(req: NextRequest) {
   const cdse = getCopernicusClient();
   const today = new Date().toISOString().slice(0, 10);
   const fortnightAgo = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10);
+  const month = new Date().getMonth() + 1;
 
-  for (const field of fields) {
+  // Przetwarzanie równoległe w partiach + budżet czasu. Sekwencyjna pętla (CDSE
+  // 5-20 s/pole) nie zeskalowałaby ponad ~20-30 pól przy maxDuration 300 s — reszta
+  // ginęła bez analizy. Teraz partie po CONCURRENCY, a przy zbliżaniu się do deadline
+  // przerywamy i raportujemy fields_deferred (dokończy kolejny cron). Audyt 2.9.
+  const CONCURRENCY = 6;
+  const deadline = Date.now() + 250_000;
+
+  async function processField(field: (typeof fields)[number]): Promise<void> {
     try {
       const polygon = JSON.parse(field.polygon) as GeoJSON.Polygon;
       const [tiff, weather] = await Promise.all([
@@ -96,7 +105,7 @@ export async function GET(req: NextRequest) {
             detail: `Pole ${field.id}: brak bezchmurnej sceny Sentinel-2 w oknie 14 dni — pominięto odczyt NDVI.`,
           },
         });
-        continue;
+        return;
       }
 
       const prev = await prisma.ndviReading.findFirst({
@@ -123,7 +132,7 @@ export async function GET(req: NextRequest) {
         ndviPrevious: prev?.ndviMean,
         daysWithoutRain: weather.daysWithoutRain,
         avgEt0Next7: weather.avgEt0Next7,
-        monthOfYear: new Date().getMonth() + 1,
+        monthOfYear: month,
       });
 
       if (rec.severity !== 'none') {
@@ -154,16 +163,27 @@ export async function GET(req: NextRequest) {
     } catch (err) {
       results.fields_failed++;
       console.error(`Cron daily: pole ${field.id} — błąd:`, err);
-      await prisma.event.create({
-        data: {
-          farmId: field.farm_id,
-          type: 'cron.error',
-          title: 'Błąd dziennej analizy',
-          detail: String(err),
-        },
-      });
+      await prisma.event
+        .create({
+          data: {
+            farmId: field.farm_id,
+            type: 'cron.error',
+            title: 'Błąd dziennej analizy',
+            detail: String(err),
+          },
+        })
+        .catch(() => {});
     }
   }
+
+  let launched = 0;
+  for (let i = 0; i < fields.length; i += CONCURRENCY) {
+    if (Date.now() > deadline) break;
+    const chunk = fields.slice(i, i + CONCURRENCY);
+    await Promise.allSettled(chunk.map(processField));
+    launched += chunk.length;
+  }
+  results.fields_deferred = fields.length - launched;
 
   return NextResponse.json({
     ...results,

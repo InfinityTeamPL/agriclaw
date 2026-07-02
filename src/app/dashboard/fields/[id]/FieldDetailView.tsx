@@ -7,6 +7,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -29,7 +30,11 @@ import {
   formatHa,
   severityStyle,
 } from '@/lib/ui/format';
-import { FieldLayerMap } from '@/components/dashboard/FieldLayerMap';
+// Lazy-load MapLibre (~250 kB gzip) — poza First Load JS, ładowany przy renderze mapy.
+const FieldLayerMap = dynamic(
+  () => import('@/components/dashboard/FieldLayerMap').then((m) => m.FieldLayerMap),
+  { ssr: false, loading: () => <div className="h-full w-full min-h-[300px] animate-pulse rounded-2xl bg-slate-100" /> },
+);
 import { BbchTracker } from '@/components/dashboard/BbchTracker';
 import { HistoryChart } from '@/components/dashboard/HistoryChart';
 import { ThermalBadge } from '@/components/dashboard/ThermalBadge';

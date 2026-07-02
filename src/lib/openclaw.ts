@@ -743,6 +743,25 @@ export class OpenClawClient {
               }
             }
           });
+
+          // Zerwane połączenie z VM w trakcie odpowiedzi. Bez tych handlerów:
+          // (1) event 'error' bez listenera → uncaught exception ubija cały proces
+          //     serverless (wszystkie równoległe requesty); (2) ciche 'close' →
+          //     Promise wisi aż do CHAT_TIMEOUT_MS (rolnik widzi "agent pisze" 13 min).
+          // Patrz audyt 2.6.
+          ws.on("error", (err) => {
+            clearTimeout(timer);
+            reject(new Error(`Połączenie z agentem przerwane: ${String(err)}`));
+          });
+          ws.on("close", () => {
+            clearTimeout(timer);
+            if (lastFullText) {
+              // Mamy częściową/pełną odpowiedź — zwróć ją zamiast błędu.
+              resolve({ content: lastFullText, thinking: lastThinking, images: lastImages, usage, model });
+            } else {
+              reject(new Error("Połączenie z agentem zamknięte przed odpowiedzią"));
+            }
+          });
         });
 
         const promptTokens = (result.usage?.input as number) || (result.usage?.prompt_tokens as number) || (result.usage?.promptTokens as number) || 0;

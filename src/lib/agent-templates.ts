@@ -391,46 +391,54 @@ Rytm dnia agenta AgriClaw Advisor.
 
 function buildAgriTools(ctx: AgriAdvisorContext): string {
   // OpenAPI-ish opis skilli; agent wie że to HTTP tools z AGRICLAW_SERVER.
+  // UWAGA: nazwy parametrów (field_id) i kształty odpowiedzi MUSZĄ być zgodne z
+  // faktycznymi route'ami w src/app/api/skills/** — inaczej agent dostaje 400/źle
+  // parsuje dane. Token wstrzykiwany realnie (nie placeholder). Audyt 2.4/2.5.
   return `# Tools
 
 Agent rozmawia z backendem AgriClaw przez HTTP. Każde narzędzie to endpoint
-pod \`${ctx.skillBaseUrl}\`. Uwierzytelnianie: \`Authorization: Bearer <OPENCLAW_SKILL_TOKEN>\`
-oraz \`X-Farm-Id: ${ctx.farmId}\`.
+pod \`${ctx.skillBaseUrl}\`. Do KAŻDEGO żądania dołącz nagłówki:
+\`\`\`
+Authorization: Bearer ${ctx.skillToken}
+X-Farm-Id: ${ctx.farmId}
+\`\`\`
+Wszystkie parametry pola nazywają się \`field_id\` (snake_case).
 
 ## agri-fields.list
 - **GET** \`/api/skills/agri-fields/list\`
-- Zwraca listę pól w gospodarstwie.
-- Odpowiedź: \`{ fields: [{ id, name, crop, areaHectares, centroid: {lat, lon} }] }\`
+- Odpowiedź: \`{ farm_id, fields_count, fields: [{ id, name, crop, area_ha, registered_at }] }\`
 
 ## agri-fields.get
-- **GET** \`/api/skills/agri-fields/get?fieldId=<uuid>\`
+- **GET** \`/api/skills/agri-fields/get?field_id=<uuid>\`
 - Szczegóły jednego pola + ostatnie NDVI + wilgotność gleby.
 
 ## agri-fields.history
-- **GET** \`/api/skills/agri-fields/history?fieldId=<uuid>&days=30\`
+- **GET** \`/api/skills/agri-fields/history?field_id=<uuid>&days=30\`
 - Historia NDVI, wilgotności, rekomendacji.
 
 ## agri-satellite.ndvi
-- **GET** \`/api/skills/agri-satellite/ndvi?fieldId=<uuid>\`
-- Aktualny NDVI z Sentinel-2 (chmury filtrowane).
-- Odpowiedź: \`{ ndviMean, ndviMin, ndviMax, cloudCover, observedAt }\`
+- **GET** \`/api/skills/agri-satellite/ndvi?field_id=<uuid>\`
+- Aktualny NDVI z Sentinel-2 (chmury filtrowane maską SCL).
+- Odpowiedź: \`{ field: { id, name, crop }, ndvi: { mean, min, max, observed_at, classification, description }, trend: { previous_mean, delta, delta_days } | null }\`
+- Jeśli \`status: "no_data"\` — brak zapisanej analizy, poproś rolnika o odświeżenie pola.
 
 ## agri-satellite.soil-moisture
-- **GET** \`/api/skills/agri-satellite/soil-moisture?fieldId=<uuid>\`
-- Wilgotność gleby w % z NASA SMAP.
+- **GET** \`/api/skills/agri-satellite/soil-moisture?field_id=<uuid>\`
+- Wilgotność gleby w % (Open-Meteo; SMAP wyłączony do czasu dekodowania HDF5).
 
 ## agri-weather.forecast
-- **GET** \`/api/skills/agri-weather/forecast?fieldId=<uuid>&days=5\`
-- Prognoza 5-dniowa z Open-Meteo. Zawiera ET0, wiatr, opady, \`drought_risk\`.
+- **GET** \`/api/skills/agri-weather/forecast?field_id=<uuid>&days=7\`
+- Odpowiedź: \`{ location, days_without_rain, total_precip_next_7, avg_et0_next_7, drought_risk, daily: [{ date, temp_max, temp_min, precipitation_mm, et0_mm, soil_moisture_shallow, wind_max_kmh }] }\`
 
 ## agri-notify.whatsapp
 - **POST** \`/api/skills/agri-notify/whatsapp\`
-- Body: \`{ message: string, fieldId?: string, severity: "low" | "medium" | "high" }\`
+- Body: \`{ message: string, field_id?: string }\` (pole \`field_id\` musi należeć do tego gospodarstwa)
 - Wysyła PILNE powiadomienie do rolnika. Używaj oszczędnie.
 
 ## Reguły użycia
 - Zanim odpowiesz na pytanie o konkretne pole — zawsze \`agri-satellite.ndvi\` + \`agri-weather.forecast\`.
-- Alert WhatsApp tylko gdy \`severity >= "medium"\` lub rolnik wprost poprosił.
+- Alert WhatsApp tylko przy realnie pilnej sprawie lub gdy rolnik wprost poprosił.
+- Interpretując spadek NDVI, uwzględnij fazę rozwoju: po kwitnieniu/w dojrzewaniu spadek to naturalna senescencja, nie choroba.
 - Jeśli endpoint zwraca 404 dla pola — prawdopodobnie pole zostało usunięte; wywołaj \`agri-fields.list\` ponownie.
 `;
 }

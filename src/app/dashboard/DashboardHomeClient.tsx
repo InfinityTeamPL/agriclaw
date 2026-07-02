@@ -5,6 +5,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -28,7 +29,12 @@ import { useRouter } from 'next/navigation';
 import { CountUp } from '@/components/dashboard/CountUp';
 import { Sparkline } from '@/components/dashboard/Sparkline';
 import { PolygonThumb } from '@/components/dashboard/PolygonThumb';
-import { FarmMiniMap } from '@/components/dashboard/FarmMiniMap';
+// Lazy-load MapLibre (~250 kB gzip) — poza First Load JS panelu, ładowany dopiero
+// przy renderze mapy. Audyt: perf (maplibre statycznie w bundlu dashboardu).
+const FarmMiniMap = dynamic(
+  () => import('@/components/dashboard/FarmMiniMap').then((m) => m.FarmMiniMap),
+  { ssr: false, loading: () => <div className="h-full w-full animate-pulse rounded-2xl bg-emerald-100/60" /> },
+);
 import { classifyNdvi, ndviColorHex } from '@/lib/satellite/ndvi';
 import { cropLabel, formatHa, formatDatePL, formatDateTimePL, severityStyle } from '@/lib/ui/format';
 
