@@ -31,9 +31,12 @@ export async function POST(req: NextRequest) {
 
   // Wewnętrzne wywołanie własnego endpointu — odciążamy heavy-lift (Open-Meteo)
   // i korzystamy z auto-Recommendation wbudowanego w /frost, /heat, /diseases.
-  const origin = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
+  // WAŻNE: NEXTAUTH_URL (publiczna domena) ma pierwszeństwo. VERCEL_URL to URL
+  // deploymentu (agriclaw-<hash>-team.vercel.app) chroniony przez Vercel
+  // Deployment Protection — fetch dostaje 302 na vercel.com/sso-api i wszystkie
+  // wewnętrzne wywołania padają (zweryfikowane na prod: 16/16 failures).
+  const origin = process.env.NEXTAUTH_URL
+    ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
   const endpoints = ['frost', 'heat', 'diseases', 'water-balance'];
 
