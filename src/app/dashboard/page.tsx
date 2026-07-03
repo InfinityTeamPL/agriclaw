@@ -29,7 +29,7 @@ export default async function DashboardHome() {
            ST_Y(ST_Centroid(f.polygon)) AS centroid_lat,
            ST_X(ST_Centroid(f.polygon)) AS centroid_lon
     FROM "fields" f
-    WHERE f.farm_id = ${farm.id}
+    WHERE f.farm_id = ${farm.id} AND f.deleted_at IS NULL
     ORDER BY f.created_at DESC
   `;
 

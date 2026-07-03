@@ -1,108 +1,88 @@
 import Link from 'next/link';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { SatelliteScanner } from './SatelliteScanner';
+import { NdviKeyline } from '@/components/brand/NdviKeyline';
 
 export function Hero() {
   return (
     <section className="relative pt-24 pb-16 sm:pt-32 sm:pb-24 overflow-hidden">
-      {/* ambient bg */}
+      {/* Tło: siatka kartograficzna zamiast dekoracyjnych blobów */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-b from-sky-50 via-white to-emerald-50/50" />
-        <svg
-          className="absolute inset-0 w-full h-full opacity-[0.04]"
-          aria-hidden="true"
-        >
-          <defs>
-            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="1" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#grid)" />
-        </svg>
+        <div className="absolute inset-0 bg-background" />
+        <div className="absolute inset-0 cadastral-grid opacity-60 [mask-image:radial-gradient(ellipse_at_top_right,black,transparent_70%)]" />
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="grid lg:grid-cols-[1.1fr_1.2fr] gap-10 lg:gap-16 items-center">
+        <div className="grid lg:grid-cols-[1.05fr_1.2fr] gap-10 lg:gap-16 items-center">
           {/* ────── Lewo: tekst ────── */}
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 ring-1 ring-emerald-200 px-3 py-1.5 mb-6">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-              <span className="text-xs font-mono uppercase tracking-wider text-emerald-800">
-                W fazie testów z pierwszymi rolnikami
+            {/* Eyebrow jako odczyt HUD — nie badge ze Sparkles */}
+            <div className="inline-flex items-center gap-2.5 border border-border bg-card px-3 py-1.5 rounded-md mb-7">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-signal-healthy opacity-60 animate-ping" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-signal-healthy" />
               </span>
+              <span className="hud-label">Faza testów · pierwszych 100 gospodarstw</span>
             </div>
 
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-gray-900 leading-[1.05]">
+            <h1 className="font-display text-4xl sm:text-6xl lg:text-[4.25rem] font-semibold tracking-tight text-foreground leading-[1.02]">
               Twój cyfrowy
               <br />
               agronom.
               <br />
-              <span className="relative inline-block">
-                <span className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 bg-clip-text text-transparent">
-                  O krok przed pogodą.
-                </span>
-                <svg
-                  viewBox="0 0 200 12"
-                  className="absolute -bottom-1 left-0 w-full h-2"
-                  fill="none"
-                >
-                  <path
-                    d="M2 10 Q 50 2 100 6 T 198 10"
-                    stroke="currentColor"
-                    className="text-emerald-400"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
+              <span className="relative inline-block pb-3">
+                O krok przed pogodą.
+                {/* Rampa NDVI zamiast gradient-textu — sygnatura marki */}
+                <NdviKeyline className="absolute -bottom-0.5 left-0" height={4} />
               </span>
             </h1>
 
-            <p className="mt-6 text-lg sm:text-xl text-gray-600 max-w-xl leading-relaxed">
+            <p className="mt-7 text-lg sm:text-xl text-muted-foreground max-w-xl leading-relaxed">
               Obraz z góry + pogoda + historia Twojego pola →
-              <span className="text-gray-900 font-medium"> konkretna rada po polsku</span>.
+              <span className="text-foreground font-medium"> konkretna rada po polsku</span>.
               WhatsApp: „pole 3 pryskaj jutro 5:30". Tyle.
             </p>
 
-            <p className="mt-4 text-base text-gray-500 max-w-xl">
+            <p className="mt-4 text-base text-muted-foreground/80 max-w-xl">
               Dla gospodarstw 20–500 ha. Pszenica, kukurydza, rzepak, burak, ziemniaki — cokolwiek rośnie.
             </p>
 
-            <div className="mt-10 flex flex-col sm:flex-row gap-3">
+            <div className="mt-9 flex flex-col sm:flex-row gap-3">
               <Link
                 href="/signup"
-                className="group inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-emerald-600 text-white rounded-2xl font-semibold hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/40 transition-all"
+                className="group inline-flex items-center justify-center gap-2 px-7 py-3.5 bg-primary text-primary-foreground rounded-md font-semibold shadow-card hover:brightness-110 transition-all"
               >
                 Załóż konto za darmo
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </Link>
               <Link
                 href="#jak"
-                className="inline-flex items-center justify-center px-7 py-3.5 bg-white text-gray-900 rounded-2xl font-semibold ring-1 ring-gray-200 hover:ring-gray-300 hover:shadow-sm transition"
+                className="inline-flex items-center justify-center px-7 py-3.5 bg-card text-foreground rounded-md font-semibold border border-border hover:border-foreground/30 transition"
               >
                 Jak to działa
               </Link>
             </div>
 
-            <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-gray-500">
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                Gotowe w 60 sekund
+            {/* Metryki jako telemetria — mono, tabular */}
+            <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <div className="flex items-center gap-2 hud-label">
+                <span className="w-1.5 h-1.5 rounded-full bg-signal-healthy" />
+                Gotowe w 60 s
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+              <div className="flex items-center gap-2 hud-label">
+                <span className="w-1.5 h-1.5 rounded-full bg-signal-frost" />
                 Zero instalacji
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              <div className="flex items-center gap-2 hud-label">
+                <span className="w-1.5 h-1.5 rounded-full bg-signal-heat" />
                 Działa w telefonie
               </div>
             </div>
           </div>
 
-          {/* ────── Prawo: animacja ────── */}
+          {/* ────── Prawo: animacja skanu ────── */}
           <div className="relative">
             <SatelliteScanner />
-            <div className="absolute -z-10 inset-0 -m-8 bg-gradient-to-br from-emerald-400/30 via-sky-400/20 to-transparent blur-3xl rounded-full" />
           </div>
         </div>
       </div>

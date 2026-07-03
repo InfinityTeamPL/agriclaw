@@ -10,7 +10,7 @@ export default async function ScoutingPage() {
   const { farm } = await requireFarm();
 
   const fields = await prisma.field.findMany({
-    where: { farmId: farm.id },
+    where: { farmId: farm.id, deletedAt: null },
     select: { id: true, name: true, crop: true },
     orderBy: { createdAt: 'asc' },
   });

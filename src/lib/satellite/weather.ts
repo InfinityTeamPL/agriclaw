@@ -2,6 +2,8 @@
 // Używamy forecast + daily aggregates + ET0 (evapotranspiration FAO)
 // Docs: https://open-meteo.com/en/docs
 
+import { fetchWithTimeout } from './http';
+
 const API_URL = 'https://api.open-meteo.com/v1/forecast';
 
 export interface WeatherDaily {
@@ -142,9 +144,9 @@ function formatSprayWindowLabel(startIso: string, endIso: string): string {
       ? 'dziś'
       : s.toISOString().slice(0, 10) === tomorrow
         ? 'jutro'
-        : s.toLocaleDateString('pl-PL', { weekday: 'long' });
+        : s.toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw', weekday: 'long' });
   const fmt = (d: Date) =>
-    d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+    d.toLocaleTimeString('pl-PL', { timeZone: 'Europe/Warsaw', hour: '2-digit', minute: '2-digit' });
   return `${dayLabel} ${fmt(s)}–${fmt(new Date(e.getTime() + 3600 * 1000))}`;
 }
 
@@ -165,7 +167,7 @@ export async function fetchSprayForecast(
     timezone: 'auto',
     forecast_days: '3',
   });
-  const res = await fetch(`${API_URL}?${params.toString()}`);
+  const res = await fetchWithTimeout(`${API_URL}?${params.toString()}`, { timeoutMs: 15_000, retries: 1 });
   if (!res.ok) throw new Error(`Open-Meteo spray forecast failed: ${res.status}`);
   const data = (await res.json()) as {
     hourly?: {
@@ -232,7 +234,7 @@ export async function fetchWeatherForecast(
     forecast_days: String(Math.min(Math.max(days, 1), 14)),
   });
 
-  const res = await fetch(`${API_URL}?${params.toString()}`);
+  const res = await fetchWithTimeout(`${API_URL}?${params.toString()}`, { timeoutMs: 15_000, retries: 1 });
   if (!res.ok) {
     throw new Error(`Open-Meteo failed: ${res.status}`);
   }

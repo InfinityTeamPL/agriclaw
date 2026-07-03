@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { ndviColorHex } from '@/lib/satellite/ndvi';
+import { ndviColorHex } from '@/lib/design/ndvi-scale';
 import { hybridStyle } from '@/lib/map-style';
 import { Loader2 } from 'lucide-react';
 

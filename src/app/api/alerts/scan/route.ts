@@ -6,17 +6,23 @@
 // Każde z powyższych ma już własny endpoint który auto-tworzy Recommendation
 // w DB gdy wykryje zagrożenie. Tutaj po prostu równolegle je odpalamy dla każdego pola.
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { requireFarm } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 
 export const maxDuration = 120;
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   const { farm } = await requireFarm();
 
+  // Ciasteczko sesji wołającego (dashboard) — MUSIMY je przekazać do wewnętrznych
+  // wywołań, inaczej requireAuth w /frost,/heat,... robi redirect na /login (307),
+  // fetch podąża za nim, dostaje 200 (HTML logowania) i skan raportuje FAŁSZYWY
+  // sukces nie tworząc żadnych rekomendacji. (audyt: skaner „nic nie robi").
+  const cookie = req.headers.get('cookie') ?? '';
+
   const fields = await prisma.field.findMany({
-    where: { farmId: farm.id },
+    where: { farmId: farm.id, deletedAt: null },
     select: { id: true, name: true },
   });
 
@@ -48,7 +54,10 @@ export async function POST() {
       tasks.push(
         fetch(`${origin}/api/fields/${field.id}/${endpoint}`, {
           method: 'GET',
-          headers: { 'x-internal-scan': '1' },
+          headers: { 'x-internal-scan': '1', cookie },
+          // Nie podążaj za redirectem na /login — traktuj brak autoryzacji jako
+          // porażkę, nie fałszywy sukces (opaqueredirect → res.ok === false).
+          redirect: 'manual',
         })
           .then((res) => {
             scans.push({ fieldId: field.id, endpoint, ok: res.ok });

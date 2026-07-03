@@ -270,18 +270,25 @@ Dokument roboczy — żywa mapa drogowa. Tu zapisujemy wszystko co musimy zbudow
 
 ---
 
-## 8. Rzeczy do zbadania (research gaps — agenty lecą)
+## 8. Research (ukończony) + status audytu 2026-07
 
-- [ ] `docs/research/satellite-catalog-2026.md` — agent a-X leci (katalog satelitarny)
-- [ ] `docs/research/eu-pl-regulations-2026.md` — agent a-Y leci (regulacje UE+PL)
-- [ ] `docs/research/field-register-spec.md` — agent a-Y leci (spec księgi polowej)
-- [ ] `docs/competition/global-competition-2026.md` — wcześniejszy research agent (jeszcze leci)
-- [ ] `docs/competition/poland-market-grants-2026.md` — j.w.
-- [ ] `docs/competition/feature-matrix.md` — j.w.
-- [ ] `docs/competition/agriclaw-gap-analysis.md` — j.w.
-- [ ] `docs/competition/roadmap-recommendation.md` — j.w.
+Research ukończony — dokumenty gotowe:
+- [x] `docs/research/satellite-catalog-2026.md` — katalog satelitarny
+- [x] `docs/research/eu-pl-regulations-2026.md` — regulacje UE+PL
+- [x] `docs/research/field-register-spec.md` — spec księgi polowej
+- [x] `docs/competition/global-competition-2026.md` — 28 konkurentów global
+- [x] `docs/competition/poland-market-grants-2026.md` — rynek PL + granty
+- [x] `docs/competition/feature-matrix.md` — macierz funkcji (kolumna ACW zaktualizowana 2026-07)
+- [x] `docs/competition/agriclaw-gap-analysis.md`
+- [x] `docs/competition/roadmap-recommendation.md`
 
-Po dociągnięciu researchu — zaktualizuję ten dokument i wydzielę konkretne tiketyImplementacyjne.
+**Audyt 2026-07** (`docs/audyt/audyt-2026-07.md`) + wdrożenie 4 torów:
+- Tor 1 (dane/bezpieczeństwo): ZROBIONY — maska chmur SCL, koniec fałszywego NDVI/alarmu suszy,
+  reguła agenta faza-aware, ULDK, SMAP, crony, IDOR, timeouty, walidacje.
+- Tor 2 (agent + skala): ZROBIONY — WS crash-guard, równoległy cron, kontrakt TOOLS.md, lazy-load map.
+- Tor 3 (UI „stacja naziemna"): ZROBIONY fundament + landing + dashboard — fonty, tokeny, rampa NDVI
+  jako brand, mono-telemetria, scan-line loading. Zostało: Field Mode, map-first, shared-element.
+- Tor 4 (flagowe): DO ZROBIENIA — pełny WhatsApp webhook, plan azotowy ARiMR, baza ŚOR MRiRW, VRA/ISOXML.
 
 ---
 

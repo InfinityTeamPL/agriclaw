@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
       SELECT ST_Y(ST_Centroid(f.polygon)) AS lat, ST_X(ST_Centroid(f.polygon)) AS lon
       FROM "fields" f
       JOIN "farms" fa ON fa.id = f.farm_id
-      WHERE f.id = ${fieldId} AND fa.user_id = ${user.id}
+      WHERE f.id = ${fieldId} AND fa.user_id = ${user.id} AND f.deleted_at IS NULL
       LIMIT 1
     `;
     if (rows.length === 0) {

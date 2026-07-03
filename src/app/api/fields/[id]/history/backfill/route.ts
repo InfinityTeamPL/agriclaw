@@ -16,7 +16,10 @@ export async function POST(
   { params }: { params: { id: string } },
 ) {
   const { user } = await requireAuth();
-  const years = Math.max(1, Math.min(10, parseInt(req.nextUrl.searchParams.get('years') ?? '5', 10)));
+  // Guard na ?years=abc → parseInt daje NaN, które przenikało do dat i dawało
+  // Invalid Date → 500 z Prisma. Nieparsowalne / poza zakresem → domyślne 5 lat.
+  const yearsRaw = parseInt(req.nextUrl.searchParams.get('years') ?? '5', 10);
+  const years = Number.isFinite(yearsRaw) ? Math.max(1, Math.min(10, yearsRaw)) : 5;
 
   if (!isCopernicusConfigured()) {
     return NextResponse.json(
@@ -33,7 +36,7 @@ export async function POST(
            ST_X(ST_Centroid(f.polygon)) AS centroid_lon
     FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
-    WHERE f.id = ${params.id} AND fa.user_id = ${user.id}
+    WHERE f.id = ${params.id} AND fa.user_id = ${user.id} AND f.deleted_at IS NULL
     LIMIT 1
   `;
   const field = rows[0];

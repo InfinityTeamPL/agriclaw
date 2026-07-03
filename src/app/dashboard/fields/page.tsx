@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Plus, Sprout } from 'lucide-react';
 import { requireFarm } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
+import { NdviKeyline } from '@/components/brand/NdviKeyline';
 import { FieldsList, type FieldListItem } from './FieldsList';
 
 export const dynamic = 'force-dynamic';
@@ -26,7 +27,7 @@ export default async function FieldsPage() {
     SELECT f.id, f.name, f.crop, f.area_hectares, f.created_at,
            ST_AsGeoJSON(f.polygon)::text AS polygon
     FROM "fields" f
-    WHERE f.farm_id = ${farm.id}
+    WHERE f.farm_id = ${farm.id} AND f.deleted_at IS NULL
     ORDER BY f.created_at DESC
   `;
 
@@ -59,28 +60,35 @@ export default async function FieldsPage() {
     };
   });
 
+  const totalHa = items.reduce((acc, f) => acc + f.areaHectares, 0);
+
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="flex items-end justify-between flex-wrap gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100/70 text-emerald-800 text-xs font-medium">
-            <Sprout className="w-3.5 h-3.5" />
-            Katalog gospodarstwa
+          <div className="inline-flex items-center gap-2 border border-border bg-card px-2.5 py-1 rounded-md">
+            <span className="w-1.5 h-1.5 rounded-full bg-signal-healthy" />
+            <span className="hud-label">Katalog gospodarstwa</span>
           </div>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-gray-900">
+          <h1 className="mt-3 font-display text-3xl font-semibold tracking-tight text-foreground">
             Moje pola
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {items.length > 0
-              ? `${items.length} ${items.length === 1 ? 'pole' : 'pól'} w gospodarstwie · ${items
-                  .reduce((acc, f) => acc + f.areaHectares, 0)
-                  .toFixed(2)} ha łącznie.`
-              : 'Jeszcze nie dodałeś żadnego pola.'}
+          <p className="text-sm text-muted-foreground mt-1">
+            {items.length > 0 ? (
+              <>
+                <span className="font-mono tabular text-foreground">{items.length}</span>{' '}
+                {items.length === 1 ? 'pole' : 'pól'} w gospodarstwie ·{' '}
+                <span className="font-mono tabular text-foreground">{totalHa.toFixed(2)}</span> ha
+                łącznie.
+              </>
+            ) : (
+              'Jeszcze nie dodałeś żadnego pola.'
+            )}
           </p>
         </div>
         <Link
           href="/dashboard/fields/new"
-          className="group inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-medium px-5 py-2.5 rounded-2xl shadow-[0_10px_25px_-10px_rgba(16,185,129,0.7)] hover:shadow-[0_14px_30px_-10px_rgba(16,185,129,0.9)] hover:-translate-y-0.5 transition"
+          className="group inline-flex items-center gap-2 bg-primary text-primary-foreground font-semibold px-5 py-2.5 rounded-md shadow-card hover:brightness-110 transition-all"
         >
           <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
           Dodaj pole
@@ -88,17 +96,18 @@ export default async function FieldsPage() {
       </div>
 
       {items.length === 0 ? (
-        <div className="rounded-3xl bg-white/60 backdrop-blur-md border border-dashed border-emerald-300/60 p-10 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 mx-auto flex items-center justify-center mb-3">
-            <Sprout className="w-5 h-5 text-emerald-600" />
+        <div className="relative rounded-lg bg-card border border-dashed border-border p-10 text-center shadow-card overflow-hidden">
+          <NdviKeyline className="absolute top-0 left-0" />
+          <div className="w-12 h-12 rounded-md bg-secondary border border-border mx-auto flex items-center justify-center mb-3">
+            <Sprout className="w-5 h-5 text-signal-healthy" />
           </div>
-          <p className="text-gray-900 font-medium">Brak pól</p>
-          <p className="text-sm text-gray-500 mt-1 max-w-xs mx-auto">
+          <p className="text-foreground font-medium">Brak pól</p>
+          <p className="text-sm text-muted-foreground mt-1 max-w-xs mx-auto">
             Dodaj pierwsze pole — narysuj granicę na mapie satelitarnej i gotowe.
           </p>
           <Link
             href="/dashboard/fields/new"
-            className="inline-flex items-center gap-2 mt-5 bg-emerald-600 text-white font-medium px-4 py-2 rounded-2xl hover:bg-emerald-700 transition"
+            className="inline-flex items-center gap-2 mt-5 bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-md hover:brightness-110 transition-all"
           >
             <Plus className="w-4 h-4" />
             Dodaj pierwsze pole

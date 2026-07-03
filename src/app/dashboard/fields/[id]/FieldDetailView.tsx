@@ -7,6 +7,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -21,7 +22,10 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { classifyNdvi, ndviColorHex, describeNdvi } from '@/lib/satellite/ndvi';
+import { classifyNdvi, describeNdvi } from '@/lib/satellite/ndvi';
+import { ndviColorHex } from '@/lib/design/ndvi-scale';
+import { NdviKeyline } from '@/components/brand/NdviKeyline';
+import { ScanLine } from '@/components/brand/ScanLine';
 import {
   cropLabel,
   formatDatePL,
@@ -29,7 +33,11 @@ import {
   formatHa,
   severityStyle,
 } from '@/lib/ui/format';
-import { FieldLayerMap } from '@/components/dashboard/FieldLayerMap';
+// Lazy-load MapLibre (~250 kB gzip) — poza First Load JS, ładowany przy renderze mapy.
+const FieldLayerMap = dynamic(
+  () => import('@/components/dashboard/FieldLayerMap').then((m) => m.FieldLayerMap),
+  { ssr: false, loading: () => <ScanLine className="h-full w-full min-h-[300px]" label="Ładowanie mapy…" /> },
+);
 import { BbchTracker } from '@/components/dashboard/BbchTracker';
 import { HistoryChart } from '@/components/dashboard/HistoryChart';
 import { ThermalBadge } from '@/components/dashboard/ThermalBadge';
@@ -109,13 +117,19 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
     toast.info('Uruchamiam analizę satelitarną. To może potrwać 10–30 sekund.');
     try {
       const res = await fetch(`/api/analysis/${field.id}`, { method: 'POST' });
+      const data = await res.json().catch(() => null);
       if (!res.ok) {
-        const data = await res.json().catch(() => null);
         toast.error(
           typeof data?.error === 'string'
             ? data.error
             : 'Analiza nie powiodła się. Spróbuj ponownie.',
         );
+        setRunning(false);
+        return;
+      }
+      // Brak bezchmurnego zdjęcia (200 + status) — to NIE sukces, nie odświeżaj.
+      if (data?.status === 'no_clear_imagery') {
+        toast.warning(data.message ?? 'Brak bezchmurnego zdjęcia w ostatnich 14 dniach.');
         setRunning(false);
         return;
       }
@@ -139,44 +153,39 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
         className="flex items-start justify-between flex-wrap gap-4"
       >
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100/70 text-emerald-800 text-xs font-medium">
-            <Sprout className="w-3.5 h-3.5" />
-            {cropLabel(field.crop)}
+          <div className="inline-flex items-center gap-2 border border-border bg-card px-3 py-1.5 rounded-md">
+            <Sprout className="w-3.5 h-3.5 text-signal-healthy" />
+            <span className="hud-label">{cropLabel(field.crop)}</span>
           </div>
-          <h1 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-gray-900">
+          <h1 className="mt-3 font-display text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
             {field.name}
           </h1>
-          <div className="mt-1 text-sm text-gray-500 flex items-center gap-2 flex-wrap">
-            <span>{formatHa(field.areaHectares)} ha</span>
-            <span className="text-gray-300">·</span>
-            <span>dodane {formatDatePL(field.createdAt)}</span>
+          <NdviKeyline className="mt-2 max-w-[8rem]" height={3} />
+          <div className="mt-2 text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+            <span className="font-mono tabular">{formatHa(field.areaHectares)} ha</span>
+            <span className="text-border">·</span>
+            <span>
+              dodane <span className="font-mono tabular">{formatDatePL(field.createdAt)}</span>
+            </span>
             {latest && (
               <>
-                <span className="text-gray-300">·</span>
+                <span className="text-border">·</span>
                 <span className="inline-flex items-center gap-1">
                   <Satellite className="w-3.5 h-3.5" />
-                  dane z {formatDateTimePL(latest.observedAt)}
+                  dane z <span className="font-mono tabular">{formatDateTimePL(latest.observedAt)}</span>
                 </span>
               </>
             )}
           </div>
         </div>
-        <div className="relative">
-          {!running && (
-            <>
-              <span className="absolute inset-0 rounded-2xl bg-emerald-500/50 animate-ping opacity-60" aria-hidden="true" />
-              <span className="absolute inset-0 rounded-2xl bg-emerald-500/30 animate-pulse" aria-hidden="true" />
-            </>
-          )}
+        <div>
           <button
             type="button"
             onClick={handleRunAnalysis}
             disabled={running}
             className={cn(
-              'relative inline-flex items-center gap-2 px-5 py-3 rounded-2xl font-medium transition shadow-[0_10px_25px_-10px_rgba(16,185,129,0.7)] hover:shadow-[0_14px_30px_-10px_rgba(16,185,129,0.9)]',
-              running
-                ? 'bg-emerald-500 text-white cursor-not-allowed opacity-90'
-                : 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:-translate-y-0.5',
+              'inline-flex items-center gap-2 px-5 py-3 rounded-md font-semibold bg-primary text-primary-foreground shadow-card transition-all hover:brightness-110',
+              running && 'cursor-not-allowed opacity-90',
             )}
           >
             {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Satellite className="w-4 h-4" />}
@@ -194,7 +203,7 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="rounded-3xl overflow-hidden bg-white/70 backdrop-blur-md border border-white/60 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.3)]"
+          className="rounded-lg overflow-hidden bg-card border border-border shadow-card"
         >
           <FieldLayerMap
             fieldId={field.id}
@@ -212,9 +221,9 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
           className="space-y-4 lg:sticky lg:top-20 lg:self-start"
         >
           {/* NDVI Big card */}
-          <div className="rounded-3xl bg-white/80 backdrop-blur-md border border-white/60 p-5 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.3)]">
-            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.15em] text-gray-500 font-semibold">
-              <Sprout className="w-3.5 h-3.5 text-emerald-600" />
+          <div className="rounded-lg bg-card border border-border p-5 shadow-card">
+            <div className="flex items-center gap-2 hud-label">
+              <Sprout className="w-3.5 h-3.5 text-signal-healthy" />
               Aktualny NDVI
             </div>
             {latest ? (
@@ -228,21 +237,23 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
                 trend={trend}
               />
             ) : (
-              <div className="mt-4 rounded-2xl bg-gray-50 border border-dashed border-gray-200 p-4 text-sm text-gray-600">
+              <div className="mt-4 rounded-md bg-secondary border border-dashed border-border p-4 text-sm text-muted-foreground">
                 Nie przeprowadzono jeszcze analizy. Kliknij „Uruchom analizę", aby pobrać
                 aktualne dane satelitarne.
               </div>
             )}
 
             {seriesChronological.length >= 2 && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                  <span>Trend NDVI</span>
-                  <span>{seriesChronological.length} obserwacji</span>
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="hud-label">Trend NDVI</span>
+                  <span className="hud-label">
+                    <span className="tabular">{seriesChronological.length}</span> obserwacji
+                  </span>
                 </div>
                 <Sparkline
                   values={seriesChronological}
-                  color={latest ? ndviColorHex(latest.mean) : '#059669'}
+                  color={latest ? ndviColorHex(latest.mean) : '#16a34a'}
                   height={48}
                 />
               </div>
@@ -250,8 +261,8 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
           </div>
 
           {/* Tabs */}
-          <div className="rounded-3xl bg-white/80 backdrop-blur-md border border-white/60 overflow-hidden shadow-[0_20px_60px_-30px_rgba(15,23,42,0.3)]">
-            <div className="flex items-center p-1.5 m-1.5 rounded-2xl bg-gray-100/70">
+          <div className="rounded-lg bg-card border border-border overflow-hidden shadow-card">
+            <div className="flex items-center p-1.5 m-1.5 rounded-md bg-secondary">
               <TabButton active={tab === 'analysis'} onClick={() => setTab('analysis')}>
                 Analiza
               </TabButton>
@@ -331,10 +342,10 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={cn(
-        'flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition',
+        'flex-1 px-3 py-2 rounded-md text-xs font-semibold transition',
         active
-          ? 'bg-white text-emerald-700 shadow-sm'
-          : 'text-gray-500 hover:text-gray-900',
+          ? 'bg-card text-primary shadow-card'
+          : 'text-muted-foreground hover:text-foreground',
       )}
     >
       {children}
@@ -353,7 +364,7 @@ function AnalysisTab({
 }) {
   if (!latest) {
     return (
-      <div className="text-sm text-gray-500 py-4 text-center">
+      <div className="text-sm text-muted-foreground py-4 text-center">
         Brak danych — uruchom analizę, aby zobaczyć szczegóły wegetacji.
       </div>
     );
@@ -366,12 +377,12 @@ function AnalysisTab({
         <MetricMini
           label="Zachmurzenie"
           value={`${Math.round(latest.cloudCover * 100)}%`}
-          icon={<CloudSun className="w-3.5 h-3.5 text-sky-600" />}
+          icon={<CloudSun className="w-3.5 h-3.5 text-signal-frost" />}
         />
         <MetricMini
           label="Powierzchnia"
           value={`${formatHa(field.areaHectares)} ha`}
-          icon={<Droplets className="w-3.5 h-3.5 text-sky-600" />}
+          icon={<Droplets className="w-3.5 h-3.5 text-signal-frost" />}
         />
       </div>
 
@@ -386,18 +397,18 @@ function AnalysisTab({
         />
       )}
 
-      <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-lime-50 border border-emerald-100 p-3 text-sm text-gray-800">
+      <div className="rounded-md bg-secondary border border-border p-3 text-sm text-foreground">
         {describeNdvi(latest.mean, crop)}
       </div>
       <a
         href="/dashboard/agent"
-        className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-2xl bg-gray-900 text-white text-sm hover:bg-gray-800 transition"
+        className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-md bg-primary text-primary-foreground text-sm hover:brightness-110 transition"
       >
         <span className="inline-flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-emerald-300" />
+          <MessageSquare className="w-4 h-4" />
           Zapytaj agenta o to pole
         </span>
-        <span className="text-emerald-300">→</span>
+        <span aria-hidden="true">→</span>
       </a>
     </div>
   );
@@ -406,7 +417,7 @@ function AnalysisTab({
 function HistoryTab({ history }: { history: NdviPoint[] }) {
   if (history.length === 0) {
     return (
-      <div className="text-sm text-gray-500 py-4 text-center">
+      <div className="text-sm text-muted-foreground py-4 text-center">
         Historia jest pusta — uruchom pierwszą analizę.
       </div>
     );
@@ -418,7 +429,7 @@ function HistoryTab({ history }: { history: NdviPoint[] }) {
         return (
           <li
             key={r.id}
-            className="flex items-center gap-3 p-2.5 rounded-2xl hover:bg-gray-50 transition"
+            className="flex items-center gap-3 p-2.5 rounded-md hover:bg-secondary transition"
           >
             <span
               className="w-3 h-3 rounded-full shrink-0"
@@ -426,15 +437,15 @@ function HistoryTab({ history }: { history: NdviPoint[] }) {
               aria-hidden="true"
             />
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-medium text-gray-900">
-                NDVI {r.mean.toFixed(3)}
+              <div className="text-sm font-medium text-foreground">
+                NDVI <span className="font-mono tabular">{r.mean.toFixed(3)}</span>
               </div>
-              <div className="text-xs text-gray-500">
-                zakres {r.min.toFixed(2)}–{r.max.toFixed(2)} · zachmurzenie{' '}
-                {Math.round(r.cloudCover * 100)}%
+              <div className="text-xs text-muted-foreground">
+                zakres <span className="font-mono tabular">{r.min.toFixed(2)}–{r.max.toFixed(2)}</span> · zachmurzenie{' '}
+                <span className="font-mono tabular">{Math.round(r.cloudCover * 100)}%</span>
               </div>
             </div>
-            <div className="text-xs text-gray-500 shrink-0 text-right">
+            <div className="text-xs text-muted-foreground shrink-0 text-right font-mono tabular">
               {formatDateTimePL(r.observedAt)}
             </div>
           </li>
@@ -447,7 +458,7 @@ function HistoryTab({ history }: { history: NdviPoint[] }) {
 function RecsTab({ recs }: { recs: Recommendation[] }) {
   if (recs.length === 0) {
     return (
-      <div className="text-sm text-gray-500 py-4 text-center">
+      <div className="text-sm text-muted-foreground py-4 text-center">
         Brak rekomendacji. Uruchom analizę, aby otrzymać pierwszą.
       </div>
     );
@@ -459,22 +470,22 @@ function RecsTab({ recs }: { recs: Recommendation[] }) {
         return (
           <li
             key={r.id}
-            className="rounded-2xl border border-gray-200 bg-white p-3 space-y-2"
+            className="rounded-md border border-border bg-card p-3 space-y-2"
           >
             <div className="flex items-center gap-2 flex-wrap">
               <span
-                className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${style.pill}`}
+                className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md border ${style.pill}`}
               >
                 {style.label}
               </span>
-              <span className="font-medium text-gray-900 text-sm">{r.title}</span>
-              <span className="text-[11px] text-gray-400 ml-auto">
+              <span className="font-medium text-foreground text-sm">{r.title}</span>
+              <span className="text-[11px] text-muted-foreground ml-auto font-mono tabular">
                 {formatDateTimePL(r.createdAt)}
               </span>
             </div>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">{r.message}</p>
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{r.message}</p>
             {r.action && (
-              <p className="text-sm text-emerald-900 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2 whitespace-pre-wrap">
+              <p className="text-sm text-foreground bg-signal-healthy/10 border border-signal-healthy/25 rounded-md px-3 py-2 whitespace-pre-wrap">
                 <span className="font-semibold">Co zrobić: </span>
                 {r.action}
               </p>
@@ -496,12 +507,12 @@ function MetricMini({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl bg-gray-50 border border-gray-100 p-2.5">
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold">
+    <div className="rounded-md bg-secondary border border-border p-2.5">
+      <div className="flex items-center gap-1.5 hud-label">
         {icon}
         {label}
       </div>
-      <div className="mt-1 text-sm font-semibold text-gray-900">{value}</div>
+      <div className="mt-1 text-sm font-semibold text-foreground font-mono tabular">{value}</div>
     </div>
   );
 }
@@ -535,22 +546,23 @@ function CurrentNdvi({
   return (
     <div className="mt-3 space-y-3">
       <div className="flex items-baseline gap-3">
-        <div className="text-5xl font-semibold tracking-tight tabular-nums" style={{ color }}>
+        <div className="font-mono text-5xl font-semibold tracking-tight tabular" style={{ color }}>
           {mean.toFixed(2)}
         </div>
         <div className="flex-1">
-          <div className="text-sm font-medium text-gray-900">{classLabel[cls]}</div>
-          <div className="text-xs text-gray-500">
-            zakres {min.toFixed(2)}–{max.toFixed(2)}
+          <div className="text-sm font-medium text-foreground">{classLabel[cls]}</div>
+          <div className="text-xs text-muted-foreground">
+            zakres <span className="font-mono tabular">{min.toFixed(2)}–{max.toFixed(2)}</span>
           </div>
         </div>
         {trend !== null && (
           <TrendBadge delta={trend} />
         )}
       </div>
-      <p className="text-sm text-gray-600 leading-relaxed">{describeNdvi(mean, crop)}</p>
-      <div className="text-[11px] text-gray-400">
-        Dane z {formatDateTimePL(observedAt)} · zachmurzenie {Math.round(cloudCover * 100)}%
+      <p className="text-sm text-muted-foreground leading-relaxed">{describeNdvi(mean, crop)}</p>
+      <div className="text-[11px] text-muted-foreground">
+        Dane z <span className="font-mono tabular">{formatDateTimePL(observedAt)}</span> · zachmurzenie{' '}
+        <span className="font-mono tabular">{Math.round(cloudCover * 100)}%</span>
       </div>
     </div>
   );
@@ -560,7 +572,7 @@ function TrendBadge({ delta }: { delta: number }) {
   const abs = Math.abs(delta);
   if (abs < 0.01) {
     return (
-      <div className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+      <div className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md bg-secondary text-muted-foreground">
         <Minus className="w-3 h-3" />
         bez zmian
       </div>
@@ -568,15 +580,16 @@ function TrendBadge({ delta }: { delta: number }) {
   }
   if (delta > 0) {
     return (
-      <div className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">
-        <ArrowUp className="w-3 h-3" />+{delta.toFixed(2)}
+      <div className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md bg-signal-healthy/12 text-signal-healthy">
+        <ArrowUp className="w-3 h-3" />
+        <span className="font-mono tabular">+{delta.toFixed(2)}</span>
       </div>
     );
   }
   return (
-    <div className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full bg-amber-100 text-amber-700">
+    <div className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md bg-signal-heat/12 text-signal-heat">
       <ArrowDown className="w-3 h-3" />
-      {delta.toFixed(2)}
+      <span className="font-mono tabular">{delta.toFixed(2)}</span>
     </div>
   );
 }
@@ -586,18 +599,18 @@ function AnalysisProgress() {
     <motion.div
       initial={{ opacity: 0, y: -6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl bg-gradient-to-r from-emerald-50 via-lime-50 to-sky-50 border border-emerald-200/60 p-4 flex items-center gap-4"
+      className="relative overflow-hidden rounded-lg bg-card border border-border shadow-card p-4 flex items-center gap-4"
     >
-      <div className="relative w-12 h-12 shrink-0">
-        <div className="absolute inset-0 rounded-full border-2 border-emerald-100" />
-        <div className="absolute inset-0 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
-        <Satellite className="absolute inset-0 m-auto w-5 h-5 text-emerald-600" />
+      <NdviKeyline className="absolute inset-x-0 top-0" height={3} rounded={false} />
+      <div className="flex items-center justify-center w-12 h-12 shrink-0 rounded-md bg-secondary border border-border">
+        <Satellite className="w-5 h-5 text-signal-healthy" />
       </div>
-      <div>
-        <div className="font-semibold text-gray-900">Pobieram dane satelitarne</div>
-        <div className="text-sm text-gray-600">
+      <div className="flex-1">
+        <div className="font-display font-semibold tracking-tight text-foreground">Pobieram dane satelitarne</div>
+        <div className="text-sm text-muted-foreground">
           Sentinel-2 NDVI + prognoza pogody + rekomendacja — to potrwa 10–30 sekund.
         </div>
+        <ScanLine className="mt-2 h-1.5 w-full" />
       </div>
     </motion.div>
   );

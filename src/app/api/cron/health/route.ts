@@ -2,6 +2,7 @@
 // Jeśli agent.status === 'READY' ale gateway nie odpowiada, mark jako 'ERROR'.
 
 import { NextRequest, NextResponse } from 'next/server';
+import { timingSafeEqual } from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { OpenClawClient } from '@/lib/openclaw';
 
@@ -9,12 +10,14 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
 
 function isAuthorized(req: NextRequest): boolean {
+  // Tylko Bearer CRON_SECRET (timing-safe). Bez skrótu na x-vercel-cron (podrabialny).
   const secret = process.env.CRON_SECRET;
   if (!secret) return process.env.NODE_ENV === 'development';
   const auth = req.headers.get('authorization') || '';
-  if (auth === `Bearer ${secret}`) return true;
-  const vercelSig = req.headers.get('x-vercel-cron');
-  return Boolean(vercelSig);
+  const expected = `Bearer ${secret}`;
+  const a = Buffer.from(auth);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 export async function GET(req: NextRequest) {
@@ -28,8 +31,12 @@ export async function GET(req: NextRequest) {
 
   const results = { checked: 0, healthy: 0, unhealthy: 0, recovered: 0 };
 
-  for (const agent of agents) {
-    if (!agent.serverIp) continue;
+  // Health-checki równolegle w partiach — sekwencyjnie 15+ martwych agentów ×
+  // timeout kładło się poza maxDuration (120 s). Liczniki mutowane bezpiecznie
+  // (JS single-thread, inkrementacja nie przeplata się z await).
+  const CONCURRENCY = 10;
+  async function checkAgent(agent: (typeof agents)[number]): Promise<void> {
+    if (!agent.serverIp) return;
     const client = new OpenClawClient(
       agent.serverIp,
       agent.gatewayPort,
@@ -77,6 +84,10 @@ export async function GET(req: NextRequest) {
       }
       results.unhealthy++;
     }
+  }
+
+  for (let i = 0; i < agents.length; i += CONCURRENCY) {
+    await Promise.allSettled(agents.slice(i, i + CONCURRENCY).map(checkAgent));
   }
 
   return NextResponse.json(results);

@@ -22,7 +22,7 @@ export async function GET() {
            ST_AsGeoJSON(f.polygon)::text AS polygon
     FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
-    WHERE fa.user_id = ${user.id}
+    WHERE fa.user_id = ${user.id} AND f.deleted_at IS NULL
     ORDER BY f.created_at DESC
   `;
 
@@ -57,27 +57,46 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Farm not found' }, { status: 404 });
   }
 
-  // Oblicz powierzchnię w hektarach (turf zwraca m²)
+  // Odrzuć poligon z samoprzecięciami — turf.area policzyłby błędną powierzchnię
+  // (podstawa dawek i compliance), a geometria byłaby niepoprawna. Audyt 2.MEDIUM.
   const feature = { type: 'Feature' as const, geometry: polygon, properties: {} };
+  const selfIntersections = turf.kinks(feature);
+  if (selfIntersections.features.length > 0) {
+    return NextResponse.json(
+      { error: 'Granica pola przecina samą siebie — narysuj poligon bez skrzyżowań linii.' },
+      { status: 400 },
+    );
+  }
+
+  // Oblicz powierzchnię w hektarach (turf zwraca m²)
   const areaSqM = turf.area(feature);
   const areaHectares = areaSqM / 10_000;
 
-  // PostGIS insert
+  // PostGIS insert. ST_MakeValid naprawia drobne defekty geometrii; try/catch
+  // mapuje błąd geometrii na 400 zamiast nieobsłużonego 500.
   const polygonJson = JSON.stringify(polygon);
-  const rows = await prisma.$queryRaw<Array<{ id: string }>>`
-    INSERT INTO "fields" (id, farm_id, name, crop, area_hectares, polygon, created_at, updated_at)
-    VALUES (
-      gen_random_uuid(),
-      ${farmId},
-      ${name},
-      ${crop},
-      ${areaHectares},
-      ST_SetSRID(ST_GeomFromGeoJSON(${polygonJson}), 4326),
-      NOW(),
-      NOW()
-    )
-    RETURNING id
-  `;
+  let rows: Array<{ id: string }>;
+  try {
+    rows = await prisma.$queryRaw<Array<{ id: string }>>`
+      INSERT INTO "fields" (id, farm_id, name, crop, area_hectares, polygon, created_at, updated_at)
+      VALUES (
+        gen_random_uuid(),
+        ${farmId},
+        ${name},
+        ${crop},
+        ${areaHectares},
+        ST_MakeValid(ST_SetSRID(ST_GeomFromGeoJSON(${polygonJson}), 4326)),
+        NOW(),
+        NOW()
+      )
+      RETURNING id
+    `;
+  } catch (err) {
+    return NextResponse.json(
+      { error: 'Nieprawidłowa geometria pola.', detail: String(err).slice(0, 200) },
+      { status: 400 },
+    );
+  }
 
   return NextResponse.json(
     {

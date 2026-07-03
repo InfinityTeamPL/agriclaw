@@ -27,7 +27,7 @@ export async function GET(
            ST_X(ST_Centroid(f.polygon)) AS lon
     FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
-    WHERE f.id = ${params.id} AND fa.user_id = ${user.id}
+    WHERE f.id = ${params.id} AND fa.user_id = ${user.id} AND f.deleted_at IS NULL
     LIMIT 1
   `;
   const field = rows[0];
@@ -112,7 +112,7 @@ export async function GET(
       (n) => n.level === 'warning' || n.level === 'critical',
     );
     const title = `Przymrozki — ${firstDanger
-      ? new Date(firstDanger.date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' })
+      ? new Date(firstDanger.date).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw', weekday: 'long', day: 'numeric', month: 'long' })
       : 'najbliższe dni'}`;
 
     const existing = await prisma.recommendation.findFirst({

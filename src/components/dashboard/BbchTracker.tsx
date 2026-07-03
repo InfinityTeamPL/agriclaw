@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Wheat, Clock, TrendingUp, AlertCircle, Loader2 } from 'lucide-react';
+import { Wheat, Clock, TrendingUp, AlertCircle } from 'lucide-react';
 
 interface BbchStatus {
   crop: string;
@@ -61,17 +61,17 @@ export function BbchTracker({ fieldId }: { fieldId: string }) {
 
   if (loading) {
     return (
-      <div className="rounded-3xl bg-white border border-gray-200 p-5 animate-pulse">
-        <div className="h-4 w-32 bg-gray-200 rounded mb-3" />
-        <div className="h-8 bg-gray-100 rounded mb-2" />
-        <div className="h-2 bg-gray-100 rounded" />
+      <div className="rounded-lg bg-card border border-border shadow-card p-5 animate-pulse">
+        <div className="h-4 w-32 bg-muted rounded mb-3" />
+        <div className="h-8 bg-muted rounded mb-2" />
+        <div className="h-2 bg-muted rounded" />
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="rounded-3xl bg-white border border-gray-200 p-5 text-sm text-gray-500">
+      <div className="rounded-lg bg-card border border-border shadow-card p-5 text-sm text-muted-foreground">
         {error ?? 'Brak danych BBCH'}
       </div>
     );
@@ -80,86 +80,96 @@ export function BbchTracker({ fieldId }: { fieldId: string }) {
   const { status } = data;
 
   return (
-    <div className="rounded-3xl bg-white border border-gray-200 p-5 space-y-4">
+    <div className="rounded-lg bg-card border border-border shadow-card p-5 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center">
-            <Wheat className="w-4 h-4 text-emerald-700" />
+          <div className="w-9 h-9 rounded-md bg-secondary border border-border flex items-center justify-center">
+            <Wheat className="w-4 h-4 text-signal-healthy" />
           </div>
           <div>
-            <div className="font-semibold text-gray-900">Faza rozwoju</div>
-            <div className="text-[10px] text-gray-500 uppercase tracking-wider font-mono">
-              BBCH model · GDD
+            <div className="font-display font-semibold tracking-tight text-foreground">
+              Faza rozwoju
             </div>
+            <div className="hud-label">BBCH model · GDD</div>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-3xl font-bold text-emerald-700 tabular-nums leading-none">
+          <div className="font-mono tabular text-3xl font-semibold text-foreground leading-none">
             BBCH {status.currentBbch}
           </div>
-          <div className="text-xs text-gray-500 mt-0.5">{status.currentLabel}</div>
+          <div className="text-xs text-muted-foreground mt-0.5">{status.currentLabel}</div>
         </div>
       </div>
 
       {status.currentDescription && (
-        <p className="text-xs text-gray-600">{status.currentDescription}</p>
+        <p className="text-xs text-muted-foreground">{status.currentDescription}</p>
       )}
 
       {/* Progress bar sezonowy */}
       <div>
-        <div className="flex justify-between text-[10px] text-gray-500 font-mono mb-1">
-          <span>Postęp sezonu</span>
-          <span>{status.progress}%</span>
+        <div className="flex justify-between mb-1">
+          <span className="hud-label">Postęp sezonu</span>
+          <span className="font-mono tabular text-[10px] text-muted-foreground">
+            {status.progress}%
+          </span>
         </div>
-        <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+        {/* Wypełnienie = sygnał zdrowia rośliny (dane) */}
+        <div className="h-2 rounded-full bg-muted overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 transition-all"
+            className="h-full bg-signal-healthy transition-all"
             style={{ width: `${status.progress}%` }}
           />
         </div>
-        <div className="flex justify-between text-[10px] text-gray-400 mt-1">
-          <span>Siew {new Date(data.sowingDate).toLocaleDateString('pl-PL')}</span>
-          <span className="font-mono">{status.accumulated} GDD</span>
+        <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+          <span>
+            Siew{' '}
+            <span className="font-mono tabular">
+              {new Date(data.sowingDate).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw' })}
+            </span>
+          </span>
+          <span className="font-mono tabular">{status.accumulated} GDD</span>
         </div>
       </div>
 
       {/* Następny milestone */}
       {status.nextMilestone && (
-        <div className="rounded-2xl bg-gradient-to-br from-sky-50 to-emerald-50/50 border border-sky-100 p-3 space-y-2">
+        <div className="rounded-md bg-secondary border border-border p-3 space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-xs font-semibold text-sky-900">
-              <Clock className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+              <Clock className="w-3.5 h-3.5 text-muted-foreground" />
               Następna faza
             </div>
             {status.daysToNext !== null && (
-              <span className="text-[10px] bg-sky-600 text-white px-2 py-0.5 rounded-full font-semibold">
+              <span className="font-mono tabular text-[10px] bg-primary text-primary-foreground px-2 py-0.5 rounded-md font-semibold">
                 za ~{status.daysToNext} dni
               </span>
             )}
           </div>
           <div>
-            <span className="font-semibold text-gray-900">BBCH {status.nextMilestone.bbch}</span>
-            <span className="text-gray-600"> — {status.nextMilestone.label}</span>
+            <span className="font-mono tabular font-semibold text-foreground">
+              BBCH {status.nextMilestone.bbch}
+            </span>
+            <span className="text-muted-foreground"> — {status.nextMilestone.label}</span>
           </div>
-          <div className="text-[10px] font-mono text-gray-500">
+          <div className="text-[10px] text-muted-foreground">
             <TrendingUp className="inline w-3 h-3 mr-1" />
-            potrzeba jeszcze {Math.round(status.gddToNext)} GDD (T_base {status.tBase}°C)
+            potrzeba jeszcze{' '}
+            <span className="font-mono tabular">{Math.round(status.gddToNext)} GDD</span> (T_base{' '}
+            <span className="font-mono tabular">{status.tBase}°C</span>)
           </div>
         </div>
       )}
 
-      {/* Alerty agronomiczne */}
+      {/* Alerty agronomiczne — amber = sygnał ostrzegawczy (dane) */}
       {status.alerts.length > 0 && (
         <div className="space-y-2">
-          <div className="text-[10px] uppercase tracking-wider text-amber-700 font-semibold">
-            Co zrobić
-          </div>
+          <div className="hud-label text-signal-heat">Co zrobić</div>
           {status.alerts.map((a, i) => (
             <div
               key={i}
-              className="flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900"
+              className="flex items-start gap-2 rounded-md bg-signal-heat/10 border border-signal-heat/30 p-3 text-xs text-foreground"
             >
-              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-700" />
+              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-signal-heat" />
               <span>{a}</span>
             </div>
           ))}
@@ -167,7 +177,7 @@ export function BbchTracker({ fieldId }: { fieldId: string }) {
       )}
 
       {data.sowingDateIsEstimate && (
-        <div className="text-[10px] text-gray-400 italic border-t border-gray-100 pt-2">
+        <div className="text-[10px] text-muted-foreground italic border-t border-border pt-2">
           Data siewu oszacowana z typu uprawy. W ustawieniach pola podaj faktyczną żeby
           uzyskać większą dokładność.
         </div>

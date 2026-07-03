@@ -8,39 +8,30 @@
 //
 // Docs: https://openrouter.ai/docs
 
+import { fetchWithTimeout } from '@/lib/satellite/http';
+
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-// Vision-capable modele na OpenRouter (stan kwiecień 2026).
-// Dostępne warianty Gemma 4:
-//  - 31B Dense (full params) — najlepszy reasoning, wolniejszy
-//  - 26B A4B MoE (4B active) — szybszy, tańszy, też dobry vision
-// Plus mamy non-Google fallback: Qwen 2.5 VL 72B (często top w vision benchmarkach),
-// Llama 3.2 Vision 11B/90B, Gemini Flash 2.0.
+// Vision-capable modele na OpenRouter — TYLKO te faktycznie obecne w katalogu
+// (zweryfikowane GET /api/v1/models). Wcześniej chain zawierał 3 nieistniejące
+// slugi (qwen ...-2.5-...:free, llama-3.2-11b-...:free, gemini-2.0-flash-exp:free),
+// przez co środek łańcucha zawsze rzucał błąd i wydłużał failover. Audyt: model list.
 export type VisionModel =
   | 'google/gemma-4-31b-it:free'
   | 'google/gemma-4-31b-it'
   | 'google/gemma-4-26b-a4b-it:free'
   | 'google/gemma-4-26b-a4b-it'
-  | 'qwen/qwen-2.5-vl-72b-instruct:free'
-  | 'meta-llama/llama-3.2-11b-vision-instruct:free'
-  | 'meta-llama/llama-3.2-90b-vision-instruct:free'
-  | 'google/gemma-3-27b-it:free'
-  | 'google/gemini-2.0-flash-exp:free';
+  | 'qwen/qwen2.5-vl-72b-instruct'; // poprawny slug (bez myślnika, wariant paid)
 
-// Fallback chain zgodnie z preferencją usera:
-// "jak sie da darmowy to najpierw darmowy; gemma-4-31b-it pierwszy"
-// 1. Gemma 4 31B :free — preferowany (user verified = najlepsze diagnozy PL)
-// 2. Gemma 4 31B paid — zaraz po, bo ten sam model bez rate-limitu Google AI Studio
-// 3-5. Non-Google backupy (różny upstream = różny rate-limit bucket)
-// 6. Gemma 4 26B paid — awaryjny tańszy
+// Fallback chain: najpierw darmowa Gemma 4 31B (najlepsze diagnozy PL), potem ten
+// sam model paid (bez rate-limitu), darmowa mniejsza Gemma, non-Google backup (Qwen VL),
+// na końcu paid Gemma 26B.
 const VISION_FALLBACK_CHAIN: VisionModel[] = [
-  'google/gemma-4-31b-it:free', // #1 USER NAJLEPSZY (free priority)
+  'google/gemma-4-31b-it:free', // #1 preferowany (free priority)
   'google/gemma-4-31b-it', // #2 ten sam paid — bez rate-limitu
-  'qwen/qwen-2.5-vl-72b-instruct:free', // #3 non-Google — inny bucket
-  'google/gemma-4-26b-a4b-it:free', // #4 Gemma mniejsza :free
-  'meta-llama/llama-3.2-11b-vision-instruct:free', // #5 Meta
-  'google/gemini-2.0-flash-exp:free', // #6 Gemini Flash
-  'google/gemma-4-26b-a4b-it', // #7 ostatni ratunek paid
+  'google/gemma-4-26b-a4b-it:free', // #3 Gemma mniejsza :free
+  'qwen/qwen2.5-vl-72b-instruct', // #4 non-Google backup — inny bucket
+  'google/gemma-4-26b-a4b-it', // #5 ostatni ratunek paid
 ];
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -99,7 +90,7 @@ export class OpenRouterClient {
     };
     if (opts.json) body.response_format = { type: 'json_object' };
 
-    const res = await fetch(OPENROUTER_URL, {
+    const res = await fetchWithTimeout(OPENROUTER_URL, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
@@ -108,6 +99,7 @@ export class OpenRouterClient {
         'X-Title': 'AgriClaw',
       },
       body: JSON.stringify(body),
+      timeoutMs: 60_000,
     });
 
     if (!res.ok) {
@@ -185,6 +177,9 @@ ${opts.jsonSchema}`
       ],
       json: Boolean(opts.jsonSchema),
       temperature: 0.2,
+      // Rozbudowany JSON diagnozy (objawy[], środki[] z dawkami, porada) przekracza
+      // domyślne 1024 tokeny → ucięty JSON.parse rzucał 502. Audyt 2.6.
+      max_tokens: 2500,
     });
   }
 }

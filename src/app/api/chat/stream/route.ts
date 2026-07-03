@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
   const farm = await prisma.farm.findFirst({
     where: { id: farmId, userId: user.id },
     include: {
-      fields: { select: { id: true, name: true, crop: true, areaHectares: true } },
+      fields: { where: { deletedAt: null }, select: { id: true, name: true, crop: true, areaHectares: true } },
       agents: {
         where: { status: 'READY' },
         orderBy: { createdAt: 'asc' },
@@ -98,6 +98,37 @@ export async function POST(req: NextRequest) {
     async start(controller) {
       const fullInput = `${systemPrompt}\n\n---\n\nRolnik pyta: ${message}`;
 
+      let closed = false;
+      const safeClose = () => {
+        if (closed) return;
+        closed = true;
+        try {
+          controller.close();
+        } catch {
+          /* już zamknięty */
+        }
+      };
+
+      // Keep-alive — komentarz SSE co 15 s, żeby proxy nie zerwało połączenia
+      // gdy agent długo „myśli" bez emitowania delty.
+      const keepAlive = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(': keep-alive\n\n'));
+        } catch {
+          clearInterval(keepAlive);
+        }
+      }, 15_000);
+
+      // Rozłączenie klienta (zamknął kartę / abort) → przerywamy strumień do
+      // przeglądarki. Uwaga: praca agenta (runAgentStream) toczy się dalej do
+      // końca i zapisuje odpowiedź ASSISTANT do bazy — CELOWO, żeby po powrocie
+      // rolnik zobaczył gotową odpowiedź. Nasłuch usuwamy w finally.
+      const onAbort = () => {
+        clearInterval(keepAlive);
+        safeClose();
+      };
+      req.signal.addEventListener('abort', onAbort);
+
       try {
         controller.enqueue(
           encoder.encode(
@@ -157,13 +188,19 @@ export async function POST(req: NextRequest) {
           );
         }
       } catch (err) {
-        controller.enqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({ type: 'error', error: String(err) })}\n\n`,
-          ),
-        );
+        try {
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: 'error', error: String(err) })}\n\n`,
+            ),
+          );
+        } catch {
+          /* połączenie już zamknięte */
+        }
       } finally {
-        controller.close();
+        clearInterval(keepAlive);
+        req.signal.removeEventListener('abort', onAbort);
+        safeClose();
       }
     },
   });

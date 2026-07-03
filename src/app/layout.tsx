@@ -1,7 +1,29 @@
 import type { Metadata, Viewport } from 'next';
+import { Space_Grotesk, Inter, IBM_Plex_Mono } from 'next/font/google';
 import { Toaster } from 'sonner';
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
 import './globals.css';
+
+// Typografia AgriClaw — trzy role:
+//  display  Space Grotesk — geometryczny grotesk, „techniczny", pełne PL znaki
+//  body     Inter — czytelny na telefonie w słońcu
+//  mono     IBM Plex Mono — TELEMETRIA: NDVI, ha, współrzędne, daty (tabular-nums)
+const display = Space_Grotesk({
+  subsets: ['latin', 'latin-ext'],
+  variable: '--font-display',
+  display: 'swap',
+});
+const body = Inter({
+  subsets: ['latin', 'latin-ext'],
+  variable: '--font-sans',
+  display: 'swap',
+});
+const mono = IBM_Plex_Mono({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['400', '500', '600'],
+  variable: '--font-mono',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'AgriClaw — cyfrowy agronom dla rolnika',
@@ -22,7 +44,8 @@ export const viewport: Viewport = {
   themeColor: '#16a34a',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
+  // NIE blokujemy powiększania (usunięto maximumScale:1) — WCAG 1.4.4. Rolnik
+  // w słońcu / w rękawicach / starszy musi móc powiększyć drobny tekst i zdjęcia.
 };
 
 export default function RootLayout({
@@ -31,15 +54,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="pl">
+    <html lang="pl" className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <head>
         <link rel="manifest" href="/manifest.webmanifest" />
         <meta name="apple-mobile-web-app-title" content="AgriClaw" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
-      <body className="min-h-screen bg-background text-foreground antialiased">
+      <body className="min-h-screen bg-background text-foreground font-sans antialiased">
         {children}
-        <Toaster position="top-right" richColors />
+        <Toaster position="top-right" toastOptions={{ className: 'agri-toast' }} />
         <ServiceWorkerRegister />
       </body>
     </html>

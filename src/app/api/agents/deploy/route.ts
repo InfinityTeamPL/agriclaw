@@ -195,6 +195,7 @@ export async function POST(req: NextRequest) {
     where: { id: farmId },
     include: {
       fields: {
+        where: { deletedAt: null },
         select: { id: true, name: true, crop: true, areaHectares: true },
         orderBy: { createdAt: 'asc' },
       },

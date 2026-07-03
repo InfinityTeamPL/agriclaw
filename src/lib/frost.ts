@@ -158,7 +158,7 @@ function buildRecommendation(a: {
   }
 
   const dniList = danger
-    .map((n) => new Date(n.date).toLocaleDateString('pl-PL', { weekday: 'short', day: 'numeric', month: 'short' }))
+    .map((n) => new Date(n.date).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw', weekday: 'short', day: 'numeric', month: 'short' }))
     .join(', ');
 
   // Rekomendacje per uprawa

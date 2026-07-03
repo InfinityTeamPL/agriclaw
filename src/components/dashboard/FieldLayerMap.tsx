@@ -172,7 +172,7 @@ export function FieldLayerMap({ fieldId, polygon, centroid, className }: Props) 
             box-shadow: 0 2px 6px rgba(0,0,0,0.4);
             cursor: pointer;
           `;
-          const date = new Date(s.createdAt).toLocaleDateString('pl-PL');
+          const date = new Date(s.createdAt).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw' });
           const notePart = s.note ? `<div style="margin-top:4px;color:#555">${s.note.slice(0, 100)}</div>` : '';
           const photoPart = s.photoUrl
             ? `<img src="${s.photoUrl}" style="margin-top:6px;max-width:200px;max-height:120px;border-radius:6px" />`
@@ -346,7 +346,7 @@ export function FieldLayerMap({ fieldId, polygon, centroid, className }: Props) 
               ))}
             </div>
             <div className="text-[9px] text-gray-400 pt-1 border-t border-gray-100">
-              Sentinel-2 · 10 m/piksel · {new Date(current.observedAt).toLocaleDateString('pl-PL')}
+              Sentinel-2 · 10 m/piksel · {new Date(current.observedAt).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw' })}
             </div>
           </div>
         </div>

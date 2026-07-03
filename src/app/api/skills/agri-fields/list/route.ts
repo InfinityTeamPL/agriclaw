@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   }
 
   const fields = await prisma.field.findMany({
-    where: { farmId: auth.farmId },
+    where: { farmId: auth.farmId, deletedAt: null },
     select: { id: true, name: true, crop: true, areaHectares: true, createdAt: true },
     orderBy: { createdAt: 'asc' },
   });

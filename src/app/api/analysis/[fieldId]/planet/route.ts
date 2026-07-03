@@ -28,7 +28,7 @@ export async function GET(
     SELECT f.id, ST_AsGeoJSON(f.polygon)::text AS polygon
     FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
-    WHERE f.id = ${params.fieldId} AND fa.user_id = ${user.id}
+    WHERE f.id = ${params.fieldId} AND fa.user_id = ${user.id} AND f.deleted_at IS NULL
     LIMIT 1
   `;
   const field = rows[0];

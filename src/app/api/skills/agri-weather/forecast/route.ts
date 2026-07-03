@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     const rows = await prisma.$queryRaw<Array<{ lat: number; lon: number }>>`
       SELECT ST_Y(ST_Centroid(polygon)) AS lat, ST_X(ST_Centroid(polygon)) AS lon
       FROM "fields"
-      WHERE id = ${fieldId} AND farm_id = ${auth.farmId}
+      WHERE id = ${fieldId} AND farm_id = ${auth.farmId} AND deleted_at IS NULL
     `;
     if (rows.length === 0) return NextResponse.json({ error: 'Field not found' }, { status: 404 });
     lat = rows[0].lat;

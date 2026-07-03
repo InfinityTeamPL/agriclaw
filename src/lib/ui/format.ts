@@ -38,6 +38,9 @@ export function formatDatePL(date: Date | string | null | undefined): string {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
+    // Przypięta strefa — inaczej serwer (UTC) i klient (Europe/Warsaw) renderują
+    // różną datę koło północy → hydration mismatch w React.
+    timeZone: 'Europe/Warsaw',
   });
 }
 
@@ -51,6 +54,9 @@ export function formatDateTimePL(date: Date | string | null | undefined): string
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    // Przypięta strefa — spójny wynik serwer/klient (bez hydration mismatch) i
+    // godziny w czasie lokalnym rolnika zamiast UTC.
+    timeZone: 'Europe/Warsaw',
   });
 }
 

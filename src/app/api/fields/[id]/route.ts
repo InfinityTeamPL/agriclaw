@@ -7,7 +7,7 @@ async function ensureOwnership(userId: string, fieldId: string) {
   const rows = await prisma.$queryRaw<Array<{ id: string; farm_id: string }>>`
     SELECT f.id, f.farm_id FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
-    WHERE f.id = ${fieldId} AND fa.user_id = ${userId}
+    WHERE f.id = ${fieldId} AND fa.user_id = ${userId} AND f.deleted_at IS NULL
   `;
   return rows[0] ?? null;
 }
@@ -33,7 +33,7 @@ export async function GET(
   >`
     SELECT id, farm_id, name, crop, area_hectares, created_at,
            ST_AsGeoJSON(polygon)::text AS polygon
-    FROM "fields" WHERE id = ${params.id}
+    FROM "fields" WHERE id = ${params.id} AND deleted_at IS NULL
   `;
   const field = rows[0];
   if (!field) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -99,6 +99,27 @@ export async function DELETE(
   const ownership = await ensureOwnership(user.id, params.id);
   if (!ownership) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  await prisma.field.delete({ where: { id: params.id } });
-  return NextResponse.json({ ok: true });
+  // Twarde usunięcie ATOMOWO tylko gdy pole nie ma ŻADNEGO zabiegu — jedno
+  // zapytanie DELETE ... WHERE NOT EXISTS(...). Dzięki temu zabieg dodany w
+  // międzyczasie (druga karta / agent AI) blokuje kasowanie i nie ma okna TOCTOU
+  // między liczeniem a usuwaniem, które mogłoby zniszczyć prawnie wymaganą księgę.
+  const hardDeleted = await prisma.$executeRaw`
+    DELETE FROM "fields"
+    WHERE id = ${params.id}
+      AND NOT EXISTS (SELECT 1 FROM "treatments" WHERE field_id = ${params.id})
+  `;
+  if (hardDeleted > 0) {
+    return NextResponse.json({ ok: true });
+  }
+
+  // Pole ma zabiegi → soft-delete chroni e-rejestr (IJHARS). updateMany nie
+  // rzuca gdy 0 wierszy (np. równoległe usunięcie).
+  const treatmentsPreserved = await prisma.treatment.count({
+    where: { fieldId: params.id },
+  });
+  await prisma.field.updateMany({
+    where: { id: params.id, deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
+  return NextResponse.json({ ok: true, softDeleted: true, treatmentsPreserved });
 }

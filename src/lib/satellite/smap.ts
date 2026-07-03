@@ -24,58 +24,17 @@ export interface SmapReading {
  * Dla MVP: zwraca mock dane jeśli credentials nie ustawione.
  */
 export async function fetchSmapSoilMoisture(
-  lat: number,
-  lon: number,
+  _lat: number,
+  _lon: number,
 ): Promise<SmapReading | null> {
-  const username = process.env.EARTHDATA_USERNAME;
-  const password = process.env.EARTHDATA_PASSWORD;
-
-  if (!username || !password) {
-    // MVP fallback: zwróć null — użyjemy Open-Meteo zamiast
-    return null;
-  }
-
-  const bbox = [lon - 0.05, lat - 0.05, lon + 0.05, lat + 0.05].join(',');
-  const today = new Date().toISOString().slice(0, 10);
-  const tenDaysAgo = new Date(Date.now() - 10 * 864e5).toISOString().slice(0, 10);
-
-  const params = new URLSearchParams({
-    collection_concept_id: SMAP_COLLECTION_ID,
-    bounding_box: bbox,
-    temporal: `${tenDaysAgo}T00:00:00Z,${today}T23:59:59Z`,
-    sort_key: '-start_date',
-    page_size: '1',
-  });
-
-  const res = await fetch(`${EARTHDATA_CMR}?${params.toString()}`, {
-    headers: {
-      Authorization: `Basic ${Buffer.from(`${username}:${password}`).toString('base64')}`,
-    },
-  });
-
-  if (!res.ok) {
-    console.error(`SMAP CMR failed: ${res.status}`);
-    return null;
-  }
-
-  const data = (await res.json()) as {
-    feed?: {
-      entry?: Array<{
-        time_start: string;
-        summary?: string;
-      }>;
-    };
-  };
-
-  const entry = data.feed?.entry?.[0];
-  if (!entry) return null;
-
-  // MVP: używamy timestamp + mock 35% do czasu kiedy dopniemy pełny SMAP HDF decoding
-  // Pełna implementacja wymaga pobrania HDF5 granule i wyekstraktowania wartości dla lat/lon
-  // (zbyt skomplikowane na MVP — Open-Meteo soil_moisture jest dokładniejsze dla Polski)
-  return {
-    observedAt: entry.time_start,
-    moisturePct: 35, // placeholder — zaimplementujemy HDF5 decoding w Fazie 2
-    source: 'smap-l3',
-  };
+  // Dekodowanie HDF5 SMAP nie jest jeszcze zaimplementowane (Faza 2). Wcześniej ta
+  // funkcja — przy ustawionych EARTHDATA_USERNAME/PASSWORD — zwracała zaszyte na
+  // sztywno 35% jako realny odczyt 'smap-l3'. To AKTYWNIE tłumiło alert suszowy
+  // (reguła: susza gdy NDVI < 0.35 i wilgotność < 25%) i zapisywało fikcję do bazy.
+  // Dopóki nie ma realnego dekodowania granule — zwracamy null i korzystamy z
+  // Open-Meteo soil_moisture_0_to_7cm (dokładniejsze dla PL). Patrz audyt 2.18.
+  //
+  // TODO(Faza 2): pobrać granule HDF5 (CMR: ${EARTHDATA_CMR}, kolekcja
+  // ${SMAP_COLLECTION_ID}) i wyekstraktować wartość dla lat/lon zamiast placeholdera.
+  return null;
 }

@@ -10,6 +10,7 @@
 // 4. Dane które wyskakują po zeskanowaniu: średnie zdrowie, wilgotność, okno działania
 
 import { useEffect, useMemo, useState } from 'react';
+import { ndviColorHex } from '@/lib/design/ndvi-scale';
 
 const FIELD_COLS = 8;
 const FIELD_ROWS = 5;
@@ -22,16 +23,8 @@ type Patch = {
   delay: number;
 };
 
-// Paleta zdrowia roślin — trzymana w sync z silnikiem analiz
-function ndviColor(ndvi: number): string {
-  if (ndvi < 0.2) return '#78350f'; // bare soil brown
-  if (ndvi < 0.35) return '#dc2626'; // stressed
-  if (ndvi < 0.5) return '#f97316'; // orange
-  if (ndvi < 0.6) return '#facc15'; // yellow
-  if (ndvi < 0.7) return '#84cc16'; // light green
-  if (ndvi < 0.8) return '#16a34a'; // green
-  return '#14532d'; // dark green
-}
+// Kolor zdrowia roślin z KANONICZNEJ rampy NDVI (jedno źródło = brand).
+const ndviColor = ndviColorHex;
 
 export function SatelliteScanner() {
   const [scanActive, setScanActive] = useState(false);

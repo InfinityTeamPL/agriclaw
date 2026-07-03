@@ -10,7 +10,7 @@ export async function GET() {
     where: { userId: user.id },
     orderBy: { createdAt: 'asc' },
     include: {
-      fields: { select: { id: true } },
+      fields: { where: { deletedAt: null }, select: { id: true } },
       agents: {
         where: { status: { not: 'DELETED' } },
         select: { id: true, status: true, name: true },

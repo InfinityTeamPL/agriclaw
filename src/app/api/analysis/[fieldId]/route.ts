@@ -32,7 +32,7 @@ export async function POST(
            ST_X(ST_Centroid(f.polygon)) AS centroid_lon
     FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
-    WHERE f.id = ${params.fieldId} AND fa.user_id = ${user.id}
+    WHERE f.id = ${params.fieldId} AND fa.user_id = ${user.id} AND f.deleted_at IS NULL
   `;
 
   const field = rows[0];
@@ -99,9 +99,27 @@ export async function POST(
   }
   const stats = indices.ndvi; // backward-compat alias dla dalszej logiki
 
-  // Previous NDVI dla porównania
+  // Brak bezchmurnych pikseli w oknie 14 dni: po masce chmur SCL raster jest w
+  // całości NaN → validCount === 0, a computeNdviStats zwraca mean = 0. NIE
+  // zapisujemy takiego "0" jako pomiaru (zatruwałby historię i wywołał fałszywy
+  // alarm suszowy przy NDVI < 0.35). Dotyczy tylko realnych danych — mock zawsze
+  // ma validCount > 0. Patrz audyt 1.2 / 2.8.
+  if (!isMock && indices.ndvi.validCount === 0) {
+    return NextResponse.json(
+      {
+        fieldId: field.id,
+        status: 'no_clear_imagery',
+        message:
+          'Brak bezchmurnego zdjęcia satelitarnego w ostatnich 14 dniach. Sprawdź radar Sentinel-1 (widzi przez chmury) albo spróbuj ponownie za kilka dni.',
+        cdse_error: cdseError,
+      },
+      { status: 200 },
+    );
+  }
+
+  // Previous NDVI dla porównania (tylko realne pomiary — mock nie może zafałszować trendu)
   const previousReading = await prisma.ndviReading.findFirst({
-    where: { fieldId: field.id },
+    where: { fieldId: field.id, source: { not: 'mock' } },
     orderBy: { observedAt: 'desc' },
   });
 
@@ -124,6 +142,7 @@ export async function POST(
       saviMax: indices.savi.max,
       validCount: indices.ndvi.validCount,
       cloudCover: 0,
+      source: isMock ? 'mock' : 'sentinel-2',
     },
   });
 
@@ -155,6 +174,7 @@ export async function POST(
     daysWithoutRain: weatherSummary.daysWithoutRain,
     avgEt0Next7: weatherSummary.avgEt0Next7,
     soilMoisturePct,
+    monthOfYear: new Date().getMonth() + 1,
   });
 
   const savedRec = await prisma.recommendation.create({

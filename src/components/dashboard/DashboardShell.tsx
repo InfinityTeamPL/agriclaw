@@ -27,6 +27,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { NdviKeyline } from '@/components/brand/NdviKeyline';
 
 interface DashboardShellProps {
   farm: { id: string; name: string; address: string };
@@ -56,6 +57,13 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
     exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 
   const handleSignOut = () => {
+    // Wyczyść cache SW z ewentualnych pozostałości przed wylogowaniem —
+    // chroni dane gospodarstwa na współdzielonym urządzeniu.
+    try {
+      navigator.serviceWorker?.controller?.postMessage({ type: 'CLEAR_RUNTIME_CACHE' });
+    } catch {
+      /* SW niedostępny — nic nie szkodzi */
+    }
     signOut({ callbackUrl: '/' });
   };
 
@@ -95,30 +103,24 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
     .join('') || 'AG';
 
   return (
-    <div className="min-h-screen flex bg-[#f4f7f3] relative overflow-hidden">
-      {/* Ambient gradient backdrop */}
-      <div className="pointer-events-none absolute inset-0 -z-0">
-        <div className="absolute -top-32 -left-24 w-[520px] h-[520px] rounded-full bg-emerald-200/40 blur-3xl" />
-        <div className="absolute top-1/2 -right-32 w-[480px] h-[480px] rounded-full bg-sky-200/30 blur-3xl" />
-        <div className="absolute bottom-0 left-1/3 w-[420px] h-[420px] rounded-full bg-lime-200/30 blur-3xl" />
-      </div>
-
+    <div className="min-h-screen flex bg-background relative">
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          'relative z-10 hidden md:flex md:flex-col border-r border-white/40 bg-white/55 backdrop-blur-xl transition-[width] duration-300 ease-out',
+          'relative z-10 hidden md:flex md:flex-col border-r border-border bg-card transition-[width] duration-300 ease-out',
           collapsed ? 'md:w-[76px]' : 'md:w-64',
         )}
       >
-        <div className="h-16 flex items-center gap-3 px-4 border-b border-white/50">
-          <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 shadow-[0_8px_24px_-6px_rgba(16,185,129,0.55)] flex items-center justify-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-tr from-white/30 to-transparent" />
-            <span className="relative text-white font-semibold tracking-tight text-sm">Ag</span>
+        {/* Sygnatura: keyline rampy NDVI na górze paska bocznego */}
+        <NdviKeyline height={3} rounded={false} />
+        <div className="h-16 flex items-center gap-3 px-4 border-b border-border">
+          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center relative overflow-hidden">
+            <span className="relative text-primary-foreground font-display font-semibold tracking-tight text-sm">Ag</span>
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-gray-900 tracking-tight">AgriClaw</div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-700/80">Cyfrowy agronom</div>
+              <div className="font-display font-semibold text-foreground tracking-tight">AgriClaw</div>
+              <div className="hud-label">Cyfrowy agronom</div>
             </div>
           )}
         </div>
@@ -275,14 +277,14 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
 
           {/* Right cluster */}
           <div className="flex items-center gap-2">
-            <button
-              type="button"
+            <Link
+              href="/dashboard"
               className="hidden sm:inline-flex relative items-center justify-center w-10 h-10 rounded-2xl text-gray-600 hover:bg-white/70 hover:text-emerald-700 transition"
-              aria-label="Powiadomienia"
+              aria-label="Alerty i pilne sygnały"
+              title="Alerty i pilne sygnały"
             >
               <Bell className="w-[18px] h-[18px]" />
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" />
-            </button>
+            </Link>
 
             {/* Profile menu */}
             <div className="relative" ref={profileRef}>

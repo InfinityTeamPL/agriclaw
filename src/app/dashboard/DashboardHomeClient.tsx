@@ -5,6 +5,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -19,7 +20,6 @@ import {
   MessageSquare,
   CheckCircle2,
   CircleDot,
-  Sparkles,
   Loader2,
   Radar,
   ShieldCheck,
@@ -28,8 +28,15 @@ import { useRouter } from 'next/navigation';
 import { CountUp } from '@/components/dashboard/CountUp';
 import { Sparkline } from '@/components/dashboard/Sparkline';
 import { PolygonThumb } from '@/components/dashboard/PolygonThumb';
-import { FarmMiniMap } from '@/components/dashboard/FarmMiniMap';
-import { classifyNdvi, ndviColorHex } from '@/lib/satellite/ndvi';
+// Lazy-load MapLibre (~250 kB gzip) — poza First Load JS panelu, ładowany dopiero
+// przy renderze mapy. Audyt: perf (maplibre statycznie w bundlu dashboardu).
+const FarmMiniMap = dynamic(
+  () => import('@/components/dashboard/FarmMiniMap').then((m) => m.FarmMiniMap),
+  { ssr: false, loading: () => <div className="h-full w-full animate-pulse rounded-lg bg-secondary" /> },
+);
+import { classifyNdvi } from '@/lib/satellite/ndvi';
+import { ndviColorHex } from '@/lib/design/ndvi-scale';
+import { NdviKeyline } from '@/components/brand/NdviKeyline';
 import { cropLabel, formatHa, formatDatePL, formatDateTimePL, severityStyle } from '@/lib/ui/format';
 
 interface FieldItem {
@@ -146,24 +153,21 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
       {/* Header */}
       <motion.div variants={item} className="flex items-end justify-between flex-wrap gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-100/70 text-emerald-800 text-xs font-medium">
-            <Sparkles className="w-3.5 h-3.5" />
-            Dzisiaj na Twoim gospodarstwie
+          <div className="inline-flex items-center gap-2 border border-border bg-card px-3 py-1.5 rounded-md">
+            <span className="w-1.5 h-1.5 rounded-full bg-signal-healthy" />
+            <span className="hud-label">Dzisiaj na Twoim gospodarstwie</span>
           </div>
-          <h1 className="mt-3 text-3xl sm:text-4xl font-semibold tracking-tight text-gray-900">
-            Dzień dobry w{' '}
-            <span className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-600 bg-clip-text text-transparent">
-              {farm.name}
-            </span>
+          <h1 className="mt-3 font-display text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
+            Dzień dobry w <span className="text-primary">{farm.name}</span>
           </h1>
-          <p className="mt-1.5 text-sm text-gray-500 inline-flex items-center gap-1.5">
+          <p className="mt-1.5 text-sm text-muted-foreground inline-flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5" />
             {farm.address}
           </p>
         </div>
         <Link
           href="/dashboard/fields/new"
-          className="group inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-medium px-5 py-2.5 rounded-2xl shadow-[0_10px_25px_-10px_rgba(16,185,129,0.7)] hover:shadow-[0_14px_30px_-10px_rgba(16,185,129,0.9)] hover:-translate-y-0.5 transition"
+          className="group inline-flex items-center gap-2 bg-primary text-primary-foreground font-semibold px-5 py-2.5 rounded-md shadow-card hover:brightness-110 transition-all"
         >
           <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
           Dodaj pole
@@ -174,20 +178,20 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
       {highSeverityRecs.length > 0 && (
         <motion.div
           variants={item}
-          className="rounded-xl bg-white border border-red-200 p-5"
+          className="rounded-lg bg-card border border-destructive/40 shadow-card p-5"
         >
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-lg bg-red-50 text-red-700 border border-red-200 flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-md bg-destructive/10 text-destructive border border-destructive/30 flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-4 h-4" />
               </div>
               <div>
-                <div className="font-semibold text-gray-900 text-lg">
+                <div className="font-display font-semibold tracking-tight text-foreground text-lg">
                   {highSeverityRecs.length === 1
                     ? 'Pilny sygnał wymaga uwagi'
                     : `${highSeverityRecs.length} pilnych sygnałów wymaga uwagi`}
                 </div>
-                <div className="text-sm text-gray-600 mt-0.5">
+                <div className="text-sm text-muted-foreground mt-0.5">
                   Kliknij w sygnał, żeby przejść do pola.
                 </div>
               </div>
@@ -195,7 +199,7 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
             <button
               onClick={runScan}
               disabled={scanning || fields.length === 0}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white border border-gray-200 text-gray-900 text-sm font-semibold hover:bg-gray-50 transition disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md bg-card border border-border text-foreground text-sm font-semibold hover:border-foreground/30 transition disabled:opacity-50"
             >
               {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radar className="w-4 h-4" />}
               {scanning ? 'Skanuję…' : 'Skanuj wszystkie pola'}
@@ -206,21 +210,19 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
               <Link
                 key={r.id}
                 href={`/dashboard/fields/${r.fieldId}`}
-                className="group rounded-2xl bg-white/80 border border-red-100 p-3 hover:bg-white hover:shadow-md transition flex items-start gap-2"
+                className="group rounded-md bg-card border border-destructive/20 p-3 hover:border-destructive/40 hover:shadow-card transition flex items-start gap-2"
               >
-                <div className="w-2 h-2 rounded-full bg-red-600 shrink-0 mt-1.5 animate-pulse" />
+                <div className="w-2 h-2 rounded-full bg-destructive shrink-0 mt-1.5 animate-pulse" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs font-semibold text-gray-500 truncate">
-                    {r.fieldName}
-                  </div>
-                  <div className="text-sm font-medium text-gray-900 truncate group-hover:text-red-700">
+                  <div className="hud-label truncate">{r.fieldName}</div>
+                  <div className="text-sm font-medium text-foreground truncate group-hover:text-destructive">
                     {r.title}
                   </div>
-                  <div className="text-[10px] text-gray-400 mt-0.5">
+                  <div className="mt-0.5 font-mono tabular text-[10px] text-muted-foreground">
                     {formatDateTimePL(r.createdAt)}
                   </div>
                 </div>
-                <ArrowUpRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-red-600 shrink-0" />
+                <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-destructive shrink-0" />
               </Link>
             ))}
           </div>
@@ -231,15 +233,15 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
       {highSeverityRecs.length === 0 && fields.length > 0 && (
         <motion.div
           variants={item}
-          className="rounded-xl bg-white border border-gray-200 p-4 flex items-center justify-between gap-3 flex-wrap"
+          className="rounded-lg bg-card border border-border shadow-card p-4 flex items-center justify-between gap-3 flex-wrap"
         >
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-md bg-signal-healthy/10 text-signal-healthy border border-signal-healthy/30 flex items-center justify-center">
               <CheckCircle2 className="w-4 h-4" />
             </div>
             <div>
-              <div className="font-semibold text-gray-900">Brak pilnych sygnałów</div>
-              <div className="text-sm text-gray-500">
+              <div className="font-semibold text-foreground">Brak pilnych sygnałów</div>
+              <div className="text-sm text-muted-foreground">
                 Skanuj wszystkie pola żeby sprawdzić przymrozki, upały, choroby i bilans wodny.
               </div>
             </div>
@@ -247,7 +249,7 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
           <button
             onClick={runScan}
             disabled={scanning}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:brightness-110 transition disabled:opacity-50"
           >
             {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radar className="w-4 h-4" />}
             {scanning ? 'Skanuję…' : 'Skanuj pola'}
@@ -264,7 +266,7 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
           icon={<Sprout className="w-4 h-4" />}
           label="Pola"
           value={<CountUp value={stats.fieldsCount} />}
-          accent="emerald"
+          accent="healthy"
           trend={stats.fieldsCount > 0 ? 'aktywne' : 'brak'}
         />
         <StatTile
@@ -272,21 +274,21 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
           label="Łącznie hektarów"
           value={<CountUp value={stats.totalHa} format={(v) => formatHa(v)} />}
           suffix="ha"
-          accent="sky"
+          accent="frost"
           trend="powierzchnia"
         />
         <StatTile
           icon={<Satellite className="w-4 h-4" />}
           label="Ostatnia analiza"
           valueText={stats.lastAnalysisAt ? formatDatePL(stats.lastAnalysisAt) : '—'}
-          accent="violet"
+          accent="neutral"
           trend={stats.lastAnalysisAt ? 'satelita Sentinel-2' : 'nie uruchomiono'}
         />
         <StatTile
           icon={<AlertTriangle className="w-4 h-4" />}
           label="Pilne sygnały"
           value={<CountUp value={stats.activeAlerts} />}
-          accent={stats.activeAlerts > 0 ? 'amber' : 'emerald'}
+          accent={stats.activeAlerts > 0 ? 'heat' : 'healthy'}
           trend={stats.activeAlerts > 0 ? 'sprawdź pola' : 'wszystko spokojne'}
         />
         <Link href="/dashboard/compliance" className="contents">
@@ -294,7 +296,7 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
             icon={<ShieldCheck className="w-4 h-4" />}
             label="Zgodność ARiMR"
             value={<><CountUp value={stats.complianceScore} />%</>}
-            accent={stats.complianceScore >= 80 ? 'emerald' : stats.complianceScore >= 50 ? 'amber' : 'rose'}
+            accent={stats.complianceScore >= 80 ? 'healthy' : stats.complianceScore >= 50 ? 'heat' : 'drought'}
             trend={
               stats.complianceFails > 0
                 ? `${stats.complianceFails} naruszenia`
@@ -309,10 +311,10 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
       {/* Map + Activity stream */}
       <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-4 lg:gap-6">
         {/* Farm map */}
-        <div className="relative rounded-3xl overflow-hidden bg-white/70 backdrop-blur-md border border-white/60 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.25)]">
-          <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/90 backdrop-blur text-xs font-medium text-gray-700 border border-white">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Widok z satelity · {fields.length} {fields.length === 1 ? 'pole' : 'pól'}
+        <div className="relative rounded-lg overflow-hidden bg-card border border-border shadow-card">
+          <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 rounded-md bg-card/95 border border-border">
+            <div className="w-1.5 h-1.5 rounded-full bg-signal-healthy animate-pulse" />
+            <span className="hud-label">Widok z satelity · {fields.length} {fields.length === 1 ? 'pole' : 'pól'}</span>
           </div>
           {fields.length > 0 ? (
             <FarmMiniMap
@@ -321,19 +323,19 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
               className="relative w-full h-[340px] sm:h-[380px]"
             />
           ) : (
-            <div className="h-[340px] sm:h-[380px] flex flex-col items-center justify-center gap-3 bg-gradient-to-br from-emerald-50 via-lime-50 to-sky-50">
-              <div className="w-14 h-14 rounded-3xl bg-white/70 backdrop-blur flex items-center justify-center shadow-sm">
-                <MapPin className="w-6 h-6 text-emerald-600" />
+            <div className="h-[340px] sm:h-[380px] flex flex-col items-center justify-center gap-3 cadastral-grid">
+              <div className="w-14 h-14 rounded-md bg-card border border-border flex items-center justify-center shadow-card">
+                <MapPin className="w-6 h-6 text-primary" />
               </div>
               <div className="text-center px-6">
-                <div className="text-base font-medium text-gray-900">Nie narysowałeś jeszcze pól</div>
-                <div className="text-sm text-gray-500 mt-1">
+                <div className="text-base font-medium text-foreground">Nie narysowałeś jeszcze pól</div>
+                <div className="text-sm text-muted-foreground mt-1">
                   Dodaj pierwsze pole — narysuj granicę na mapie satelitarnej.
                 </div>
               </div>
               <Link
                 href="/dashboard/fields/new"
-                className="inline-flex items-center gap-2 mt-1 bg-emerald-600 text-white font-medium px-4 py-2 rounded-2xl hover:bg-emerald-700 transition"
+                className="inline-flex items-center gap-2 mt-1 bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-md hover:brightness-110 transition"
               >
                 <Plus className="w-4 h-4" />
                 Narysuj pierwsze pole
@@ -343,15 +345,15 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
         </div>
 
         {/* Activity stream */}
-        <div className="rounded-3xl bg-white/70 backdrop-blur-md border border-white/60 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.25)] overflow-hidden flex flex-col">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="rounded-lg bg-card border border-border shadow-card overflow-hidden flex flex-col">
+          <div className="px-5 py-4 border-b border-border flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-emerald-600" />
-              <h2 className="text-sm font-semibold text-gray-900">Ostatnia aktywność</h2>
+              <Activity className="w-4 h-4 text-primary" />
+              <h2 className="font-display text-sm font-semibold tracking-tight text-foreground">Ostatnia aktywność</h2>
             </div>
             <Link
               href="/dashboard/agent"
-              className="text-xs font-medium text-emerald-700 hover:text-emerald-800 inline-flex items-center gap-1"
+              className="text-xs font-medium text-primary hover:brightness-110 inline-flex items-center gap-1"
             >
               Agent
               <ArrowUpRight className="w-3 h-3" />
@@ -359,39 +361,39 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
           </div>
           <div className="flex-1 overflow-y-auto max-h-[340px] sm:max-h-[380px]">
             {recentEvents.length === 0 && recentRecs.length === 0 ? (
-              <div className="p-6 text-sm text-gray-500 text-center">
+              <div className="p-6 text-sm text-muted-foreground text-center">
                 Brak aktywności. Uruchom analizę pola, aby zobaczyć tu rekomendacje.
               </div>
             ) : (
-              <ul className="divide-y divide-gray-100">
+              <ul className="divide-y divide-border">
                 {recentRecs.slice(0, 3).map((r) => {
                   const style = severityStyle(r.severity);
                   return (
-                    <li key={`rec-${r.id}`} className="px-5 py-4 hover:bg-gray-50 transition">
+                    <li key={`rec-${r.id}`} className="px-5 py-4 hover:bg-secondary transition">
                       <Link href={`/dashboard/fields/${r.fieldId}`} className="block">
                         <div className="flex items-start gap-3">
-                          <div className="w-8 h-8 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shrink-0 shadow-sm">
-                            <Sparkles className="w-4 h-4 text-white" />
+                          <div className="w-8 h-8 rounded-md bg-signal-healthy/10 border border-signal-healthy/30 flex items-center justify-center shrink-0">
+                            <Satellite className="w-4 h-4 text-signal-healthy" />
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span
-                                className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${style.pill}`}
+                                className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md border ${style.pill}`}
                               >
                                 {style.label}
                               </span>
-                              <span className="text-xs text-gray-400">
+                              <span className="font-mono tabular text-[10px] text-muted-foreground">
                                 {formatDateTimePL(r.createdAt)}
                               </span>
                             </div>
-                            <div className="mt-1 text-sm font-medium text-gray-900 truncate">
+                            <div className="mt-1 text-sm font-medium text-foreground truncate">
                               {r.title}
                             </div>
-                            <div className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                            <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                               {r.message}
                             </div>
-                            <div className="text-[11px] text-gray-400 mt-1.5">
-                              Pole: <span className="text-gray-600">{r.fieldName}</span>
+                            <div className="text-[11px] text-muted-foreground mt-1.5">
+                              Pole: <span className="text-foreground">{r.fieldName}</span>
                             </div>
                           </div>
                         </div>
@@ -400,25 +402,25 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
                   );
                 })}
                 {recentEvents.map((e) => (
-                  <li key={`evt-${e.id}`} className="px-5 py-4 hover:bg-gray-50 transition">
+                  <li key={`evt-${e.id}`} className="px-5 py-4 hover:bg-secondary transition">
                     <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-2xl bg-gradient-to-br from-sky-100 to-sky-50 border border-sky-100 flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-md bg-secondary border border-border flex items-center justify-center shrink-0">
                         <EventIcon type={e.type} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-sky-700">
+                          <span className="hud-label">
                             {prettyEventType(e.type)}
                           </span>
-                          <span className="text-xs text-gray-400">
+                          <span className="font-mono tabular text-[10px] text-muted-foreground">
                             {formatDateTimePL(e.createdAt)}
                           </span>
                         </div>
-                        <div className="mt-0.5 text-sm font-medium text-gray-900 truncate">
+                        <div className="mt-0.5 text-sm font-medium text-foreground truncate">
                           {e.title}
                         </div>
                         {e.detail && (
-                          <div className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                          <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                             {e.detail}
                           </div>
                         )}
@@ -436,13 +438,13 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
       <motion.section variants={item} className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-gray-900">Twoje pola</h2>
-            <p className="text-sm text-gray-500">Podgląd kondycji każdego kawałka gospodarstwa.</p>
+            <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">Twoje pola</h2>
+            <p className="text-sm text-muted-foreground">Podgląd kondycji każdego kawałka gospodarstwa.</p>
           </div>
           {fields.length > 0 && (
             <Link
               href="/dashboard/fields"
-              className="text-sm font-medium text-emerald-700 hover:text-emerald-800 inline-flex items-center gap-1"
+              className="text-sm font-medium text-primary hover:brightness-110 inline-flex items-center gap-1"
             >
               Wszystkie pola
               <ArrowUpRight className="w-3.5 h-3.5" />
@@ -451,17 +453,17 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
         </div>
 
         {fields.length === 0 ? (
-          <div className="rounded-3xl bg-white/60 backdrop-blur-md border border-dashed border-emerald-300/60 p-10 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 mx-auto flex items-center justify-center mb-3">
-              <Sprout className="w-5 h-5 text-emerald-600" />
+          <div className="rounded-lg bg-card border border-dashed border-border p-10 text-center">
+            <div className="w-12 h-12 rounded-md bg-signal-healthy/10 border border-signal-healthy/30 mx-auto flex items-center justify-center mb-3">
+              <Sprout className="w-5 h-5 text-signal-healthy" />
             </div>
-            <p className="text-gray-900 font-medium">Zacznij od pierwszego pola</p>
-            <p className="text-sm text-gray-500 mt-1 max-w-xs mx-auto">
+            <p className="text-foreground font-medium">Zacznij od pierwszego pola</p>
+            <p className="text-sm text-muted-foreground mt-1 max-w-xs mx-auto">
               Narysuj granicę na mapie satelitarnej — reszta (NDVI, pogoda, porady) dzieje się sama.
             </p>
             <Link
               href="/dashboard/fields/new"
-              className="inline-flex items-center gap-2 mt-5 bg-emerald-600 text-white font-medium px-4 py-2 rounded-2xl hover:bg-emerald-700 transition"
+              className="inline-flex items-center gap-2 mt-5 bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-md hover:brightness-110 transition"
             >
               <Plus className="w-4 h-4" />
               Dodaj pierwsze pole
@@ -485,26 +487,26 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
       <motion.div variants={item}>
         <Link
           href="/dashboard/agent"
-          className="group relative block rounded-3xl bg-gradient-to-br from-gray-900 via-emerald-950 to-emerald-900 text-white overflow-hidden p-6 sm:p-8 shadow-[0_30px_80px_-20px_rgba(6,78,59,0.55)] hover:shadow-[0_30px_80px_-20px_rgba(6,78,59,0.8)] transition"
+          className="group relative block rounded-lg bg-secondary border border-border overflow-hidden p-6 sm:p-8 shadow-card hover:shadow-pop transition"
         >
-          <div className="absolute -top-12 -right-12 w-64 h-64 rounded-full bg-emerald-500/20 blur-3xl" />
-          <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-sky-500/15 blur-3xl" />
+          {/* Rampa NDVI jako sygnatura marki na górnej krawędzi */}
+          <NdviKeyline className="absolute top-0 left-0" rounded={false} height={3} />
           <div className="relative flex items-center gap-4 flex-wrap">
-            <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur border border-white/20 flex items-center justify-center">
-              <MessageSquare className="w-5 h-5 text-emerald-200" />
+            <div className="w-12 h-12 rounded-md bg-card border border-border flex items-center justify-center">
+              <MessageSquare className="w-5 h-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-xs uppercase tracking-[0.2em] text-emerald-300 font-medium">
+              <div className="hud-label">
                 AgroAgent
               </div>
-              <div className="mt-0.5 text-lg sm:text-xl font-semibold tracking-tight">
+              <div className="mt-0.5 font-display text-lg sm:text-xl font-semibold tracking-tight text-foreground">
                 Zapytaj o swoje pola — odpowie w sekundę.
               </div>
-              <div className="text-sm text-emerald-100/80 mt-0.5">
+              <div className="text-sm text-muted-foreground mt-0.5">
                 „Co zrobić z polem za stodołą?" · „Kiedy siać rzepak?" · „Prognoza na ten tydzień?"
               </div>
             </div>
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white text-gray-900 font-medium group-hover:bg-emerald-50 transition">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground font-semibold group-hover:brightness-110 transition">
               Otwórz czat
               <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition" />
             </div>
@@ -515,33 +517,28 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
   );
 }
 
-type AccentColor = 'emerald' | 'sky' | 'amber' | 'violet' | 'rose';
+type AccentColor = 'healthy' | 'frost' | 'heat' | 'drought' | 'neutral';
 
-const accentTokens: Record<AccentColor, { grad: string; icon: string; trend: string }> = {
-  emerald: {
-    grad: 'from-emerald-500/15 via-emerald-500/5 to-transparent',
-    icon: 'bg-emerald-100 text-emerald-700',
-    trend: 'text-emerald-700',
+const accentTokens: Record<AccentColor, { icon: string; trend: string }> = {
+  healthy: {
+    icon: 'bg-signal-healthy/10 text-signal-healthy',
+    trend: 'text-signal-healthy',
   },
-  sky: {
-    grad: 'from-sky-500/15 via-sky-500/5 to-transparent',
-    icon: 'bg-sky-100 text-sky-700',
-    trend: 'text-sky-700',
+  frost: {
+    icon: 'bg-signal-frost/10 text-signal-frost',
+    trend: 'text-signal-frost',
   },
-  amber: {
-    grad: 'from-amber-500/15 via-amber-500/5 to-transparent',
-    icon: 'bg-amber-100 text-amber-700',
-    trend: 'text-amber-700',
+  heat: {
+    icon: 'bg-signal-heat/10 text-signal-heat',
+    trend: 'text-signal-heat',
   },
-  violet: {
-    grad: 'from-violet-500/15 via-violet-500/5 to-transparent',
-    icon: 'bg-violet-100 text-violet-700',
-    trend: 'text-violet-700',
+  drought: {
+    icon: 'bg-signal-drought/10 text-signal-drought',
+    trend: 'text-signal-drought',
   },
-  rose: {
-    grad: 'from-rose-500/15 via-rose-500/5 to-transparent',
-    icon: 'bg-rose-100 text-rose-700',
-    trend: 'text-rose-700',
+  neutral: {
+    icon: 'bg-secondary text-muted-foreground',
+    trend: 'text-muted-foreground',
   },
 };
 
@@ -564,22 +561,19 @@ function StatTile({
 }) {
   const tokens = accentTokens[accent];
   return (
-    <div className="relative rounded-3xl bg-white/70 backdrop-blur-md border border-white/60 p-4 sm:p-5 overflow-hidden group hover:-translate-y-0.5 hover:shadow-xl transition-all duration-300 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.3)]">
-      <div
-        className={`absolute inset-0 bg-gradient-to-br ${tokens.grad} opacity-60 group-hover:opacity-100 transition-opacity`}
-      />
+    <div className="relative rounded-lg bg-card border border-border p-4 sm:p-5 overflow-hidden group hover:-translate-y-0.5 hover:shadow-pop transition-all duration-300 shadow-card">
       <div className="relative flex items-start justify-between gap-3">
         <div>
-          <div className="text-xs text-gray-500 font-medium">{label}</div>
-          <div className="mt-2 text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 flex items-baseline gap-1">
+          <div className="hud-label">{label}</div>
+          <div className="mt-2 font-mono tabular text-2xl sm:text-3xl font-semibold tracking-tight text-foreground flex items-baseline gap-1">
             {value ?? <span>{valueText}</span>}
-            {suffix && <span className="text-sm text-gray-400 font-normal">{suffix}</span>}
+            {suffix && <span className="text-sm text-muted-foreground font-normal">{suffix}</span>}
           </div>
           {trend && (
             <div className={`text-[11px] font-medium mt-1 ${tokens.trend}`}>{trend}</div>
           )}
         </div>
-        <div className={`w-9 h-9 rounded-2xl ${tokens.icon} flex items-center justify-center shrink-0`}>
+        <div className={`w-9 h-9 rounded-md ${tokens.icon} flex items-center justify-center shrink-0`}>
           {icon}
         </div>
       </div>
@@ -600,7 +594,7 @@ function FieldCard({ field }: { field: FieldItem }) {
   return (
     <Link
       href={`/dashboard/fields/${field.id}`}
-      className="group relative block rounded-3xl bg-white/80 backdrop-blur-md border border-white/60 overflow-hidden hover:-translate-y-1 hover:shadow-2xl shadow-[0_10px_30px_-18px_rgba(15,23,42,0.25)] transition-all duration-300"
+      className="group relative block rounded-lg bg-card border border-border overflow-hidden hover:-translate-y-1 hover:shadow-pop shadow-card transition-all duration-300"
     >
       {/* Header with polygon thumb */}
       <div
@@ -620,22 +614,22 @@ function FieldCard({ field }: { field: FieldItem }) {
         <div className="absolute top-3 right-3">
           {field.ndviMean !== null ? (
             <div
-              className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/95 backdrop-blur border"
-              style={{ borderColor: `${ndviColor}55`, color: '#0f172a' }}
+              className="inline-flex items-center gap-1.5 font-mono tabular text-[11px] font-semibold px-2.5 py-1 rounded-md bg-card border"
+              style={{ borderColor: `${ndviColor}55`, color: 'hsl(var(--foreground))' }}
             >
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ndviColor }} />
               NDVI {field.ndviMean.toFixed(2)}
             </div>
           ) : (
-            <div className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full bg-white/95 backdrop-blur border border-gray-200 text-gray-500">
+            <div className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-md bg-card border border-border text-muted-foreground">
               Brak analizy
             </div>
           )}
         </div>
         {/* Crop pill top-left */}
         <div className="absolute top-3 left-3">
-          <div className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full bg-white/95 backdrop-blur border border-white text-gray-700">
-            <Sprout className="w-3 h-3 text-emerald-600" />
+          <div className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-md bg-card border border-border text-foreground">
+            <Sprout className="w-3 h-3 text-signal-healthy" />
             {cropLabel(field.crop)}
           </div>
         </div>
@@ -645,15 +639,15 @@ function FieldCard({ field }: { field: FieldItem }) {
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <div className="font-semibold text-gray-900 tracking-tight truncate group-hover:text-emerald-700 transition">
+            <div className="font-semibold text-foreground tracking-tight truncate group-hover:text-primary transition">
               {field.name}
             </div>
-            <div className="text-xs text-gray-500 mt-0.5">
-              {formatHa(field.areaHectares)} ha
+            <div className="text-xs text-muted-foreground mt-0.5">
+              <span className="font-mono tabular">{formatHa(field.areaHectares)}</span> ha
               {cls && ` · ${classLabel[cls] ?? ''}`}
             </div>
           </div>
-          <div className="w-8 h-8 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-emerald-50 group-hover:text-emerald-600 transition">
+          <div className="w-8 h-8 rounded-md bg-secondary flex items-center justify-center text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition">
             <ArrowUpRight className="w-4 h-4" />
           </div>
         </div>
@@ -662,15 +656,15 @@ function FieldCard({ field }: { field: FieldItem }) {
         {field.ndviSeries.length >= 2 ? (
           <div className="mt-3">
             <Sparkline values={field.ndviSeries} color={ndviColor} height={32} />
-            <div className="mt-1 flex items-center justify-between text-[10px] text-gray-400">
-              <span>trend z {field.ndviSeries.length} obserwacji</span>
-              <span>{field.ndviObservedAt ? formatDatePL(field.ndviObservedAt) : ''}</span>
+            <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
+              <span>trend z <span className="font-mono tabular">{field.ndviSeries.length}</span> obserwacji</span>
+              <span className="font-mono tabular">{field.ndviObservedAt ? formatDatePL(field.ndviObservedAt) : ''}</span>
             </div>
           </div>
         ) : (
-          <div className="mt-3 text-[11px] text-gray-400 py-2 border-t border-gray-100">
+          <div className="mt-3 text-[11px] text-muted-foreground py-2 border-t border-border">
             {field.ndviObservedAt
-              ? `Jedna obserwacja · ${formatDatePL(field.ndviObservedAt)}`
+              ? <>Jedna obserwacja · <span className="font-mono tabular">{formatDatePL(field.ndviObservedAt)}</span></>
               : 'Uruchom analizę, aby zebrać pierwsze dane.'}
           </div>
         )}
@@ -681,15 +675,15 @@ function FieldCard({ field }: { field: FieldItem }) {
 
 function EventIcon({ type }: { type: string }) {
   if (type.startsWith('ndvi') || type.startsWith('analysis')) {
-    return <Satellite className="w-4 h-4 text-sky-700" />;
+    return <Satellite className="w-4 h-4 text-signal-frost" />;
   }
   if (type.includes('alert') || type.includes('error')) {
-    return <AlertTriangle className="w-4 h-4 text-amber-600" />;
+    return <AlertTriangle className="w-4 h-4 text-signal-heat" />;
   }
   if (type.includes('deployed') || type.includes('ready')) {
-    return <CheckCircle2 className="w-4 h-4 text-emerald-600" />;
+    return <CheckCircle2 className="w-4 h-4 text-signal-healthy" />;
   }
-  return <CircleDot className="w-4 h-4 text-sky-700" />;
+  return <CircleDot className="w-4 h-4 text-muted-foreground" />;
 }
 
 function prettyEventType(type: string): string {

@@ -1,14 +1,15 @@
 'use client';
 
 // Chat z agentem AgriClaw — SSE streaming z /api/chat/stream.
-// Polerowany design: glass shell, animowane wejścia, typing indicator z bounce,
+// Wygląd instrumentu: karta bg-card + border, keyline NDVI jako sygnatura,
 // markdown w bąbelkach assistant, auto-scroll na nowe wiadomości.
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Send, Bot, User, Sparkles } from 'lucide-react';
+import { Send, Bot, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { NdviKeyline } from '@/components/brand/NdviKeyline';
 import { SimpleMarkdown } from './SimpleMarkdown';
 
 export interface ChatInitialMessage {
@@ -53,13 +54,46 @@ export function ChatInterface({
   );
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  // Czy przewijać automatycznie na dół. Fałsz gdy user sam przewinął w górę,
+  // żeby streaming odpowiedzi nie wyrywał go z czytania.
+  const stickToBottomRef = useRef(true);
+  // Ostatnia pozycja scrolla — służy do odróżnienia gestu użytkownika (scroll W
+  // GÓRĘ) od programowego scrollTo w dół. Bez tego animacja smooth-scroll odpalała
+  // onScroll na każdej klatce i fałszywie wyłączała auto-scroll w trakcie streamu.
+  const lastScrollTopRef = useRef(0);
+  // Abort streamu + strażnik montażu — po odejściu ze strony w trakcie streamu
+  // nie ciągniemy readera i nie robimy setState na odmontowanym komponencie.
+  const abortRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    const el = scrollRef.current;
-    if (el) {
+    if (stickToBottomRef.current && scrollRef.current) {
+      const el = scrollRef.current;
       el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      abortRef.current?.abort();
+    };
+  }, []);
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    // Gest użytkownika = scroll W GÓRĘ (scrollTop maleje). Programowy scrollTo w
+    // dół tylko zwiększa scrollTop, więc nie wyłącza „trzymaj się dołu".
+    const scrolledUp = el.scrollTop < lastScrollTopRef.current - 2;
+    lastScrollTopRef.current = el.scrollTop;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (scrolledUp) {
+      stickToBottomRef.current = false;
+    } else if (distanceFromBottom < 80) {
+      stickToBottomRef.current = true;
+    }
+  };
 
   // Auto-grow textarea
   useEffect(() => {
@@ -82,6 +116,11 @@ export function ChatInterface({
     ]);
     setInput('');
     setSending(true);
+    // Nowa wiadomość = wracamy do trybu „trzymaj się dołu".
+    stickToBottomRef.current = true;
+
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
       const res = await fetch('/api/chat/stream', {
@@ -92,6 +131,7 @@ export function ChatInterface({
           conversationId: conversationId ?? undefined,
           message: text,
         }),
+        signal: controller.signal,
       });
 
       if (!res.ok || !res.body) {
@@ -174,6 +214,8 @@ export function ChatInterface({
         ),
       );
     } catch (err) {
+      // Celowe przerwanie (abort/odmontowanie) — nie pokazuj błędu.
+      if (controller.signal.aborted || !mountedRef.current) return;
       console.error(err);
       setMessages((prev) =>
         prev.map((m) =>
@@ -188,7 +230,8 @@ export function ChatInterface({
       );
       toast.error('Nieoczekiwany błąd. Spróbuj ponownie.');
     } finally {
-      setSending(false);
+      if (abortRef.current === controller) abortRef.current = null;
+      if (mountedRef.current) setSending(false);
     }
   };
 
@@ -205,28 +248,36 @@ export function ChatInterface({
   };
 
   return (
-    <div className="rounded-3xl bg-white/80 backdrop-blur-md border border-white/60 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.3)] flex flex-col min-h-[560px] overflow-hidden">
+    <div className="rounded-lg bg-card border border-border shadow-card flex flex-col min-h-[560px] overflow-hidden">
+      {/* Sygnatura marki: pasek rampy NDVI jako górna krawędź instrumentu */}
+      <NdviKeyline height={3} rounded={false} />
+
       {/* Header */}
-      <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-emerald-50/60 via-white to-sky-50/40">
+      <div className="px-5 py-4 border-b border-border bg-secondary">
         <div className="flex items-center gap-3">
-          <div className="relative w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-[0_6px_20px_-8px_rgba(16,185,129,0.8)]">
-            <Bot className="w-5 h-5 text-white" />
-            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-white" />
+          <div className="relative w-10 h-10 rounded-md bg-primary flex items-center justify-center">
+            <Bot className="w-5 h-5 text-primary-foreground" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-signal-healthy border-2 border-card" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <div className="font-semibold text-gray-900">AgroAgent</div>
-              <span className="text-[10px] uppercase tracking-[0.15em] text-emerald-700 font-semibold bg-emerald-100 px-1.5 py-0.5 rounded-full">
-                Online
+              <div className="font-display font-semibold tracking-tight text-foreground">
+                AgroAgent
+              </div>
+              <span className="inline-flex items-center gap-1.5 border border-border bg-card px-1.5 py-0.5 rounded-md">
+                <span className="w-1.5 h-1.5 rounded-full bg-signal-healthy" />
+                <span className="hud-label">Online</span>
               </span>
             </div>
-            <div className="text-xs text-gray-500">Cyfrowy agronom · zna Twoje pola</div>
+            <div className="text-xs text-muted-foreground">
+              Cyfrowy agronom · zna Twoje pola
+            </div>
           </div>
         </div>
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-5 py-5 space-y-4">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 sm:px-5 py-5 space-y-4">
         {messages.length === 0 ? (
           <EmptyChatTip onPick={(q) => void sendMessage(q)} />
         ) : (
@@ -234,8 +285,8 @@ export function ChatInterface({
             {messages.map((m) => (
               <motion.div
                 key={m.id}
-                initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
               >
                 <MessageBubble message={m} />
@@ -246,8 +297,8 @@ export function ChatInterface({
       </div>
 
       {/* Composer */}
-      <div className="border-t border-gray-100 p-3 sm:p-4 bg-white/70 backdrop-blur">
-        <div className="flex items-end gap-2 rounded-2xl border border-gray-200 bg-white focus-within:ring-2 focus-within:ring-emerald-500/40 focus-within:border-emerald-500 transition p-2">
+      <div className="border-t border-border p-3 sm:p-4 bg-secondary">
+        <div className="flex items-end gap-2 rounded-md border border-input bg-card focus-within:ring-2 focus-within:ring-ring/40 focus-within:border-ring transition p-2">
           <textarea
             ref={textareaRef}
             rows={1}
@@ -256,7 +307,7 @@ export function ChatInterface({
             onKeyDown={handleKeyDown}
             disabled={sending}
             placeholder="Zapytaj agenta, np. Czy pole za stodołą wymaga nawożenia?"
-            className="flex-1 resize-none px-2 py-1.5 bg-transparent focus:outline-none text-sm placeholder:text-gray-400 max-h-[180px]"
+            className="flex-1 resize-none px-2 py-1.5 bg-transparent focus:outline-none text-sm placeholder:text-muted-foreground max-h-[180px]"
             maxLength={4000}
           />
           <button
@@ -264,17 +315,17 @@ export function ChatInterface({
             onClick={send}
             disabled={sending || !input.trim()}
             className={cn(
-              'inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition shrink-0',
+              'inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition shrink-0',
               sending || !input.trim()
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:shadow-lg hover:-translate-y-0.5',
+                ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                : 'bg-primary text-primary-foreground hover:brightness-110',
             )}
           >
-            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            <Send className={cn('w-4 h-4', sending && 'animate-pulse')} />
             <span className="hidden sm:inline">Wyślij</span>
           </button>
         </div>
-        <p className="mt-2 text-[11px] text-gray-400 px-1">
+        <p className="mt-2 hud-label px-1">
           Enter — wyślij · Shift+Enter — nowa linia
         </p>
       </div>
@@ -286,21 +337,20 @@ function EmptyChatTip({ onPick }: { onPick: (q: string) => void }) {
   return (
     <div className="h-full flex flex-col items-center justify-center text-center py-10 px-4">
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
+        initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="relative"
       >
-        <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-[0_14px_36px_-10px_rgba(16,185,129,0.7)]">
-          <Sparkles className="w-7 h-7 text-white" />
+        <div className="w-16 h-16 rounded-md bg-primary flex items-center justify-center">
+          <Bot className="w-7 h-7 text-primary-foreground" />
         </div>
-        <div className="absolute inset-0 rounded-3xl animate-ping bg-emerald-500/20" />
       </motion.div>
       <div className="mt-5 max-w-sm">
-        <div className="text-lg font-semibold text-gray-900 tracking-tight">
+        <div className="hud-label mb-1.5">Agronom AI · gotowy</div>
+        <div className="font-display text-lg font-semibold text-foreground tracking-tight">
           Agent zna Twoje pola
         </div>
-        <div className="text-sm text-gray-500 mt-1">
+        <div className="text-sm text-muted-foreground mt-1">
           Zapytaj po polsku, jak rozmawiasz z sąsiadem. Odpowiedź — w sekundę.
         </div>
       </div>
@@ -313,7 +363,7 @@ function EmptyChatTip({ onPick }: { onPick: (q: string) => void }) {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.08 * i + 0.2 }}
-            className="text-left text-sm rounded-2xl border border-gray-200 bg-white hover:border-emerald-400 hover:bg-emerald-50/40 px-3 py-2.5 transition text-gray-700 hover:text-emerald-800"
+            className="text-left text-sm rounded-md border border-border bg-card hover:border-primary/50 hover:bg-secondary px-3 py-2.5 transition text-foreground"
           >
             „{s}"
           </motion.button>
@@ -329,20 +379,20 @@ function MessageBubble({ message }: { message: ChatMessage }) {
     <div className={cn('flex gap-3 items-end', isUser ? 'flex-row-reverse' : 'flex-row')}>
       <div
         className={cn(
-          'shrink-0 w-8 h-8 rounded-2xl flex items-center justify-center shadow-sm',
+          'shrink-0 w-8 h-8 rounded-md flex items-center justify-center',
           isUser
-            ? 'bg-gradient-to-br from-gray-700 to-gray-900 text-white'
-            : 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white',
+            ? 'bg-foreground text-background'
+            : 'bg-primary text-primary-foreground',
         )}
       >
         {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
       </div>
       <div
         className={cn(
-          'max-w-[80%] px-4 py-2.5 text-sm leading-relaxed shadow-sm',
+          'max-w-[80%] px-4 py-2.5 text-sm leading-relaxed',
           isUser
-            ? 'bg-gradient-to-br from-emerald-600 to-emerald-500 text-white rounded-2xl rounded-br-md'
-            : 'bg-white border border-gray-200 text-gray-900 rounded-2xl rounded-bl-md',
+            ? 'bg-primary text-primary-foreground rounded-md rounded-br-sm'
+            : 'bg-card border border-border text-foreground rounded-md rounded-bl-sm shadow-card',
         )}
       >
         {!message.content && message.streaming ? (
@@ -353,7 +403,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           <div className="space-y-1.5">
             <SimpleMarkdown text={message.content} />
             {message.streaming && (
-              <span className="inline-block w-1.5 h-3 align-baseline bg-emerald-600 ml-0.5 animate-pulse" />
+              <span className="inline-block w-1.5 h-3 align-baseline bg-signal-healthy ml-0.5 animate-pulse" />
             )}
           </div>
         )}
@@ -378,7 +428,7 @@ function TypingDots() {
           width: 7px;
           height: 7px;
           border-radius: 9999px;
-          background-color: #10b981;
+          background-color: hsl(var(--signal-healthy));
           animation: typing-bounce 1.2s infinite ease-in-out;
         }
         @keyframes typing-bounce {

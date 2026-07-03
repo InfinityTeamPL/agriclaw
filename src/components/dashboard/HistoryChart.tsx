@@ -7,6 +7,9 @@
 import { useEffect, useState } from 'react';
 import { Loader2, Calendar, TrendingUp, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { NdviKeyline } from '@/components/brand/NdviKeyline';
+import { ScanLine } from '@/components/brand/ScanLine';
+import { ndviColorHex } from '@/lib/design/ndvi-scale';
 
 interface MonthlyPoint {
   month: string; // YYYY-MM
@@ -31,14 +34,6 @@ interface HistoryResponse {
   oldestYear: string | null;
   newestYear: string | null;
   needsBackfill: boolean;
-}
-
-function ndviColor(v: number): string {
-  if (v < 0.2) return '#7f1d1d';
-  if (v < 0.35) return '#dc2626';
-  if (v < 0.55) return '#f97316';
-  if (v < 0.7) return '#84cc16';
-  return '#14532d';
 }
 
 export function HistoryChart({ fieldId }: { fieldId: string }) {
@@ -85,53 +80,59 @@ export function HistoryChart({ fieldId }: { fieldId: string }) {
 
   if (loading) {
     return (
-      <div className="rounded-3xl bg-white border border-gray-200 p-5 animate-pulse">
-        <div className="h-4 w-40 bg-gray-200 rounded mb-3" />
-        <div className="h-24 bg-gray-100 rounded" />
+      <div className="rounded-lg bg-card border border-border shadow-card overflow-hidden">
+        <NdviKeyline height={3} rounded={false} />
+        <div className="p-5 space-y-3">
+          <div className="hud-label">Historia pola</div>
+          <ScanLine className="h-24" label="Wczytywanie serii NDVI…" />
+        </div>
       </div>
     );
   }
 
   if (!data || data.monthly.length === 0) {
     return (
-      <div className="rounded-3xl bg-white border border-gray-200 p-6 text-center">
-        <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-        <div className="font-semibold text-gray-900">Brak historii pola</div>
-        <p className="text-sm text-gray-500 mb-4 max-w-sm mx-auto">
-          Zobacz jak Twoje pole wyglądało przez ostatnie 5 lat — NDVI od 2020 do dziś,
-          porównanie lat, identyfikacja powtarzających się słabych stref.
-        </p>
-        <div className="flex gap-2 justify-center">
-          <button
-            onClick={() => runBackfill(3)}
-            disabled={backfilling}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 hover:bg-gray-50 text-sm font-medium transition"
-          >
-            {backfilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            3 lata
-          </button>
-          <button
-            onClick={() => runBackfill(5)}
-            disabled={backfilling}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 text-sm font-semibold transition"
-          >
-            {backfilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            5 lat (zalecane)
-          </button>
-          <button
-            onClick={() => runBackfill(10)}
-            disabled={backfilling}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-300 hover:bg-gray-50 text-sm font-medium transition"
-          >
-            {backfilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            10 lat (max)
-          </button>
-        </div>
-        {backfilling && (
-          <div className="text-xs text-gray-500 mt-3 animate-pulse">
-            Pobieram zdjęcia z orbity. Nie zamykaj okna...
+      <div className="rounded-lg bg-card border border-border shadow-card overflow-hidden">
+        <NdviKeyline height={3} rounded={false} />
+        <div className="p-6 text-center">
+          <Calendar className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+          <div className="font-display tracking-tight font-semibold text-foreground">Brak historii pola</div>
+          <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
+            Zobacz jak Twoje pole wyglądało przez ostatnie 5 lat — NDVI od 2020 do dziś,
+            porównanie lat, identyfikacja powtarzających się słabych stref.
+          </p>
+          <div className="flex gap-2 justify-center">
+            <button
+              onClick={() => runBackfill(3)}
+              disabled={backfilling}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-border bg-card hover:bg-secondary text-sm font-medium transition"
+            >
+              {backfilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              3 lata
+            </button>
+            <button
+              onClick={() => runBackfill(5)}
+              disabled={backfilling}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:brightness-110 text-sm font-semibold transition"
+            >
+              {backfilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              5 lat (zalecane)
+            </button>
+            <button
+              onClick={() => runBackfill(10)}
+              disabled={backfilling}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-border bg-card hover:bg-secondary text-sm font-medium transition"
+            >
+              {backfilling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              10 lat (max)
+            </button>
           </div>
-        )}
+          {backfilling && (
+            <div className="hud-label mt-3 animate-pulse">
+              Pobieram zdjęcia z orbity. Nie zamykaj okna...
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -173,23 +174,25 @@ export function HistoryChart({ fieldId }: { fieldId: string }) {
   });
 
   return (
-    <div className="rounded-3xl bg-white border border-gray-200 p-5 space-y-4">
+    <div className="rounded-lg bg-card border border-border shadow-card overflow-hidden">
+      <NdviKeyline height={3} rounded={false} />
+      <div className="p-5 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-violet-50 ring-1 ring-violet-100 flex items-center justify-center">
-            <TrendingUp className="w-4 h-4 text-violet-700" />
+          <div className="w-9 h-9 rounded-md bg-secondary border border-border flex items-center justify-center">
+            <TrendingUp className="w-4 h-4 text-signal-disease" />
           </div>
           <div>
-            <div className="font-semibold text-gray-900">Historia pola</div>
-            <div className="text-xs text-gray-500">
-              {data.totalReadings} pomiarów · {data.oldestYear} — {data.newestYear}
+            <div className="font-display tracking-tight font-semibold text-foreground">Historia pola</div>
+            <div className="hud-label">
+              <span className="tabular">{data.totalReadings}</span> pomiarów · <span className="tabular">{data.oldestYear} — {data.newestYear}</span>
             </div>
           </div>
         </div>
         <button
           onClick={() => runBackfill(10)}
           disabled={backfilling}
-          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-gray-300 hover:bg-gray-50"
+          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border border-border bg-card hover:bg-secondary transition"
         >
           {backfilling ? <Loader2 className="w-3 h-3 animate-spin" /> : <Download className="w-3 h-3" />}
           Uzupełnij 10 lat
@@ -198,8 +201,8 @@ export function HistoryChart({ fieldId }: { fieldId: string }) {
 
       {/* Chart */}
       <div className="overflow-x-auto">
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-44 min-w-[600px]">
-          {/* Y gridlines */}
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-44 min-w-[600px] text-muted-foreground">
+          {/* Y gridlines — chrome wykresu, podąża za motywem */}
           {[0.2, 0.4, 0.6, 0.8].map((v) => (
             <g key={v}>
               <line
@@ -207,7 +210,8 @@ export function HistoryChart({ fieldId }: { fieldId: string }) {
                 x2={W - padding.right}
                 y1={yAt(v)}
                 y2={yAt(v)}
-                stroke="#e5e7eb"
+                stroke="currentColor"
+                strokeOpacity="0.18"
                 strokeDasharray="2,3"
               />
               <text
@@ -215,14 +219,16 @@ export function HistoryChart({ fieldId }: { fieldId: string }) {
                 y={yAt(v) + 3}
                 textAnchor="end"
                 fontSize="9"
-                fill="#9ca3af"
+                fill="currentColor"
+                fillOpacity="0.6"
+                className="tabular"
               >
                 {v.toFixed(1)}
               </text>
             </g>
           ))}
 
-          {/* Area */}
+          {/* Area — kolor DANYCH: ciemna zieleń rampy NDVI */}
           <path
             d={areaPath}
             fill="url(#areaGradient)"
@@ -230,22 +236,22 @@ export function HistoryChart({ fieldId }: { fieldId: string }) {
           />
           <defs>
             <linearGradient id="areaGradient" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#14532d" />
-              <stop offset="100%" stopColor="#14532d" stopOpacity="0" />
+              <stop offset="0%" stopColor={ndviColorHex(0.85)} />
+              <stop offset="100%" stopColor={ndviColorHex(0.85)} stopOpacity="0" />
             </linearGradient>
           </defs>
 
-          {/* Line */}
-          <path d={linePath} fill="none" stroke="#14532d" strokeWidth="1.5" />
+          {/* Line — kolor DANYCH: rampa NDVI (zdrowa biomasa) */}
+          <path d={linePath} fill="none" stroke={ndviColorHex(0.85)} strokeWidth="1.5" />
 
-          {/* Points */}
+          {/* Points — kolor DANYCH: NDVI danego miesiąca */}
           {monthly.map((p, i) => (
             <circle
               key={i}
               cx={xAt(i)}
               cy={yAt(p.mean)}
               r={2.5}
-              fill={ndviColor(p.mean)}
+              fill={ndviColorHex(p.mean)}
             >
               <title>
                 {p.month}: NDVI {p.mean.toFixed(2)} (min {p.min.toFixed(2)}, max {p.max.toFixed(2)}, {p.samples} obserwacji)
@@ -253,7 +259,7 @@ export function HistoryChart({ fieldId }: { fieldId: string }) {
             </circle>
           ))}
 
-          {/* Year ticks */}
+          {/* Year ticks — chrome wykresu */}
           {yearTicks.map((t, i) => (
             <g key={i}>
               <line
@@ -261,7 +267,8 @@ export function HistoryChart({ fieldId }: { fieldId: string }) {
                 x2={t.x}
                 y1={padding.top}
                 y2={padding.top + ch}
-                stroke="#d1d5db"
+                stroke="currentColor"
+                strokeOpacity="0.28"
                 strokeDasharray="1,2"
               />
               <text
@@ -269,8 +276,9 @@ export function HistoryChart({ fieldId }: { fieldId: string }) {
                 y={H - 10}
                 textAnchor="middle"
                 fontSize="10"
-                fill="#6b7280"
+                fill="currentColor"
                 fontWeight="600"
+                className="tabular"
               >
                 {t.year}
               </text>
@@ -281,27 +289,28 @@ export function HistoryChart({ fieldId }: { fieldId: string }) {
 
       {/* Year-over-year peak */}
       {data.yearly.length >= 2 && (
-        <div className="space-y-2 pt-2 border-t border-gray-100">
-          <div className="text-xs font-semibold text-gray-700">Szczyt wegetacji rok do roku (kwiecień–wrzesień)</div>
+        <div className="space-y-2 pt-2 border-t border-border">
+          <div className="hud-label">Szczyt wegetacji rok do roku (kwiecień–wrzesień)</div>
           <div className="flex gap-2 flex-wrap">
             {data.yearly.map((y) => (
               <div
                 key={y.year}
-                className="rounded-xl bg-gray-50 border border-gray-200 px-3 py-2 min-w-[80px]"
+                className="rounded-md bg-secondary border border-border px-3 py-2 min-w-[80px]"
               >
-                <div className="text-[10px] text-gray-500 font-mono">{y.year}</div>
+                <div className="hud-label tabular">{y.year}</div>
                 <div
-                  className="text-lg font-bold tabular-nums"
-                  style={{ color: ndviColor(y.peak) }}
+                  className="font-mono text-lg font-bold tabular"
+                  style={{ color: ndviColorHex(y.peak) }}
                 >
                   {y.peak.toFixed(2)}
                 </div>
-                <div className="text-[9px] text-gray-400">{y.samples} obs.</div>
+                <div className="text-[9px] font-mono tabular text-muted-foreground/70">{y.samples} obs.</div>
               </div>
             ))}
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -2,6 +2,8 @@
 // Limit: 1 request/sek, User-Agent wymagany.
 // Używamy do zamiany adresu gospodarstwa (np. "Włocławek, Kujawska 12") na lat/lon.
 
+import { fetchWithTimeout } from './http';
+
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
 
 export interface GeocodeResult {
@@ -23,11 +25,12 @@ export async function geocodeAddress(
     countrycodes: countryCode,
   });
 
-  const res = await fetch(`${NOMINATIM_URL}?${params.toString()}`, {
+  const res = await fetchWithTimeout(`${NOMINATIM_URL}?${params.toString()}`, {
     headers: {
       'User-Agent': 'AgriClaw/0.1 (contact@infinityteam.io)',
       'Accept-Language': 'pl,en',
     },
+    timeoutMs: 10_000,
   });
 
   if (!res.ok) return null;
