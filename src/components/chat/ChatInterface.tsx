@@ -54,13 +54,34 @@ export function ChatInterface({
   );
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  // Czy przewijać automatycznie na dół. Fałsz gdy user sam przewinął w górę,
+  // żeby streaming odpowiedzi nie wyrywał go z czytania.
+  const stickToBottomRef = useRef(true);
+  // Abort streamu + strażnik montażu — po odejściu ze strony w trakcie streamu
+  // nie ciągniemy readera i nie robimy setState na odmontowanym komponencie.
+  const abortRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
-    const el = scrollRef.current;
-    if (el) {
+    if (stickToBottomRef.current && scrollRef.current) {
+      const el = scrollRef.current;
       el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      abortRef.current?.abort();
+    };
+  }, []);
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    stickToBottomRef.current = distanceFromBottom < 80;
+  };
 
   // Auto-grow textarea
   useEffect(() => {
@@ -83,6 +104,11 @@ export function ChatInterface({
     ]);
     setInput('');
     setSending(true);
+    // Nowa wiadomość = wracamy do trybu „trzymaj się dołu".
+    stickToBottomRef.current = true;
+
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
       const res = await fetch('/api/chat/stream', {
@@ -93,6 +119,7 @@ export function ChatInterface({
           conversationId: conversationId ?? undefined,
           message: text,
         }),
+        signal: controller.signal,
       });
 
       if (!res.ok || !res.body) {
@@ -175,6 +202,8 @@ export function ChatInterface({
         ),
       );
     } catch (err) {
+      // Celowe przerwanie (abort/odmontowanie) — nie pokazuj błędu.
+      if (controller.signal.aborted || !mountedRef.current) return;
       console.error(err);
       setMessages((prev) =>
         prev.map((m) =>
@@ -189,7 +218,8 @@ export function ChatInterface({
       );
       toast.error('Nieoczekiwany błąd. Spróbuj ponownie.');
     } finally {
-      setSending(false);
+      if (abortRef.current === controller) abortRef.current = null;
+      if (mountedRef.current) setSending(false);
     }
   };
 
@@ -235,7 +265,7 @@ export function ChatInterface({
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 sm:px-5 py-5 space-y-4">
+      <div ref={scrollRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 sm:px-5 py-5 space-y-4">
         {messages.length === 0 ? (
           <EmptyChatTip onPick={(q) => void sendMessage(q)} />
         ) : (

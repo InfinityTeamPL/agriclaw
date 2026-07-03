@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   BookOpen,
@@ -396,14 +396,25 @@ function AddTreatmentModal({
 
   const purposes = TREATMENT_PURPOSES[type as keyof typeof TREATMENT_PURPOSES] ?? [];
 
+  // Escape zamyka (świadomy gest). Klik w tło NIE zamyka — formularz zabiegu ma
+  // wiele pól, przypadkowe kliknięcie nie może kasować całej pracy (audyt UX).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 p-4"
-      onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Nowy zabieg"
         className="relative bg-card border border-border rounded-lg shadow-pop w-full max-w-2xl max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
       >
         <NdviKeyline className="absolute top-0 left-0 right-0" height={3} />
         <div className="sticky top-0 bg-card z-10 flex items-center justify-between p-5 border-b border-border">

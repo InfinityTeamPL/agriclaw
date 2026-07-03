@@ -98,6 +98,33 @@ export async function POST(req: NextRequest) {
     async start(controller) {
       const fullInput = `${systemPrompt}\n\n---\n\nRolnik pyta: ${message}`;
 
+      let closed = false;
+      const safeClose = () => {
+        if (closed) return;
+        closed = true;
+        try {
+          controller.close();
+        } catch {
+          /* już zamknięty */
+        }
+      };
+
+      // Keep-alive — komentarz SSE co 15 s, żeby proxy nie zerwało połączenia
+      // gdy agent długo „myśli" bez emitowania delty.
+      const keepAlive = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(': keep-alive\n\n'));
+        } catch {
+          clearInterval(keepAlive);
+        }
+      }, 15_000);
+
+      // Rozłączenie klienta (zamknął kartę / abort) → przerywamy.
+      req.signal.addEventListener('abort', () => {
+        clearInterval(keepAlive);
+        safeClose();
+      });
+
       try {
         controller.enqueue(
           encoder.encode(
@@ -157,13 +184,18 @@ export async function POST(req: NextRequest) {
           );
         }
       } catch (err) {
-        controller.enqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({ type: 'error', error: String(err) })}\n\n`,
-          ),
-        );
+        try {
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: 'error', error: String(err) })}\n\n`,
+            ),
+          );
+        } catch {
+          /* połączenie już zamknięte */
+        }
       } finally {
-        controller.close();
+        clearInterval(keepAlive);
+        safeClose();
       }
     },
   });
