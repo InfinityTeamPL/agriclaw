@@ -224,7 +224,7 @@ export function NitrogenCalculator({ fieldId }: Props) {
         </span>
         <span>
           {data.lastNdreObservedAt
-            ? `NDRE z ${new Date(data.lastNdreObservedAt).toLocaleDateString('pl-PL')}`
+            ? `NDRE z ${new Date(data.lastNdreObservedAt).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw' })}`
             : 'Brak pomiaru NDRE — dawka książkowa'}
         </span>
       </div>

@@ -69,7 +69,7 @@ function dayLabel(iso: string): string {
   const tomorrow = new Date(Date.now() + 864e5).toISOString().slice(0, 10);
   if (iso === today) return 'Dziś';
   if (iso === tomorrow) return 'Jutro';
-  return new Date(iso).toLocaleDateString('pl-PL', { weekday: 'short', day: 'numeric' });
+  return new Date(iso).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw', weekday: 'short', day: 'numeric' });
 }
 
 export function FrostAlert({ fieldId }: Props) {

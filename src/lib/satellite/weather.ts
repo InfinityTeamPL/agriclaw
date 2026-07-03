@@ -144,9 +144,9 @@ function formatSprayWindowLabel(startIso: string, endIso: string): string {
       ? 'dziś'
       : s.toISOString().slice(0, 10) === tomorrow
         ? 'jutro'
-        : s.toLocaleDateString('pl-PL', { weekday: 'long' });
+        : s.toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw', weekday: 'long' });
   const fmt = (d: Date) =>
-    d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+    d.toLocaleTimeString('pl-PL', { timeZone: 'Europe/Warsaw', hour: '2-digit', minute: '2-digit' });
   return `${dayLabel} ${fmt(s)}–${fmt(new Date(e.getTime() + 3600 * 1000))}`;
 }
 

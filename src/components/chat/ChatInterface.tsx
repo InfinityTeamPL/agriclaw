@@ -57,6 +57,10 @@ export function ChatInterface({
   // Czy przewijać automatycznie na dół. Fałsz gdy user sam przewinął w górę,
   // żeby streaming odpowiedzi nie wyrywał go z czytania.
   const stickToBottomRef = useRef(true);
+  // Ostatnia pozycja scrolla — służy do odróżnienia gestu użytkownika (scroll W
+  // GÓRĘ) od programowego scrollTo w dół. Bez tego animacja smooth-scroll odpalała
+  // onScroll na każdej klatce i fałszywie wyłączała auto-scroll w trakcie streamu.
+  const lastScrollTopRef = useRef(0);
   // Abort streamu + strażnik montażu — po odejściu ze strony w trakcie streamu
   // nie ciągniemy readera i nie robimy setState na odmontowanym komponencie.
   const abortRef = useRef<AbortController | null>(null);
@@ -79,8 +83,16 @@ export function ChatInterface({
   const handleScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
+    // Gest użytkownika = scroll W GÓRĘ (scrollTop maleje). Programowy scrollTo w
+    // dół tylko zwiększa scrollTop, więc nie wyłącza „trzymaj się dołu".
+    const scrolledUp = el.scrollTop < lastScrollTopRef.current - 2;
+    lastScrollTopRef.current = el.scrollTop;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    stickToBottomRef.current = distanceFromBottom < 80;
+    if (scrolledUp) {
+      stickToBottomRef.current = false;
+    } else if (distanceFromBottom < 80) {
+      stickToBottomRef.current = true;
+    }
   };
 
   // Auto-grow textarea

@@ -38,6 +38,9 @@ interface Props {
 
 export function DiagnoseClient({ fields }: Props) {
   const fileRef = useRef<HTMLInputElement | null>(null);
+  // Token żądania — przy szybkim ponownym wyborze pliku ignorujemy wynik
+  // starszego downscale (async), żeby nie ustawić nieaktualnego zdjęcia.
+  const fileReqRef = useRef(0);
   const [imageData, setImageData] = useState<string | null>(null);
   const [fieldId, setFieldId] = useState<string>(fields[0]?.id ?? '');
   const [note, setNote] = useState('');
@@ -50,14 +53,17 @@ export function DiagnoseClient({ fields }: Props) {
       toast.error('Zdjęcie większe niż 20 MB');
       return;
     }
+    const token = ++fileReqRef.current;
     try {
       // Downscale przed wysyłką — inaczej duże zdjęcie z telefonu przekracza
       // limit body Vercela (4.5 MB) i POST /api/diagnose pada.
       const downscaled = await downscaleImageFile(file);
+      if (token !== fileReqRef.current) return; // wybrano nowszy plik
       setImageData(downscaled);
       setResult(null);
       setError(null);
     } catch {
+      if (token !== fileReqRef.current) return;
       toast.error('Nie udało się przetworzyć zdjęcia. Spróbuj inne.');
     }
   };

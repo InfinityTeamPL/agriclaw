@@ -98,7 +98,7 @@ export function SprayTimer({ fieldId }: Props) {
           ? 'Dziś'
           : date === tomorrow
             ? 'Jutro'
-            : new Date(date).toLocaleDateString('pl-PL', {
+            : new Date(date).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw',
                 weekday: 'short',
                 day: 'numeric',
                 month: 'short',
@@ -173,12 +173,12 @@ export function SprayTimer({ fieldId }: Props) {
         <div className="rounded-md bg-secondary border border-border p-3 text-xs">
           <div className="flex items-center justify-between mb-2">
             <div className="font-mono tabular font-semibold text-foreground">
-              {new Date(hover.time).toLocaleDateString('pl-PL', {
+              {new Date(hover.time).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw',
                 weekday: 'short',
                 day: 'numeric',
                 month: 'short',
               })}{' '}
-              {new Date(hover.time).toLocaleTimeString('pl-PL', {
+              {new Date(hover.time).toLocaleTimeString('pl-PL', { timeZone: 'Europe/Warsaw',
                 hour: '2-digit',
                 minute: '2-digit',
               })}

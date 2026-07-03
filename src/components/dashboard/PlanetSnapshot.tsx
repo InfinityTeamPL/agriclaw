@@ -148,10 +148,10 @@ export function PlanetSnapshot({ fieldId }: { fieldId: string }) {
               Data
             </div>
             <div className="mt-0.5 font-mono tabular font-semibold text-foreground">
-              {date.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' })}
+              {date.toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw', day: 'numeric', month: 'long', year: 'numeric' })}
             </div>
             <div className="text-[10px] text-muted-foreground font-mono tabular">
-              {date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}
+              {date.toLocaleTimeString('pl-PL', { timeZone: 'Europe/Warsaw', hour: '2-digit', minute: '2-digit' })}
             </div>
           </div>
           <div className="rounded-md bg-secondary border border-border p-2">

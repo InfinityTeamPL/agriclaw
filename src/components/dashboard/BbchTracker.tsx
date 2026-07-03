@@ -124,7 +124,7 @@ export function BbchTracker({ fieldId }: { fieldId: string }) {
           <span>
             Siew{' '}
             <span className="font-mono tabular">
-              {new Date(data.sowingDate).toLocaleDateString('pl-PL')}
+              {new Date(data.sowingDate).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw' })}
             </span>
           </span>
           <span className="font-mono tabular">{status.accumulated} GDD</span>

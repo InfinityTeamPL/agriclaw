@@ -112,7 +112,7 @@ export async function GET(
       (n) => n.level === 'warning' || n.level === 'critical',
     );
     const title = `Przymrozki — ${firstDanger
-      ? new Date(firstDanger.date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' })
+      ? new Date(firstDanger.date).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw', weekday: 'long', day: 'numeric', month: 'long' })
       : 'najbliższe dni'}`;
 
     const existing = await prisma.recommendation.findFirst({

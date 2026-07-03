@@ -119,11 +119,15 @@ export async function POST(req: NextRequest) {
         }
       }, 15_000);
 
-      // Rozłączenie klienta (zamknął kartę / abort) → przerywamy.
-      req.signal.addEventListener('abort', () => {
+      // Rozłączenie klienta (zamknął kartę / abort) → przerywamy strumień do
+      // przeglądarki. Uwaga: praca agenta (runAgentStream) toczy się dalej do
+      // końca i zapisuje odpowiedź ASSISTANT do bazy — CELOWO, żeby po powrocie
+      // rolnik zobaczył gotową odpowiedź. Nasłuch usuwamy w finally.
+      const onAbort = () => {
         clearInterval(keepAlive);
         safeClose();
-      });
+      };
+      req.signal.addEventListener('abort', onAbort);
 
       try {
         controller.enqueue(
@@ -195,6 +199,7 @@ export async function POST(req: NextRequest) {
         }
       } finally {
         clearInterval(keepAlive);
+        req.signal.removeEventListener('abort', onAbort);
         safeClose();
       }
     },

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   MapPin,
@@ -215,6 +215,8 @@ function AddScoutingModal({
   const [severity, setSeverity] = useState<'low' | 'medium' | 'high'>('medium');
   const [note, setNote] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
+  // Token żądania — ignoruj wynik starszego downscale przy szybkim ponownym wyborze.
+  const photoReqRef = useRef(0);
   const [lat, setLat] = useState<number | null>(null);
   const [lon, setLon] = useState<number | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
@@ -248,11 +250,15 @@ function AddScoutingModal({
       toast.error('Zdjęcie większe niż 20 MB');
       return;
     }
+    const token = ++photoReqRef.current;
     try {
       // Downscale przed zapisaniem — chroni przed limitem body Vercela (4.5 MB)
       // i przed pęcznieniem tabeli scoutingu (base64 w kolumnie Text).
-      setPhoto(await downscaleImageFile(file));
+      const downscaled = await downscaleImageFile(file);
+      if (token !== photoReqRef.current) return; // wybrano nowszy plik
+      setPhoto(downscaled);
     } catch {
+      if (token !== photoReqRef.current) return;
       toast.error('Nie udało się przetworzyć zdjęcia. Spróbuj inne.');
     }
   };

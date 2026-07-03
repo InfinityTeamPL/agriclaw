@@ -99,20 +99,27 @@ export async function DELETE(
   const ownership = await ensureOwnership(user.id, params.id);
   if (!ownership) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  // Soft delete gdy pole ma zabiegi w księdze polowej — kasowanie kaskadowe
-  // zniszczyłoby prawnie wymagany e-rejestr (IJHARS). Bez zabiegów: twarde
-  // usunięcie (czyste, np. pole dodane przez pomyłkę).
-  const treatmentCount = await prisma.treatment.count({
-    where: { fieldId: params.id },
-  });
-  if (treatmentCount > 0) {
-    await prisma.field.update({
-      where: { id: params.id },
-      data: { deletedAt: new Date() },
-    });
-    return NextResponse.json({ ok: true, softDeleted: true, treatmentsPreserved: treatmentCount });
+  // Twarde usunięcie ATOMOWO tylko gdy pole nie ma ŻADNEGO zabiegu — jedno
+  // zapytanie DELETE ... WHERE NOT EXISTS(...). Dzięki temu zabieg dodany w
+  // międzyczasie (druga karta / agent AI) blokuje kasowanie i nie ma okna TOCTOU
+  // między liczeniem a usuwaniem, które mogłoby zniszczyć prawnie wymaganą księgę.
+  const hardDeleted = await prisma.$executeRaw`
+    DELETE FROM "fields"
+    WHERE id = ${params.id}
+      AND NOT EXISTS (SELECT 1 FROM "treatments" WHERE field_id = ${params.id})
+  `;
+  if (hardDeleted > 0) {
+    return NextResponse.json({ ok: true });
   }
 
-  await prisma.field.delete({ where: { id: params.id } });
-  return NextResponse.json({ ok: true });
+  // Pole ma zabiegi → soft-delete chroni e-rejestr (IJHARS). updateMany nie
+  // rzuca gdy 0 wierszy (np. równoległe usunięcie).
+  const treatmentsPreserved = await prisma.treatment.count({
+    where: { fieldId: params.id },
+  });
+  await prisma.field.updateMany({
+    where: { id: params.id, deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
+  return NextResponse.json({ ok: true, softDeleted: true, treatmentsPreserved });
 }

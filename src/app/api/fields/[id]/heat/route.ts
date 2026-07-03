@@ -106,7 +106,7 @@ export async function GET(
       (d) => d.level === 'warning' || d.level === 'critical',
     );
     const title = `Stres cieplny — ${firstDanger
-      ? new Date(firstDanger.date).toLocaleDateString('pl-PL', { weekday: 'long', day: 'numeric', month: 'long' })
+      ? new Date(firstDanger.date).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw', weekday: 'long', day: 'numeric', month: 'long' })
       : 'najbliższe dni'}`;
 
     const existing = await prisma.recommendation.findFirst({
