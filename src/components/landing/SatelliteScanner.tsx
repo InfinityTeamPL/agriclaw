@@ -13,7 +13,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ndviColorHex } from '@/lib/design/ndvi-scale';
 
 const FIELD_COLS = 8;
-const FIELD_ROWS = 5;
+const FIELD_ROWS = 6; // wyższa karta = bogatsza siatka pola
 
 type Patch = {
   key: string;
@@ -57,7 +57,10 @@ export function SatelliteScanner() {
   }, []);
 
   return (
-    <div className="relative w-full aspect-[16/11] sm:aspect-[16/9] overflow-hidden rounded-3xl bg-gradient-to-b from-sky-950 via-sky-900 to-emerald-950 shadow-2xl ring-1 ring-black/5">
+    <div className="w-full flex flex-col gap-3">
+    {/* Karta animacji — wyższa (4/3 mobile, 6/5 desktop); karty danych są POD nią,
+        żeby nie zasłaniały siatki pola. */}
+    <div className="relative w-full aspect-[4/3] sm:aspect-[6/5] overflow-hidden rounded-3xl bg-gradient-to-b from-sky-950 via-sky-900 to-emerald-950 shadow-2xl ring-1 ring-black/5">
       {/* ────── Gwiazdy / atmosfera (tło satelity) ────── */}
       <div className="absolute inset-0 pointer-events-none">
         <Stars />
@@ -137,7 +140,7 @@ export function SatelliteScanner() {
         </div>
       </div>
 
-      {/* ────── HUD (data callouts) ────── */}
+      {/* ────── HUD (górny pasek statusu) ────── */}
       <Hud />
 
       {/* ────── animacje CSS ────── */}
@@ -159,6 +162,64 @@ export function SatelliteScanner() {
           }
         }
       `}</style>
+    </div>
+
+    {/* ────── Odczyty POD animacją — instrumenty stacji naziemnej ────── */}
+    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+      <StatCard label="Zdrowie pola" value="0.42" note="spadek" tone="drought" show={scanActive} delay={0.9} />
+      <StatCard label="Wilgoć gleby" value="18%" note="niska" tone="heat" show={scanActive} delay={1.05} />
+      <StatCard label="Okno oprysku" value="5:30" note="jutro" tone="healthy" show={scanActive} delay={1.2} />
+    </div>
+    </div>
+  );
+}
+
+// Karta odczytu pod animacją: jasny instrument (tokeny bg-card/border) z kolorem
+// DANYCH w systemie signal-*; wjeżdża po zakończeniu skanu (delay per karta).
+function StatCard({
+  label,
+  value,
+  note,
+  tone,
+  show,
+  delay,
+}: {
+  label: string;
+  value: string;
+  note: string;
+  tone: 'healthy' | 'heat' | 'drought';
+  show: boolean;
+  delay: number;
+}) {
+  const toneText =
+    tone === 'healthy'
+      ? 'text-signal-healthy'
+      : tone === 'heat'
+        ? 'text-signal-heat'
+        : 'text-signal-drought';
+  const toneDot =
+    tone === 'healthy'
+      ? 'bg-signal-healthy'
+      : tone === 'heat'
+        ? 'bg-signal-heat'
+        : 'bg-signal-drought';
+  return (
+    <div
+      className="rounded-lg bg-card border border-border shadow-card px-3 py-2.5 sm:px-4 sm:py-3"
+      style={{
+        opacity: show ? 1 : 0,
+        transform: show ? 'translateY(0)' : 'translateY(10px)',
+        transition: `opacity 600ms cubic-bezier(.2,.7,.3,1) ${delay}s, transform 600ms cubic-bezier(.2,.7,.3,1) ${delay}s`,
+      }}
+    >
+      <div className="flex items-center gap-1.5">
+        <span className={`w-1.5 h-1.5 rounded-full ${toneDot}`} />
+        <span className="hud-label truncate">{label}</span>
+      </div>
+      <div className="mt-1 flex items-baseline gap-1.5">
+        <span className={`font-mono tabular text-lg sm:text-2xl font-semibold ${toneText}`}>{value}</span>
+        <span className="text-[11px] sm:text-xs text-muted-foreground">{note}</span>
+      </div>
     </div>
   );
 }
@@ -287,45 +348,6 @@ function Hud() {
         </div>
       </div>
 
-      {/* dolne karty danych */}
-      <div className="absolute bottom-4 left-4 right-4 flex flex-wrap justify-between gap-2">
-        <HudCard label="Zdrowie pola" value="0.42" badge="spadek" />
-        <HudCard label="Wilgoć gleby" value="18%" badge="niska" tone="warn" />
-        <HudCard label="Okno oprysku" value="5:30" suffix=" jutro" tone="ok" />
-      </div>
-    </div>
-  );
-}
-
-function HudCard({
-  label,
-  value,
-  badge,
-  suffix,
-  tone = 'warn',
-}: {
-  label: string;
-  value: string;
-  badge?: string;
-  suffix?: string;
-  tone?: 'ok' | 'warn' | 'info';
-}) {
-  const toneColor =
-    tone === 'ok'
-      ? 'text-emerald-300'
-      : tone === 'warn'
-        ? 'text-amber-300'
-        : 'text-sky-300';
-  return (
-    <div className="rounded-xl bg-black/35 backdrop-blur-md px-3 py-2 ring-1 ring-white/15 min-w-[9rem]">
-      <div className="text-[10px] uppercase tracking-wider text-sky-200/80">{label}</div>
-      <div className="flex items-baseline gap-1">
-        <span className={`text-lg font-semibold ${toneColor}`}>{value}</span>
-        {suffix && <span className="text-xs text-sky-100/70">{suffix}</span>}
-      </div>
-      {badge && (
-        <div className="text-[10px] font-medium text-sky-100/80 mt-0.5">{badge}</div>
-      )}
     </div>
   );
 }
