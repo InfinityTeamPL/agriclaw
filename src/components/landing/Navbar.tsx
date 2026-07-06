@@ -27,11 +27,9 @@ export function Navbar() {
             <span className="text-primary-foreground font-display font-semibold text-sm">Ag</span>
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-signal-healthy animate-pulse" />
           </div>
-          <span
-            className={`font-display font-semibold tracking-tight text-lg ${
-              scrolled ? 'text-foreground' : 'text-white'
-            }`}
-          >
+          {/* Hero jest JASNE — text-white był reliktem ciemnego wariantu i dawał
+              niewidoczne logo/link na górze strony. */}
+          <span className="font-display font-semibold tracking-tight text-lg text-foreground">
             AgriClaw
           </span>
         </Link>
@@ -39,11 +37,7 @@ export function Navbar() {
         <div className="flex items-center gap-1 sm:gap-3">
           <Link
             href="/login"
-            className={`px-4 py-2 rounded-md font-medium text-sm hidden sm:inline-block transition ${
-              scrolled
-                ? 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-                : 'text-white/90 hover:bg-white/10'
-            }`}
+            className="px-4 py-2 rounded-md font-medium text-sm hidden sm:inline-block transition text-muted-foreground hover:bg-secondary hover:text-foreground"
           >
             Zaloguj
           </Link>
