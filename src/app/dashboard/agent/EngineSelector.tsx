@@ -97,7 +97,7 @@ export function EngineSelector({
                   : 'border-border bg-background hover:border-foreground/25',
               )}
             >
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 sm:mb-1">
                 <o.icon className={cn('w-4 h-4', active ? 'text-signal-healthy' : 'text-muted-foreground')} />
                 <span className="text-sm font-semibold text-foreground">{o.title}</span>
                 {o.value === 'openclaw' && !hasReadyAgent && (
@@ -106,7 +106,8 @@ export function EngineSelector({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">{o.desc}</p>
+              {/* Opisy tylko od sm — na telefonie selektor ma być kompaktowy */}
+              <p className="hidden sm:block text-xs text-muted-foreground leading-relaxed">{o.desc}</p>
             </button>
           );
         })}
