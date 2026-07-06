@@ -5,6 +5,7 @@ import { Camera, AlertCircle, CheckCircle2, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScanLine } from '@/components/brand/ScanLine';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
+import { AdvisoryNotice } from '@/components/dashboard/AdvisoryNotice';
 import { downscaleImageFile } from '@/lib/ui/image';
 
 interface FieldOpt {
@@ -29,6 +30,7 @@ interface DiagnosisResult {
     }>;
     okno_oprysku: string;
   };
+  zastrzezenie?: string;
   porada_dodatkowa: string;
 }
 
@@ -300,7 +302,7 @@ function DiagnosisView({ result }: { result: DiagnosisResult }) {
 
           {result.rekomendacja.srodki && result.rekomendacja.srodki.length > 0 && (
             <div className="space-y-2">
-              <div className="hud-label">Sugerowane środki</div>
+              <div className="hud-label">Środki orientacyjnie — do weryfikacji z etykietą</div>
               {result.rekomendacja.srodki.map((s, i) => (
                 <div
                   key={i}
@@ -322,12 +324,14 @@ function DiagnosisView({ result }: { result: DiagnosisResult }) {
 
           {result.rekomendacja.okno_oprysku && (
             <div className="text-sm text-foreground">
-              <span className="font-medium">Okno oprysku:</span>{' '}
+              <span className="font-medium">Okno do rozważenia:</span>{' '}
               <span className="font-mono tabular">{result.rekomendacja.okno_oprysku}</span>
             </div>
           )}
         </div>
       )}
+
+      <AdvisoryNotice />
     </div>
   );
 }

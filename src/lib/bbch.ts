@@ -27,13 +27,13 @@ const BBCH_TABLES: Record<Crop, { tBase: number; milestones: BbchMilestone[] }> 
       { bbch: 0, gddFromSowing: 0, label: 'Siew', description: 'Ziarno w glebie' },
       { bbch: 9, gddFromSowing: 120, label: 'Wschody', description: 'Koleoptyl przebija glebę' },
       { bbch: 13, gddFromSowing: 250, label: '3. liść', description: 'Trzeci liść rozwinięty' },
-      { bbch: 21, gddFromSowing: 400, label: 'Krzewienie', description: 'Pierwsze pędy boczne', alerts: ['Moment herbicydu jesiennego (jeśli ozima)'] },
+      { bbch: 21, gddFromSowing: 400, label: 'Krzewienie', description: 'Pierwsze pędy boczne', alerts: ['Okno herbicydu jesiennego do rozważenia (jeśli ozima)'] },
       { bbch: 29, gddFromSowing: 900, label: 'Koniec krzewienia', description: 'Maksymalna liczba pędów' },
-      { bbch: 30, gddFromSowing: 1000, label: 'Strzelanie w źdźbło', description: 'Pierwszy widoczny międzywęzłowy', alerts: ['MOMENT azot startowy 30-40 kg N/ha', 'Rozważ fungicyd T1'] },
-      { bbch: 37, gddFromSowing: 1350, label: 'Liść flagowy', description: 'Ostatni liść widoczny', alerts: ['Fungicyd T2 (strobiluryna+triazol)', 'Azot azotowy 40-60 kg N/ha'] },
+      { bbch: 30, gddFromSowing: 1000, label: 'Strzelanie w źdźbło', description: 'Pierwszy widoczny międzywęzłowy', alerts: ['Okno azotu startowego (typowo 30-40 kg N/ha, wg planu nawozowego)', 'Rozważ fungicyd T1'] },
+      { bbch: 37, gddFromSowing: 1350, label: 'Liść flagowy', description: 'Ostatni liść widoczny', alerts: ['Okno fungicydu T2 do rozważenia (strobiluryna+triazol)', 'Okno II dawki azotu (typowo 40-60 kg N/ha)'] },
       { bbch: 49, gddFromSowing: 1600, label: 'Koniec kłoszenia', description: 'Kłos wychodzi z pochwy liściowej' },
       { bbch: 55, gddFromSowing: 1750, label: 'Początek kwitnienia', description: 'Pierwsze pylniki widoczne', alerts: ['Krytyczne okno fuzariozy (Fusarium) — monitoruj'] },
-      { bbch: 65, gddFromSowing: 1850, label: 'Pełnia kwitnienia', description: '50% pylników', alerts: ['FAZA T3 — fungicyd przeciwko Fusarium jeśli deszcz + 20-30°C'] },
+      { bbch: 65, gddFromSowing: 1850, label: 'Pełnia kwitnienia', description: '50% pylników', alerts: ['Okno T3: rozważ fungicyd p. Fusarium, jeśli deszcz + 20-30°C'] },
       { bbch: 71, gddFromSowing: 2000, label: 'Formowanie ziarna', description: 'Ziarno wodne' },
       { bbch: 75, gddFromSowing: 2200, label: 'Dojrzałość mleczna', description: 'Ziarno zielonkawe' },
       { bbch: 85, gddFromSowing: 2500, label: 'Dojrzałość woskowa', description: 'Ziarno żółte, paznokieć wbija się' },
@@ -46,8 +46,8 @@ const BBCH_TABLES: Record<Crop, { tBase: number; milestones: BbchMilestone[] }> 
       { bbch: 0, gddFromSowing: 0, label: 'Siew', description: '' },
       { bbch: 9, gddFromSowing: 110, label: 'Wschody', description: '' },
       { bbch: 21, gddFromSowing: 380, label: 'Krzewienie', description: '' },
-      { bbch: 30, gddFromSowing: 900, label: 'Strzelanie', description: '', alerts: ['Azot azotowy + regulator wzrostu (CCC)'] },
-      { bbch: 37, gddFromSowing: 1200, label: 'Liść flagowy', description: '', alerts: ['Fungicyd (siatkowa plamistość)'] },
+      { bbch: 30, gddFromSowing: 900, label: 'Strzelanie', description: '', alerts: ['Okno azotu + ew. regulatora wzrostu (CCC)'] },
+      { bbch: 37, gddFromSowing: 1200, label: 'Liść flagowy', description: '', alerts: ['Rozważ fungicyd (siatkowa plamistość)'] },
       { bbch: 55, gddFromSowing: 1600, label: 'Kłoszenie', description: '' },
       { bbch: 85, gddFromSowing: 2300, label: 'Dojrzałość woskowa', description: '' },
       { bbch: 89, gddFromSowing: 2500, label: 'Dojrzałość pełna', description: '', alerts: ['Zbiór'] },
@@ -95,17 +95,17 @@ const BBCH_TABLES: Record<Crop, { tBase: number; milestones: BbchMilestone[] }> 
     milestones: [
       { bbch: 9, gddFromSowing: 80, label: 'Wschody', description: 'Ozimy — sianie koniec VIII' },
       { bbch: 14, gddFromSowing: 200, label: '4. liść', description: '' },
-      { bbch: 19, gddFromSowing: 350, label: '9 liści', description: '', alerts: ['Jesienny fungicyd (Phoma) + regulator'] },
+      { bbch: 19, gddFromSowing: 350, label: '9 liści', description: '', alerts: ['Okno jesiennego fungicydu (Phoma) + regulatora — do rozważenia'] },
       { bbch: 29, gddFromSowing: 500, label: 'Koniec rozety jesiennej', description: '' },
       // Zima — wernalizacja
       { bbch: 30, gddFromSowing: 550, label: 'Start wegetacji wiosennej', description: 'Po wernalizacji' },
-      { bbch: 50, gddFromSowing: 700, label: 'Strzelanie', description: '', alerts: ['Azot wiosenny 120 kg N/ha + regulator'] },
+      { bbch: 50, gddFromSowing: 700, label: 'Strzelanie', description: '', alerts: ['Okno azotu wiosennego (typowo ~120 kg N/ha) + ew. regulatora'] },
       { bbch: 55, gddFromSowing: 900, label: 'Pąki widoczne', description: '' },
-      { bbch: 60, gddFromSowing: 1000, label: 'Początek kwitnienia', description: 'Żółte kwiaty', alerts: ['Fungicyd + insektycyd (słodyszek rzepakowiec)'] },
+      { bbch: 60, gddFromSowing: 1000, label: 'Początek kwitnienia', description: 'Żółte kwiaty', alerts: ['Rozważ fungicyd/insektycyd (słodyszek) — po monitoringu progu szkodliwości'] },
       { bbch: 65, gddFromSowing: 1100, label: 'Pełnia kwitnienia', description: '' },
       { bbch: 75, gddFromSowing: 1300, label: 'Łuszczyny wypełniają się', description: '' },
       { bbch: 85, gddFromSowing: 1500, label: 'Brązowienie nasion', description: '' },
-      { bbch: 89, gddFromSowing: 1700, label: 'Dojrzałość pełna', description: '', alerts: ['Desykacja + zbiór'] },
+      { bbch: 89, gddFromSowing: 1700, label: 'Dojrzałość pełna', description: '', alerts: ['Ew. desykacja (wg etykiety i przepisów) + zbiór'] },
     ],
   },
   potato: {
@@ -115,17 +115,17 @@ const BBCH_TABLES: Record<Crop, { tBase: number; milestones: BbchMilestone[] }> 
       { bbch: 9, gddFromSowing: 150, label: 'Wschody', description: '' },
       { bbch: 19, gddFromSowing: 350, label: 'Zwarcie łanu', description: '' },
       { bbch: 39, gddFromSowing: 550, label: 'Koniec krzewienia wierzchołkowego', description: '' },
-      { bbch: 51, gddFromSowing: 650, label: 'Pąki kwiatowe', description: '', alerts: ['Phytophthora — profilaktyka (Revus, Infinito)'] },
+      { bbch: 51, gddFromSowing: 650, label: 'Pąki kwiatowe', description: '', alerts: ['Okno profilaktyki Phytophthora — dobór środka wg etykiety (MRiRW)'] },
       { bbch: 65, gddFromSowing: 900, label: 'Kwitnienie', description: 'Bulwy ~40 g' },
       { bbch: 85, gddFromSowing: 1600, label: 'Dojrzewanie bulw', description: '' },
-      { bbch: 97, gddFromSowing: 1900, label: 'Naci obumierają', description: '', alerts: ['Desykacja 14 dni przed zbiorem'] },
+      { bbch: 97, gddFromSowing: 1900, label: 'Naci obumierają', description: '', alerts: ['Ew. desykacja ~14 dni przed zbiorem (wg etykiety)'] },
     ],
   },
   sugarbeet: {
     tBase: 3,
     milestones: [
       { bbch: 9, gddFromSowing: 150, label: 'Wschody', description: '' },
-      { bbch: 15, gddFromSowing: 300, label: '5 liści', description: '', alerts: ['Herbicyd dawkowany (do zwarcia rzędów)'] },
+      { bbch: 15, gddFromSowing: 300, label: '5 liści', description: '', alerts: ['Okno herbicydu dawkowanego (do zwarcia rzędów) — do rozważenia'] },
       { bbch: 39, gddFromSowing: 800, label: 'Zwarcie rzędów', description: '' },
       { bbch: 49, gddFromSowing: 1200, label: 'Koniec wegetacji liści', description: '' },
       { bbch: 99, gddFromSowing: 2200, label: 'Zbiór', description: '', alerts: ['Plan zbioru (IX-XI)'] },
@@ -136,6 +136,10 @@ const BBCH_TABLES: Record<Crop, { tBase: number; milestones: BbchMilestone[] }> 
     milestones: [],
   },
 };
+
+// Eksport do testów — niezmiennik: alerty ŚOR muszą mieć framing „wsparcie
+// decyzji" (okno/rozważ/ew./wg etykiety), nie rozkaz. Patrz advisory.test.
+export const BBCH_TABLES_FOR_TESTS = BBCH_TABLES;
 
 /**
  * Oblicza sumę GDD od daty siewu do teraz na podstawie dziennych temperatur.

@@ -30,6 +30,11 @@ const CEREAL = ['wheat', 'barley', 'rye', 'oats'];
 const POTATO = ['potato'];
 const RAPESEED = ['rapeseed'];
 
+// Wspólny suffix weryfikacji ŚOR (wsparcie decyzji, nie polecenie — opinia
+// ekspercka prof. Rutkowski 2026). Przykłady środków są ORIENTACYJNE.
+const VERIFY_SOR =
+  'Przykłady środków są orientacyjne — dobór i dawkę potwierdź z aktualną etykietą (rejestr MRiRW), fazą uprawy, pogodą i przepisami (okres karencji). Decyzję o zabiegu podejmujesz sam.';
+
 export function assessDiseaseRisks(input: DiseaseAssessmentInput): DiseaseRisk[] {
   const risks: DiseaseRisk[] = [];
   const { crop, hourly, daily } = input;
@@ -47,7 +52,7 @@ export function assessDiseaseRisks(input: DiseaseAssessmentInput): DiseaseRisk[]
         score: Math.min(100, septoriaHours * 6),
         reason: `${septoriaHours}h wilgotności >85% i temp 15-25°C w ciągu 72h — warunki sprzyjające septoriozie liści.`,
         action:
-          'Fungicyd triazolowy w fazie kłoszenia (BBCH 47+): protiokonazol 250g/l 0.5 l/ha (Input, Proline) albo tebukonazol 250g/l 1 l/ha (Mystic, Falcon).',
+          'Do rozważenia po potwierdzeniu w polu: fungicyd triazolowy w fazie kłoszenia (BBCH 47+), np. protiokonazol 250 g/l (Input, Proline) albo tebukonazol 250 g/l (Mystic, Falcon). ' + VERIFY_SOR,
         crops: CEREAL,
       });
     }
@@ -70,7 +75,7 @@ export function assessDiseaseRisks(input: DiseaseAssessmentInput): DiseaseRisk[]
         score: 85,
         reason: `Opady + temperatura 20-30°C podczas fazy kwitnienia — wysokie ryzyko fuzariozy, porażenie obniża plon i zwiększa mykotoksyny DON.`,
         action:
-          'PILNE: fungicyd z metkonazolem / protiokonazolem / tebukonazolem w BBCH 65 (pełnia kwitnienia). Prosaro 250 EC 1 l/ha lub Osiris Star 1.5 l/ha. Efekt max gdy zastosujesz w ciągu 2-3 dni od zapylenia.',
+          'Wysokie ryzyko — po potwierdzeniu warto rozważyć pilnie: fungicyd z metkonazolem / protiokonazolem / tebukonazolem w BBCH 65 (pełnia kwitnienia), np. Prosaro 250 EC lub Osiris Star. Okno działania krótkie (2-3 dni od zapylenia). ' + VERIFY_SOR,
         crops: CEREAL,
       });
     }
@@ -95,7 +100,7 @@ export function assessDiseaseRisks(input: DiseaseAssessmentInput): DiseaseRisk[]
         score: Math.min(100, rustHours * 5),
         reason: `${rustHours}h nocnych rosy (RH>90%, 10-22°C) — warunki sprzyjające zarodnikowaniu rdzy.`,
         action:
-          'Fungicyd strobilurynowy + triazol w BBCH 37-59: Amistar 250 SC 1 l/ha + Mystic 1 l/ha, albo gotowy mix Priori Xtra 1 l/ha.',
+          'Do rozważenia po potwierdzeniu: fungicyd strobilurynowy + triazol w BBCH 37-59, np. Amistar 250 SC + Mystic, albo gotowy mix Priori Xtra. ' + VERIFY_SOR,
         crops: ['wheat'],
       });
     }
@@ -114,7 +119,7 @@ export function assessDiseaseRisks(input: DiseaseAssessmentInput): DiseaseRisk[]
         score: 55,
         reason: `Długi okres suchej, umiarkowanej pogody na gęstym łanie — klasyczne warunki dla mączniaka.`,
         action:
-          'Siarka elementarna 5 kg/ha profilaktycznie (tani i skuteczny) albo triazol (Input 1.25 l/ha) na pierwsze objawy.',
+          'Do rozważenia: siarka elementarna profilaktycznie (tania), albo triazol (np. Input) na pierwsze objawy. ' + VERIFY_SOR,
         crops: [...CEREAL, 'rapeseed'],
       });
     }
@@ -134,7 +139,7 @@ export function assessDiseaseRisks(input: DiseaseAssessmentInput): DiseaseRisk[]
         score: 90,
         reason: `Smith period: 2 dni pod rząd z ${d1Hours}h i ${d2Hours}h RH>=90% i temp >=10°C — krytyczne warunki dla zarazy.`,
         action:
-          'PILNE: fungicyd systemiczny w ciągu 48h. Infinito 1.2 l/ha (fluopikolid + propamokarb) albo Revus 0.6 l/ha (mandipropamid). Powtórz za 7-10 dni.',
+          'Wysokie ryzyko — po potwierdzeniu warto rozważyć pilnie (w ciągu 48h): fungicyd systemiczny, np. Infinito (fluopikolid + propamokarb) albo Revus (mandipropamid); zwykle powtarza się co 7-10 dni. ' + VERIFY_SOR,
         crops: POTATO,
       });
     }
@@ -155,7 +160,8 @@ export function assessDiseaseRisks(input: DiseaseAssessmentInput): DiseaseRisk[]
         risk: 'medium',
         score: 60,
         reason: `Ciepłe i wilgotne warunki w ciągu 7 dni — sprzyjają alternariozie liści.`,
-        action: 'Fungicyd z azoksystrobina + chlorotalonil albo dlfenokonazol. Revus Top 0.6 l/ha.',
+        // UWAGA: chlorotalonil wycofany z UE (rozp. 2019/677, od 2020) — nie wolno go zalecać.
+        action: 'Do rozważenia po potwierdzeniu: fungicyd z difenokonazolem lub mandipropamidem (np. Revus Top) albo azoksystrobiną — wyłącznie produkty aktualnie zarejestrowane w danej uprawie. ' + VERIFY_SOR,
         crops: [...POTATO, 'rapeseed'],
       });
     }
@@ -172,7 +178,7 @@ export function assessDiseaseRisks(input: DiseaseAssessmentInput): DiseaseRisk[]
         risk: 'medium',
         score: 65,
         reason: 'Ciepły mokry okres w fazie formowania rozety — ryzyko suchej zgnilizny.',
-        action: 'Fungicyd jesienny z tebukonazolem + metkonazolem: Caryx 1 l/ha albo Topsin M 1 kg/ha.',
+        action: 'Do rozważenia: fungicyd jesienny z tebukonazolem + metkonazolem, np. Caryx albo Topsin M. ' + VERIFY_SOR,
         crops: RAPESEED,
       });
     }

@@ -15,6 +15,7 @@ import { waitUntil } from '@vercel/functions';
 import { prisma } from '@/lib/prisma';
 import { OpenClawClient } from '@/lib/openclaw';
 import { buildAgriclawSystemPrompt } from '@/lib/openclaw-prompt';
+import { withAdvisoryDisclaimer } from '@/lib/advisory';
 import { fetchWithTimeout } from '@/lib/satellite/http';
 
 export const dynamic = 'force-dynamic';
@@ -186,9 +187,11 @@ async function handleInbound(msg: InboundMessage): Promise<void> {
     undefined,
   );
 
+  // Twardy bezpiecznik ŚOR — zalecenie ochrony roślin bez odwołania do etykiety
+  // dostaje doklejone zastrzeżenie (wsparcie decyzji, nie polecenie).
   const reply =
     result.success && result.output
-      ? result.output
+      ? withAdvisoryDisclaimer(result.output)
       : 'Przepraszam, chwilowo nie mogę odpowiedzieć. Spróbuj ponownie za chwilę.';
 
   if (result.success && result.output) {
@@ -197,7 +200,7 @@ async function handleInbound(msg: InboundMessage): Promise<void> {
         agentId: agent.id,
         conversationId: conversation.id,
         role: 'ASSISTANT',
-        content: result.output,
+        content: reply,
         metadata: JSON.stringify({ channel: 'whatsapp', model: result.model, tokensUsed: result.tokensUsed }),
       },
     });

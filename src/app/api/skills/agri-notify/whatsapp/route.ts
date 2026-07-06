@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { verifySkillAuth } from '@/lib/skill-auth';
+import { withAdvisoryDisclaimer } from '@/lib/advisory';
 import { fetchWithTimeout } from '@/lib/satellite/http';
 
 const bodySchema = z.object({
@@ -32,12 +33,16 @@ export async function POST(req: NextRequest) {
   });
   if (!farm) return NextResponse.json({ error: 'Farm not found' }, { status: 404 });
 
+  // Twardy bezpiecznik ŚOR: wiadomość agenta z zaleceniem ochrony roślin bez
+  // odwołania do etykiety dostaje doklejone zastrzeżenie (wsparcie decyzji).
+  const message = withAdvisoryDisclaimer(parsed.data.message);
+
   await prisma.event.create({
     data: {
       farmId: farm.id,
       type: 'whatsapp.outgoing',
       title: 'Powiadomienie WhatsApp (queued)',
-      detail: parsed.data.message,
+      detail: message,
     },
   });
 
@@ -60,8 +65,8 @@ export async function POST(req: NextRequest) {
         fieldId: field.id,
         severity: 'medium',
         title: 'Alert od agenta',
-        message: parsed.data.message,
-        action: parsed.data.message,
+        message,
+        action: message,
         sentViaWhatsapp: false, // zmieni się kiedy Meta API wyśle
       },
     });
@@ -78,7 +83,7 @@ export async function POST(req: NextRequest) {
       reason: !userPhone
         ? 'Rolnik nie ma numeru telefonu w profilu'
         : 'WhatsApp Business API nieskonfigurowane',
-      message: parsed.data.message,
+      message,
     });
   }
 
@@ -95,7 +100,7 @@ export async function POST(req: NextRequest) {
         messaging_product: 'whatsapp',
         to: userPhone,
         type: 'text',
-        text: { body: parsed.data.message },
+        text: { body: message },
       }),
       timeoutMs: 15_000,
       retries: 0, // POST /messages nieidempotentny — bez retry, by nie dublować wiadomości

@@ -26,6 +26,8 @@ import { classifyNdvi, describeNdvi } from '@/lib/satellite/ndvi';
 import { ndviColorHex } from '@/lib/design/ndvi-scale';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 import { ScanLine } from '@/components/brand/ScanLine';
+import { AdvisoryNotice } from '@/components/dashboard/AdvisoryNotice';
+import { isPlantProtectionText } from '@/lib/advisory';
 import {
   cropLabel,
   formatDatePL,
@@ -486,10 +488,11 @@ function RecsTab({ recs }: { recs: Recommendation[] }) {
             <p className="text-sm text-muted-foreground whitespace-pre-wrap">{r.message}</p>
             {r.action && (
               <p className="text-sm text-foreground bg-signal-healthy/10 border border-signal-healthy/25 rounded-md px-3 py-2 whitespace-pre-wrap">
-                <span className="font-semibold">Co zrobić: </span>
+                <span className="font-semibold">Do rozważenia: </span>
                 {r.action}
               </p>
             )}
+            {isPlantProtectionText(r.action) && <AdvisoryNotice compact />}
           </li>
         );
       })}
