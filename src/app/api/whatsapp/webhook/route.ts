@@ -133,7 +133,7 @@ async function handleInbound(msg: InboundMessage): Promise<void> {
   if (!user) {
     await sendWhatsappText(
       msg.from,
-      'Ten numer nie jest powiązany z kontem AgriClaw. Załóż konto na agriclaw-tau.vercel.app i dodaj numer w Ustawieniach, aby rozmawiać z agentem.',
+      'Ten numer nie jest powiązany z kontem AgriClaw. Załóż konto na agripol.xyz i dodaj numer w Ustawieniach, aby rozmawiać z agentem.',
     );
     return;
   }

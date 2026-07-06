@@ -138,7 +138,7 @@ bullet('Realny kanał wdrożenia wyników do praktyki rolniczej (platforma na pr
 // ── Stopka ──
 y = M + 26;
 page.drawLine({ start: { x: M, y: y + 14 }, end: { x: M + W, y: y + 14 }, thickness: 0.6, color: LINE });
-page.drawText('Kontakt: Infinity Tech · contact@infinityteam.io · demo: agriclaw-tau.vercel.app (konto testowe na życzenie)', {
+page.drawText('Kontakt: Infinity Tech · contact@infinityteam.io · demo: agripol.xyz (konto testowe na życzenie)', {
   x: M, y, size: 9, font: bold, color: INK,
 });
 page.drawText('Proponowany następny krok: 30-min rozmowa o zakresie WP2/WP3 i liście intencyjnym — do połowy sierpnia 2026.', {
