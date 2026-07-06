@@ -61,6 +61,9 @@ model Farm {
   lon       Float
   apiKey    String   @unique @map("api_key") // do zewnętrznych integracji
   plan      String   @default("free") // free, standard, premium
+  // Silnik czatu AI — wybór rolnika: "auto" (OpenClaw jeśli wdrożony, inaczej
+  // wbudowany) | "agroagent" (wbudowany MiniMax) | "openclaw" (autonomiczny VM)
+  chatEngine String  @default("auto") @map("chat_engine")
   suspended Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -310,14 +313,18 @@ model InstalledSkill {
 model Conversation {
   id         String   @id @default(uuid())
   farmId     String   @map("farm_id")
-  agentId    String   @map("agent_id")
-  sessionKey String   @unique @map("session_key") // OpenClaw session key
+  // Nullable: rozmowy wbudowanego AgroAgenta v2 (MiniMax tool-calling w aplikacji)
+  // nie mają wiersza Agent. SetNull — usunięcie agenta OpenClaw nie kasuje historii.
+  agentId    String?  @map("agent_id")
+  // Silnik rozmowy: "openclaw" (agent na VM) | "agroagent" (wbudowany v2)
+  engine     String   @default("openclaw")
+  sessionKey String   @unique @map("session_key")
   title      String   @default("Nowa rozmowa")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   farm     Farm      @relation(fields: [farmId], references: [id], onDelete: Cascade)
-  agent    Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agent    Agent?    @relation(fields: [agentId], references: [id], onDelete: SetNull)
   messages Message[]
 
   @@index([farmId])
@@ -327,7 +334,7 @@ model Conversation {
 
 model Message {
   id             String   @id @default(uuid())
-  agentId        String   @map("agent_id")
+  agentId        String?  @map("agent_id") // null dla wbudowanego AgroAgenta v2
   conversationId String?  @map("conversation_id")
   role           String   @default("USER") // USER, ASSISTANT, TOOL
   content        String   @db.Text
@@ -335,7 +342,7 @@ model Message {
   metadata       String?  @db.Text
   createdAt      DateTime @default(now()) @map("created_at")
 
-  agent        Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agent        Agent?        @relation(fields: [agentId], references: [id], onDelete: SetNull)
   conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
 
   @@index([agentId])
@@ -422,4 +429,63 @@ model Scouting {
   @@index([fieldId, createdAt])
   @@index([tag])
   @@map("scoutings")
+}
+
+// -----------------------------
+// Rejestr ŚOR (MRiRW) — guardrail zaleceń agenta.
+// Import z dane.gov.pl dataset 550 (CC0), wydania ~miesięczne.
+// Jedyne prawnie wiążące źródło dopuszczeń; karencja TYLKO na etykiecie PDF.
+// Research: docs/research/sor-mrirw-integracja-2026.md
+// -----------------------------
+
+model SorProduct {
+  id         String    @id // id_sor GUID z rejestru, np. {E7C1EDCD-...}
+  name       String // nazwa handlowa
+  producer   String?
+  permitNo   String?   @map("permit_no") // NrZezw
+  kind       String? // Rodzaj: Herbicyd/Fungicyd/Insektycyd/Regulator wzrostu...
+  substances String?   @db.Text // Zawartosc_SBCZ_prosty, np. "tebukonazol - 250 g"
+  permitTo   DateTime? @map("permit_to") // TerminZezw — koniec zezwolenia
+  saleTo     DateTime? @map("sale_to") // TerminDopSprzedazy — do kiedy sprzedaż
+  useTo      DateTime? @map("use_to") // TerminDopuszczenia — do kiedy STOSOWANIE
+  labelPage  String?   @map("label_page") // podstrona alfabetyczna gov.pl z etykietą PDF
+  baseSor    String?   @map("base_sor") // produkt bazowy (handel równoległy)
+
+  applications SorApplication[]
+
+  @@index([name])
+  @@map("sor_products")
+}
+
+model SorApplication {
+  id       String  @id @default(uuid())
+  sorId    String  @map("sor_id")
+  crop     String // uprawa (tekst z rejestru, np. "pszenica ozima")
+  pest     String? @db.Text // agrofag
+  dose     String? @db.Text // tekst wolny: "Maksymalna dawka...: 0,65 l/ha"
+  term     String? @db.Text // terminy/fazy BBCH — tekst wolny
+  minorUse Boolean @default(false) @map("minor_use") // zastosowanie małoobszarowe
+  methods  String? // metody stosowania
+
+  product SorProduct @relation(fields: [sorId], references: [id], onDelete: Cascade)
+
+  @@index([sorId])
+  @@index([crop])
+  @@map("sor_applications")
+}
+
+model SorImport {
+  id                     String   @id @default(uuid())
+  releaseLabel           String   @map("release_label") // np. "26.06.2026" z tytułu zasobu
+  // Idempotencja po ID zasobów, nie dacie — korekta wydania z tą samą datą
+  // dostaje na dane.gov.pl nowe id zasobów i MUSI zostać zaimportowana.
+  basicResourceId        String   @map("basic_resource_id")
+  applicationsResourceId String   @map("applications_resource_id")
+  products               Int
+  applications           Int
+  importedAt             DateTime @default(now()) @map("imported_at")
+
+  @@unique([basicResourceId, applicationsResourceId])
+  @@index([importedAt])
+  @@map("sor_imports")
 }

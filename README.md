@@ -1,6 +1,6 @@
 # AgriClaw
 
-Cyfrowy agronom dla polskich rolników. Obraz z góry + pogoda + Twój AgroAgent → konkretna rada przez WhatsApp: *„pole 3 pryskaj jutro 5:30"*.
+Cyfrowy agronom dla polskich rolników. Obraz z góry + pogoda + Twój AgroAgent → konkretna rada przez WhatsApp: *„pole 3 — dobre okno na oprysk jutro 5:30"*. Zalecenia wspierają decyzję rolnika — ostateczny wybór i weryfikacja z etykietą ŚOR należą do niego.
 
 ## Szybki start (3 komendy)
 

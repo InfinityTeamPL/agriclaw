@@ -16,14 +16,17 @@ export function Hero() {
         <div className="grid lg:grid-cols-[1.05fr_1.2fr] gap-10 lg:gap-16 items-center">
           {/* ────── Lewo: tekst ────── */}
           <div>
-            {/* Eyebrow jako odczyt HUD — nie badge ze Sparkles */}
-            <div className="inline-flex items-center gap-2.5 border border-border bg-card px-3 py-1.5 rounded-md mb-7">
+            {/* Eyebrow jako odczyt HUD — linkuje do landingu kampanii Beta 100 */}
+            <Link
+              href="/beta"
+              className="inline-flex items-center gap-2.5 border border-border bg-card px-3 py-1.5 rounded-md mb-7 hover:border-foreground/30 transition"
+            >
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full rounded-full bg-signal-healthy opacity-60 animate-ping" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-signal-healthy" />
               </span>
-              <span className="hud-label">Faza testów · pierwszych 100 gospodarstw</span>
-            </div>
+              <span className="hud-label">Beta 100 · dołącz do pilotażu →</span>
+            </Link>
 
             <h1 className="font-display text-4xl sm:text-6xl lg:text-[4.25rem] font-semibold tracking-tight text-foreground leading-[1.02]">
               Twój cyfrowy
@@ -40,7 +43,7 @@ export function Hero() {
             <p className="mt-7 text-lg sm:text-xl text-muted-foreground max-w-xl leading-relaxed">
               Obraz z góry + pogoda + historia Twojego pola →
               <span className="text-foreground font-medium"> konkretna rada po polsku</span>.
-              WhatsApp: „pole 3 pryskaj jutro 5:30". Tyle.
+              WhatsApp: „pole 3 — dobre okno na oprysk jutro 5:30". Ty decydujesz.
             </p>
 
             <p className="mt-4 text-base text-muted-foreground/80 max-w-xl">
@@ -62,6 +65,15 @@ export function Hero() {
                 Jak to działa
               </Link>
             </div>
+
+            {/* Zerowy próg wejścia: demo bez rejestracji (auto-login przez ?demo=1) */}
+            <Link
+              href="/login?demo=1"
+              className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-signal-healthy hover:underline underline-offset-4"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-signal-healthy" />
+              Albo zobacz gotowe gospodarstwo demo — bez rejestracji →
+            </Link>
 
             {/* Metryki jako telemetria — mono, tabular */}
             <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-3">

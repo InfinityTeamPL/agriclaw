@@ -65,7 +65,7 @@ export function generateRecommendation(
       title: 'Pilny stres suszowy',
       message: `Stan ${cropLabel} pogarsza się. NDVI ${ndviMean.toFixed(2)}, ${daysWithoutRain} dni bez deszczu, parowanie ${avgEt0Next7.toFixed(1)} mm/dzień.`,
       action:
-        'Jeśli masz nawadnianie — dziś 18:00-22:00 albo jutro 5:30-9:00. Bez nawadniania: oprysk spowalniający parowanie (antytranspirant).',
+        'Jeśli masz nawadnianie — dobre okno dziś 18:00-22:00 albo jutro 5:30-9:00. Bez nawadniania rozważ oprysk spowalniający parowanie (antytranspirant) — dobór, dawkę i warunki potwierdź z etykietą (rejestr MRiRW), fazą uprawy i przepisami. Decyzję o zabiegu podejmujesz sam.',
     };
   }
 
@@ -87,7 +87,7 @@ export function generateRecommendation(
       title: 'Możliwa choroba grzybowa',
       message: `NDVI spadł o ${ndviDrop.toFixed(2)} w ostatnim okresie przy normalnej wilgotności. Może wskazywać na infekcję ${cropLabel === 'pszenicy' ? '(rdza, mączniak, septorioza)' : '(plamistość liści, fuzarioza)'} — ale najpierw potwierdź.`,
       action:
-        'Sprawdź pole wizualnie w 2-3 miejscach lub zrób zdjęcie do diagnozy z kamery. Fungicyd stosuj TYLKO po potwierdzeniu choroby — dobór substancji zależy od uprawy i patogenu (nie stosuj „w ciemno"). Unikaj oprysku przy wietrze >15 km/h.',
+        'Sprawdź pole wizualnie w 2-3 miejscach lub zrób zdjęcie do diagnozy z kamery. Fungicyd rozważ TYLKO po potwierdzeniu choroby — dobór substancji i dawkę potwierdź z aktualną etykietą (rejestr MRiRW), fazą uprawy i przepisami (nie stosuj „w ciemno"). Unikaj oprysku przy wietrze >15 km/h. Decyzję o zabiegu podejmujesz sam.',
     };
   }
 
@@ -98,7 +98,7 @@ export function generateRecommendation(
       title: 'Umiarkowany stres wodny',
       message: `${daysWithoutRain} dni bez deszczu, NDVI ${ndviMean.toFixed(2)}. Stan jeszcze nie krytyczny, ale warto działać wyprzedzająco.`,
       action:
-        'Sprawdź wilgotność gleby łopatą (30 cm głębokości). Jeśli sucha: planuj nawadnianie w ciągu 48h lub oprysk antytranspirantem.',
+        'Sprawdź wilgotność gleby łopatą (30 cm głębokości). Jeśli sucha: planuj nawadnianie w ciągu 48h albo rozważ oprysk antytranspirantem — dobór i dawkę potwierdź z etykietą (rejestr MRiRW); decyzję podejmujesz sam.',
     };
   }
 

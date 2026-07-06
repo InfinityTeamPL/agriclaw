@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Wheat, Clock, TrendingUp, AlertCircle } from 'lucide-react';
+import { AdvisoryNotice } from './AdvisoryNotice';
+import { isPlantProtectionText } from '@/lib/advisory';
 
 interface BbchStatus {
   crop: string;
@@ -163,7 +165,7 @@ export function BbchTracker({ fieldId }: { fieldId: string }) {
       {/* Alerty agronomiczne — amber = sygnał ostrzegawczy (dane) */}
       {status.alerts.length > 0 && (
         <div className="space-y-2">
-          <div className="hud-label text-signal-heat">Co zrobić</div>
+          <div className="hud-label text-signal-heat">Do rozważenia</div>
           {status.alerts.map((a, i) => (
             <div
               key={i}
@@ -173,6 +175,7 @@ export function BbchTracker({ fieldId }: { fieldId: string }) {
               <span>{a}</span>
             </div>
           ))}
+          {status.alerts.some((a) => isPlantProtectionText(a)) && <AdvisoryNotice compact />}
         </div>
       )}
 

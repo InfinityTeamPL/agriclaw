@@ -15,6 +15,7 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AdvisoryNotice } from './AdvisoryNotice';
 
 type Risk = 'low' | 'medium' | 'high';
 
@@ -251,7 +252,7 @@ export function DiseaseRiskPanel({ fieldId }: Props) {
                   >
                     <Droplets className="w-4 h-4 shrink-0 mt-0.5" />
                     <div className="text-foreground">
-                      <span className="font-semibold">Co zrobić: </span>
+                      <span className="font-semibold">Do rozważenia: </span>
                       {r.action}
                     </div>
                   </div>
@@ -261,6 +262,8 @@ export function DiseaseRiskPanel({ fieldId }: Props) {
           );
         })}
       </div>
+
+      <AdvisoryNotice />
 
       <div className="flex items-center justify-between hud-label pt-2 border-t border-border">
         <span>Open-Meteo 72h hourly + 7-dniowa prognoza dzienna</span>

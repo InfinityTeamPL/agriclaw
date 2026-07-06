@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { Wind, Droplets, Thermometer, Clock } from 'lucide-react';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 import { ScanLine } from '@/components/brand/ScanLine';
+import { AdvisoryNotice } from './AdvisoryNotice';
 
 interface HourlyPoint {
   time: string;
@@ -239,6 +240,8 @@ export function SprayTimer({ fieldId }: Props) {
           ))}
         </div>
       )}
+
+      <AdvisoryNotice compact />
     </div>
   );
 }
