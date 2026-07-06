@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { timingSafeEqual } from 'crypto';
+import { waitUntil } from '@vercel/functions';
 import { prisma } from '@/lib/prisma';
 import { getCopernicusClient, extractNdviValues } from '@/lib/satellite/copernicus';
 import { computeNdviStats } from '@/lib/satellite/ndvi';
@@ -30,6 +31,34 @@ function isAuthorized(req: NextRequest): boolean {
 export async function GET(req: NextRequest) {
   if (!isAuthorized(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Rejestr ŚOR: fire-and-forget. Idempotentne po id zasobów wydania, więc
+  // codzienne odpalenie kosztuje 1 zapytanie listy + 1 SELECT gdy brak zmian.
+  // W dev wołamy funkcję bezpośrednio (brak CRON_SECRET → HTTP dałby ciche 401).
+  if (process.env.NODE_ENV === 'development') {
+    waitUntil(
+      import('@/lib/sor-registry')
+        .then((m) => m.syncSorRegistry())
+        .then((r) => console.log('sor-sync (dev):', r.status))
+        .catch((err) => console.error('sor-sync (dev):', err)),
+    );
+  } else {
+    // Publiczna domena (NEXTAUTH_URL) — VERCEL_URL jest za Deployment Protection.
+    const origin = process.env.NEXTAUTH_URL
+      ?? (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+    waitUntil(
+      fetch(`${origin}/api/cron/sor-sync`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${process.env.CRON_SECRET ?? ''}` },
+      })
+        .then((res) => {
+          // fetch nie odrzuca na 4xx/5xx — trwała misconfiguracja (401/404) byłaby
+          // niewidoczna bez tego logu (lekcja z PR #12: skaner "działał" na SSO).
+          if (!res.ok) console.error('sor-sync trigger: HTTP', res.status);
+        })
+        .catch((err) => console.error('sor-sync trigger:', err)),
+    );
   }
 
   // Bez credentiali CDSE cron nie ma jak pobrać NDVI — nie wywalaj całości 500,

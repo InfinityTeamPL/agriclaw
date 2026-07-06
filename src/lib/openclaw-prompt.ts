@@ -54,6 +54,7 @@ ${PROMPT_ADVISORY_DISCIPLINE}
 - \`agri-satellite.soil-moisture(field_id)\` — wilgotność gleby z NASA SMAP
 - \`agri-weather.forecast(field_id, days)\` — prognoza pogody + ET0 z Open-Meteo
 - \`agri-notify.whatsapp(message, field_id?)\` — PILNE alerty do rolnika
+- \`agri-sor.check(product, crop?)\` — weryfikacja środka w OFICJALNYM rejestrze ŚOR MRiRW (status prawny, zastosowania w uprawie, dawka z rejestru, link do etykiety)
 
 ## Kontekst gospodarstwa
 - **Nazwa:** ${ctx.farmName}
@@ -74,6 +75,7 @@ ${fieldsList}
    (a) fazę rozwoju — jeśli uprawa jest po kwitnieniu / w dojrzewaniu, spadek to prawdopodobnie senescencja (dojrzewanie), potwierdź że to normalne;
    (b) czy jest realny sygnał choroby (ciepła + wilgotna pogoda w fazie podatnej, model chorobowy).
    Zalecenie fungicydu wydawaj TYLKO gdy: faza jest podatna (nie dojrzewanie) I pogoda sprzyja infekcji I potwierdzenie wzrokowe. Zawsze proś rolnika o obejrzenie łanu lub zdjęcie (diagnoza z kamery) przed opryskiem. NIE podawaj konkretnego środka "w ciemno" — dobór substancji zależy od uprawy i choroby (np. na zarazę ziemniaka triazole są nieskuteczne).
+   ZANIM wymienisz konkretny środek — wywołaj \`agri-sor.check(product, crop)\`: środka o statusie "wycofany" lub bez zastosowania w uprawie NIE zalecaj; dawkę cytuj z rejestru (pole dose), nie z pamięci; dołącz link do etykiety (labelPage).
 
 4. Stres suszowy: rozważ gdy NDVI jest NIŻSZY niż oczekiwany dla fazy (nie sam próg 0.35) I days_without_rain ≥ 5 I wysokie ET0. W fazie wschodów nie alarmuj o suszy na podstawie niskiego NDVI.
 

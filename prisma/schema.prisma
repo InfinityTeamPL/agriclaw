@@ -423,3 +423,62 @@ model Scouting {
   @@index([tag])
   @@map("scoutings")
 }
+
+// -----------------------------
+// Rejestr ŚOR (MRiRW) — guardrail zaleceń agenta.
+// Import z dane.gov.pl dataset 550 (CC0), wydania ~miesięczne.
+// Jedyne prawnie wiążące źródło dopuszczeń; karencja TYLKO na etykiecie PDF.
+// Research: docs/research/sor-mrirw-integracja-2026.md
+// -----------------------------
+
+model SorProduct {
+  id         String    @id // id_sor GUID z rejestru, np. {E7C1EDCD-...}
+  name       String // nazwa handlowa
+  producer   String?
+  permitNo   String?   @map("permit_no") // NrZezw
+  kind       String? // Rodzaj: Herbicyd/Fungicyd/Insektycyd/Regulator wzrostu...
+  substances String?   @db.Text // Zawartosc_SBCZ_prosty, np. "tebukonazol - 250 g"
+  permitTo   DateTime? @map("permit_to") // TerminZezw — koniec zezwolenia
+  saleTo     DateTime? @map("sale_to") // TerminDopSprzedazy — do kiedy sprzedaż
+  useTo      DateTime? @map("use_to") // TerminDopuszczenia — do kiedy STOSOWANIE
+  labelPage  String?   @map("label_page") // podstrona alfabetyczna gov.pl z etykietą PDF
+  baseSor    String?   @map("base_sor") // produkt bazowy (handel równoległy)
+
+  applications SorApplication[]
+
+  @@index([name])
+  @@map("sor_products")
+}
+
+model SorApplication {
+  id       String  @id @default(uuid())
+  sorId    String  @map("sor_id")
+  crop     String // uprawa (tekst z rejestru, np. "pszenica ozima")
+  pest     String? @db.Text // agrofag
+  dose     String? @db.Text // tekst wolny: "Maksymalna dawka...: 0,65 l/ha"
+  term     String? @db.Text // terminy/fazy BBCH — tekst wolny
+  minorUse Boolean @default(false) @map("minor_use") // zastosowanie małoobszarowe
+  methods  String? // metody stosowania
+
+  product SorProduct @relation(fields: [sorId], references: [id], onDelete: Cascade)
+
+  @@index([sorId])
+  @@index([crop])
+  @@map("sor_applications")
+}
+
+model SorImport {
+  id                     String   @id @default(uuid())
+  releaseLabel           String   @map("release_label") // np. "26.06.2026" z tytułu zasobu
+  // Idempotencja po ID zasobów, nie dacie — korekta wydania z tą samą datą
+  // dostaje na dane.gov.pl nowe id zasobów i MUSI zostać zaimportowana.
+  basicResourceId        String   @map("basic_resource_id")
+  applicationsResourceId String   @map("applications_resource_id")
+  products               Int
+  applications           Int
+  importedAt             DateTime @default(now()) @map("imported_at")
+
+  @@unique([basicResourceId, applicationsResourceId])
+  @@index([importedAt])
+  @@map("sor_imports")
+}

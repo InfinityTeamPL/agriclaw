@@ -52,7 +52,7 @@ export function assessDiseaseRisks(input: DiseaseAssessmentInput): DiseaseRisk[]
         score: Math.min(100, septoriaHours * 6),
         reason: `${septoriaHours}h wilgotności >85% i temp 15-25°C w ciągu 72h — warunki sprzyjające septoriozie liści.`,
         action:
-          'Do rozważenia po potwierdzeniu w polu: fungicyd triazolowy w fazie kłoszenia (BBCH 47+), np. protiokonazol 250 g/l (Input, Proline) albo tebukonazol 250 g/l (Mystic, Falcon). ' + VERIFY_SOR,
+          'Do rozważenia po potwierdzeniu w polu: fungicyd triazolowy w fazie kłoszenia (BBCH 47+), np. protiokonazol 250 g/l (Input, Proline) albo tebukonazol — aktualne produkty sprawdź w rejestrze. ' + VERIFY_SOR,
         crops: CEREAL,
       });
     }
@@ -75,7 +75,7 @@ export function assessDiseaseRisks(input: DiseaseAssessmentInput): DiseaseRisk[]
         score: 85,
         reason: `Opady + temperatura 20-30°C podczas fazy kwitnienia — wysokie ryzyko fuzariozy, porażenie obniża plon i zwiększa mykotoksyny DON.`,
         action:
-          'Wysokie ryzyko — po potwierdzeniu warto rozważyć pilnie: fungicyd z metkonazolem / protiokonazolem / tebukonazolem w BBCH 65 (pełnia kwitnienia), np. Prosaro 250 EC lub Osiris Star. Okno działania krótkie (2-3 dni od zapylenia). ' + VERIFY_SOR,
+          'Wysokie ryzyko — po potwierdzeniu warto rozważyć pilnie: fungicyd z metkonazolem / protiokonazolem / tebukonazolem w BBCH 65 (pełnia kwitnienia), np. Prosaro 250 EC. Okno działania krótkie (2-3 dni od zapylenia). ' + VERIFY_SOR,
         crops: CEREAL,
       });
     }
@@ -100,7 +100,7 @@ export function assessDiseaseRisks(input: DiseaseAssessmentInput): DiseaseRisk[]
         score: Math.min(100, rustHours * 5),
         reason: `${rustHours}h nocnych rosy (RH>90%, 10-22°C) — warunki sprzyjające zarodnikowaniu rdzy.`,
         action:
-          'Do rozważenia po potwierdzeniu: fungicyd strobilurynowy + triazol w BBCH 37-59, np. Amistar 250 SC + Mystic, albo gotowy mix Priori Xtra. ' + VERIFY_SOR,
+          'Do rozważenia po potwierdzeniu: fungicyd strobilurynowy + triazol w BBCH 37-59, np. azoksystrobina (Amistar 250 SC) + triazol z aktualną rejestracją. ' + VERIFY_SOR,
         crops: ['wheat'],
       });
     }
@@ -161,7 +161,7 @@ export function assessDiseaseRisks(input: DiseaseAssessmentInput): DiseaseRisk[]
         score: 60,
         reason: `Ciepłe i wilgotne warunki w ciągu 7 dni — sprzyjają alternariozie liści.`,
         // UWAGA: chlorotalonil wycofany z UE (rozp. 2019/677, od 2020) — nie wolno go zalecać.
-        action: 'Do rozważenia po potwierdzeniu: fungicyd z difenokonazolem lub mandipropamidem (np. Revus Top) albo azoksystrobiną — wyłącznie produkty aktualnie zarejestrowane w danej uprawie. ' + VERIFY_SOR,
+        action: 'Do rozważenia po potwierdzeniu: fungicyd z difenokonazolem lub mandipropamidem (np. Revus 250 SC) albo azoksystrobiną — wyłącznie produkty aktualnie zarejestrowane w danej uprawie. ' + VERIFY_SOR,
         crops: [...POTATO, 'rapeseed'],
       });
     }
@@ -178,7 +178,7 @@ export function assessDiseaseRisks(input: DiseaseAssessmentInput): DiseaseRisk[]
         risk: 'medium',
         score: 65,
         reason: 'Ciepły mokry okres w fazie formowania rozety — ryzyko suchej zgnilizny.',
-        action: 'Do rozważenia: fungicyd jesienny z tebukonazolem + metkonazolem, np. Caryx albo Topsin M. ' + VERIFY_SOR,
+        action: 'Do rozważenia: fungicyd jesienny z metkonazolem + chlorkiem mepikwatu, np. Caryx 240 SL. ' + VERIFY_SOR,
         crops: RAPESEED,
       });
     }

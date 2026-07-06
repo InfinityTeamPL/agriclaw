@@ -27,6 +27,16 @@ interface DiagnosisResult {
       substancja_czynna: string;
       przyklad_handlowy: string;
       dawka: string;
+      // Adnotacja serwera: weryfikacja w oficjalnym rejestrze ŚOR MRiRW
+      rejestr?: {
+        status: 'aktualny' | 'wyprzedaz' | 'do_zuzycia' | 'wycofany' | 'nie_znaleziono' | 'rejestr_niedostepny';
+        matchedName?: string;
+        exactMatch?: boolean;
+        useTo?: string | null;
+        labelPage?: string | null;
+        cropAuthorized?: boolean | null;
+        releaseLabel?: string | null;
+      };
     }>;
     okno_oprysku: string;
   };
@@ -313,6 +323,7 @@ function DiagnosisView({ result }: { result: DiagnosisResult }) {
                     <div className="text-xs text-muted-foreground">
                       {s.typ} · {s.przyklad_handlowy}
                     </div>
+                    {s.rejestr && <RejestrBadge rejestr={s.rejestr} />}
                   </div>
                   <div className="text-xs font-mono tabular font-semibold whitespace-nowrap text-foreground">
                     {s.dawka}
@@ -332,6 +343,51 @@ function DiagnosisView({ result }: { result: DiagnosisResult }) {
       )}
 
       <AdvisoryNotice />
+    </div>
+  );
+}
+
+// Wynik weryfikacji środka w oficjalnym rejestrze ŚOR MRiRW (adnotacja serwera).
+function RejestrBadge({
+  rejestr,
+}: {
+  rejestr: NonNullable<DiagnosisResult['rekomendacja']['srodki'][number]['rejestr']>;
+}) {
+  const meta: Record<string, { label: string; cls: string }> = {
+    aktualny: { label: 'w rejestrze MRiRW ✓', cls: 'bg-signal-healthy/10 text-signal-healthy border-signal-healthy/30' },
+    wyprzedaz: { label: 'zezwolenie wygasa — sprawdź etykietę', cls: 'bg-signal-heat/10 text-signal-heat border-signal-heat/30' },
+    do_zuzycia: { label: 'tylko do zużycia zapasów', cls: 'bg-signal-heat/10 text-signal-heat border-signal-heat/30' },
+    wycofany: { label: 'WYCOFANY — nie stosuj', cls: 'bg-signal-drought/10 text-signal-drought border-signal-drought/30' },
+    nie_znaleziono: { label: 'brak w rejestrze — zweryfikuj nazwę', cls: 'bg-secondary text-muted-foreground border-border' },
+    rejestr_niedostepny: { label: 'rejestr ŚOR jeszcze niezaładowany', cls: 'bg-secondary text-muted-foreground border-border' },
+  };
+  const m = meta[rejestr.status] ?? meta.nie_znaleziono;
+  const warnCrop = rejestr.cropAuthorized === false;
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+      <span className={`inline-flex items-center text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border ${m.cls}`}>
+        {m.label}
+      </span>
+      {rejestr.matchedName && rejestr.exactMatch === false && (
+        <span className="inline-flex items-center text-[10px] font-mono px-1.5 py-0.5 rounded border bg-secondary text-muted-foreground border-border">
+          dopasowano: {rejestr.matchedName}
+        </span>
+      )}
+      {warnCrop && (
+        <span className="inline-flex items-center text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border bg-signal-drought/10 text-signal-drought border-signal-drought/30">
+          brak rejestracji w tej uprawie
+        </span>
+      )}
+      {rejestr.labelPage && (
+        <a
+          href={rejestr.labelPage}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[10px] font-mono underline underline-offset-2 text-muted-foreground hover:text-foreground"
+        >
+          etykieta (gov.pl) ↗
+        </a>
+      )}
     </div>
   );
 }

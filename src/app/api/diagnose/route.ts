@@ -8,6 +8,7 @@ import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { getOpenRouterClient } from '@/lib/ai/openrouter';
 import { PROMPT_ADVISORY_DISCIPLINE, ADVISORY_SHORT } from '@/lib/advisory';
+import { checkSorProduct } from '@/lib/sor-registry';
 
 const bodySchema = z.object({
   imageBase64: z.string().startsWith('data:image/'),
@@ -161,6 +162,55 @@ ${PROMPT_ADVISORY_DISCIPLINE}`;
   // żeby każda diagnoza z rekomendacją ŚOR miała framing „wsparcie decyzji".
   if (typeof diagnosis.zastrzezenie !== 'string' || !diagnosis.zastrzezenie) {
     diagnosis.zastrzezenie = ADVISORY_SHORT;
+  }
+
+  // Weryfikacja proponowanych środków w OFICJALNYM rejestrze ŚOR MRiRW
+  // (best-effort — brak importu/awaria nie blokuje diagnozy).
+  try {
+    const rec = diagnosis.rekomendacja as Record<string, unknown> | undefined;
+    const srodki = Array.isArray(rec?.srodki)
+      ? (rec!.srodki as Array<Record<string, unknown>>)
+      : [];
+
+    const registryImported = (await prisma.sorImport.count()) > 0;
+    if (!registryImported) {
+      // Pusty rejestr ≠ "produkt nie istnieje" — neutralny status zamiast
+      // fałszywego "brak w rejestrze" przy każdym środku.
+      for (const s of srodki.slice(0, 4)) s.rejestr = { status: 'rejestr_niedostepny' };
+    } else {
+      await Promise.all(
+        srodki.slice(0, 4).map(async (s) => {
+          // Weryfikujemy TYLKO nazwy handlowe — substancja czynna nie występuje
+          // w nazwach produktów (dałaby zawsze fałszywe "brak w rejestrze").
+          const raw = typeof s.przyklad_handlowy === 'string' ? s.przyklad_handlowy.trim() : '';
+          if (!raw) return;
+          // Model pisze "np. Prosaro 250 EC lub podobny (orientacyjnie)" — tnij po
+          // frazach alternatywy i nawiasie; przecinek TYLKO gdy nie między cyframi
+          // (nazwy typu "Anty Pleśń 62,5 WG" mają przecinek dziesiętny).
+          const name = raw
+            .replace(/^np\.\s*/i, '')
+            .split(/\s+(?:lub|albo)\s+|\/|;|\(/i)[0]
+            .split(/(?<!\d),(?!\d)/)[0]
+            .trim();
+          if (!name) return;
+          const check = await checkSorProduct(name, fieldContext?.crop);
+          s.rejestr =
+            check.found && check.product
+              ? {
+                  status: check.product.status,
+                  matchedName: check.product.name,
+                  exactMatch: check.exactMatch ?? false,
+                  useTo: check.product.useTo,
+                  labelPage: check.product.labelPage,
+                  cropAuthorized: check.cropAuthorized ?? null,
+                  releaseLabel: check.releaseLabel,
+                }
+              : { status: 'nie_znaleziono', releaseLabel: check.releaseLabel };
+        }),
+      );
+    }
+  } catch (err) {
+    console.error('diagnose: weryfikacja rejestru ŚOR pominięta:', err);
   }
 
   // Log event
