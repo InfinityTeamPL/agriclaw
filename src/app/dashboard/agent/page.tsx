@@ -12,9 +12,11 @@ import Link from 'next/link';
 import { Bot, Rocket } from 'lucide-react';
 import { requireFarm } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
+import { resolveChatEngine, type ChatEnginePreference } from '@/lib/agent/engine';
 import { ChatInterface, type ChatInitialMessage } from '@/components/chat/ChatInterface';
 import { AgentProvisioningPanel } from './AgentProvisioningPanel';
 import { AgentErrorPanel } from './AgentErrorPanel';
+import { EngineSelector } from './EngineSelector';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,14 +28,22 @@ export default async function AgentPage() {
     orderBy: { createdAt: 'desc' },
   });
 
-  const isReady = agent?.status === 'READY';
+  const isReady = agent?.status === 'READY' && Boolean(agent.serverIp);
+  const engine = resolveChatEngine(farm.chatEngine, isReady);
 
-  // Ostatnia konwersacja (gdy agent READY)
+  // Ostatnia konwersacja WYBRANEGO silnika (historie są rozdzielne).
   let initialMessages: ChatInitialMessage[] = [];
   let conversationId: string | null = null;
-  if (isReady && agent) {
+  if (engine === 'openclaw' || engine === 'agroagent') {
     const lastConversation = await prisma.conversation.findFirst({
-      where: { farmId: farm.id, agentId: agent.id },
+      where:
+        engine === 'openclaw'
+          ? { farmId: farm.id, agentId: agent!.id }
+          : {
+              farmId: farm.id,
+              engine: 'agroagent',
+              NOT: { sessionKey: { startsWith: 'agro:wa:' } }, // WhatsApp osobno
+            },
       orderBy: { updatedAt: 'desc' },
       include: {
         messages: { orderBy: { createdAt: 'asc' }, take: 50 },
@@ -51,25 +61,34 @@ export default async function AgentPage() {
   }
 
   const mock = agent?.hetznerServerId === 'mock-dev';
+  const provisioning = agent?.status === 'PROVISIONING';
+  const errored = agent?.status === 'ERROR';
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 flex flex-col gap-4 h-full">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Bot className="w-6 h-6 text-emerald-600" />
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 font-display tracking-tight">
+          <Bot className="w-6 h-6 text-signal-healthy" />
           Agent AgriClaw
         </h1>
-        <p className="text-sm text-gray-500">
-          Zadaj pytanie o swoje pola. Agent ma dostęp do danych satelitarnych i rekomendacji.
+        <p className="text-sm text-muted-foreground">
+          Zadaj pytanie o swoje pola. Agent ma dostęp do danych satelitarnych, pogody i rejestru ŚOR.
         </p>
       </div>
 
-      {!agent ? (
-        <AgentEmptyCTA />
-      ) : agent.status === 'PROVISIONING' ? (
-        <AgentProvisioningPanel agentId={agent.id} mock={mock} />
-      ) : agent.status === 'ERROR' ? (
-        <AgentErrorPanel agentId={agent.id} />
+      {/* Wybór silnika — decyzja rolnika, dwie pełnoprawne opcje + auto */}
+      <EngineSelector
+        farmId={farm.id}
+        current={(farm.chatEngine as ChatEnginePreference) ?? 'auto'}
+        hasReadyAgent={isReady}
+      />
+
+      {/* Status wdrożenia OpenClaw (jeśli w toku/błąd) — niezależnie od silnika */}
+      {provisioning && agent && <AgentProvisioningPanel agentId={agent.id} mock={mock} />}
+      {errored && agent && <AgentErrorPanel agentId={agent.id} />}
+
+      {engine === 'openclaw_unavailable' ? (
+        <AgentEmptyCTA openclawChosen />
       ) : (
         <ChatInterface
           farmId={farm.id}
@@ -81,23 +100,26 @@ export default async function AgentPage() {
   );
 }
 
-function AgentEmptyCTA() {
+function AgentEmptyCTA({ openclawChosen = false }: { openclawChosen?: boolean }) {
   return (
-    <div className="bg-white border border-dashed border-gray-300 rounded-xl p-8 text-center space-y-4">
-      <div className="w-12 h-12 mx-auto rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
-        <Bot className="w-6 h-6 text-emerald-600" />
+    <div className="bg-card border border-dashed border-border rounded-lg p-8 text-center space-y-4 shadow-card">
+      <div className="w-12 h-12 mx-auto rounded-md bg-signal-healthy/10 border border-signal-healthy/30 flex items-center justify-center">
+        <Bot className="w-6 h-6 text-signal-healthy" />
       </div>
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Uruchom swojego agenta</h2>
-        <p className="text-sm text-gray-500 mt-1 max-w-md mx-auto">
-          Każde gospodarstwo dostaje własnego AgroAgenta, który odpowiada po polsku i czyta dane z
-          Twoich pól.
+        <h2 className="text-lg font-semibold text-foreground font-display tracking-tight">
+          {openclawChosen ? 'OpenClaw wymaga wdrożenia agenta' : 'Uruchom swojego agenta'}
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
+          {openclawChosen
+            ? 'Wybrałeś silnik autonomiczny — postaw serwer agenta poniżej albo przełącz się na silnik wbudowany, żeby rozmawiać od razu.'
+            : 'Każde gospodarstwo dostaje własnego AgroAgenta, który odpowiada po polsku i czyta dane z Twoich pól.'}
         </p>
       </div>
       <div>
         <Link
           href="/dashboard/agent/deploy"
-          className="inline-flex items-center gap-2 bg-emerald-600 text-white font-medium px-4 py-2 rounded-lg hover:bg-emerald-700 transition"
+          className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-medium px-4 py-2 rounded-md hover:brightness-110 transition"
         >
           <Rocket className="w-4 h-4" />
           Uruchom swojego agenta

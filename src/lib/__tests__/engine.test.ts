@@ -1,0 +1,32 @@
+import { describe, it, expect } from 'vitest';
+import { resolveChatEngine, isChatEnginePreference } from '../agent/engine';
+
+describe('resolveChatEngine — wybór silnika należy do rolnika', () => {
+  it('auto: OpenClaw gdy wdrożony, inaczej wbudowany', () => {
+    expect(resolveChatEngine('auto', true)).toBe('openclaw');
+    expect(resolveChatEngine('auto', false)).toBe('agroagent');
+  });
+
+  it('jawny wybór wbudowanego wygrywa nawet przy wdrożonym OpenClaw', () => {
+    expect(resolveChatEngine('agroagent', true)).toBe('agroagent');
+    expect(resolveChatEngine('agroagent', false)).toBe('agroagent');
+  });
+
+  it('jawny wybór OpenClaw bez agenta → unavailable (BEZ cichego fallbacku)', () => {
+    expect(resolveChatEngine('openclaw', true)).toBe('openclaw');
+    expect(resolveChatEngine('openclaw', false)).toBe('openclaw_unavailable');
+  });
+
+  it('nieznana/pusta preferencja traktowana jak auto', () => {
+    expect(resolveChatEngine(null, true)).toBe('openclaw');
+    expect(resolveChatEngine(undefined, false)).toBe('agroagent');
+    expect(resolveChatEngine('cokolwiek', false)).toBe('agroagent');
+  });
+
+  it('isChatEnginePreference waliduje wartości do PATCH', () => {
+    expect(isChatEnginePreference('auto')).toBe(true);
+    expect(isChatEnginePreference('agroagent')).toBe(true);
+    expect(isChatEnginePreference('openclaw')).toBe(true);
+    expect(isChatEnginePreference('gpt4o')).toBe(false);
+  });
+});
