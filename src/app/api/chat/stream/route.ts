@@ -2,11 +2,14 @@ import { NextRequest } from 'next/server';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { OpenClawClient } from '@/lib/openclaw';
-import { buildAgriclawSystemPrompt } from '@/lib/openclaw-prompt';
+import { buildAgriclawSystemPrompt, type FarmContext } from '@/lib/openclaw-prompt';
 import { withAdvisoryDisclaimer } from '@/lib/advisory';
+import { runAgroAgent } from '@/lib/agent/agro-agent';
+import type { LlmMessage } from '@/lib/ai/minimax';
 import { chatMessageSchema } from '@/lib/schemas';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 120; // pętla narzędziowa v2 (kilka rund LLM + DB/API)
 
 export async function POST(req: NextRequest) {
   const { user } = await requireAuth();
@@ -39,13 +42,19 @@ export async function POST(req: NextRequest) {
 
   const agent = farm.agents[0];
 
+  // Brak wdrożonego agenta OpenClaw → wbudowany AgroAgent v2 (MiniMax).
+  // Chat działa dla KAŻDEGO gospodarstwa od pierwszej sekundy (koniec 409).
   if (!agent || !agent.serverIp) {
-    return new Response(
-      JSON.stringify({
-        error: 'Brak aktywnego agenta. Uruchom agenta przez /dashboard/agent.',
-      }),
-      { status: 409, headers: { 'Content-Type': 'application/json' } },
-    );
+    return runBuiltinAgentStream(req, {
+      farm: {
+        id: farm.id,
+        name: farm.name,
+        address: farm.address,
+        fields: farm.fields,
+      },
+      conversationId,
+      message,
+    });
   }
 
   const conversation = conversationId
@@ -212,6 +221,144 @@ export async function POST(req: NextRequest) {
         } catch {
           /* połączenie już zamknięte */
         }
+      } finally {
+        clearInterval(keepAlive);
+        req.signal.removeEventListener('abort', onAbort);
+        safeClose();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+    },
+  });
+}
+
+// ── Wbudowany AgroAgent v2 (MiniMax) — ten sam kontrakt SSE co ścieżka OpenClaw ──
+
+async function runBuiltinAgentStream(
+  req: NextRequest,
+  opts: {
+    farm: { id: string; name: string; address: string; fields: Array<{ id: string; name: string; crop: string; areaHectares: number }> };
+    conversationId?: string;
+    message: string;
+  },
+): Promise<Response> {
+  if (!process.env.MINIMAX_API_KEY) {
+    return new Response(
+      JSON.stringify({
+        error:
+          'Czat AI wymaga konfiguracji MINIMAX_API_KEY (wbudowany agent) albo wdrożenia agenta OpenClaw przez /dashboard/agent.',
+      }),
+      { status: 503, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  const conversation = opts.conversationId
+    ? await prisma.conversation.findFirst({
+        where: { id: opts.conversationId, farmId: opts.farm.id },
+      })
+    : await prisma.conversation.create({
+        data: {
+          farmId: opts.farm.id,
+          engine: 'agroagent',
+          sessionKey: `agro:${opts.farm.id}:${Date.now()}`,
+          title: opts.message.slice(0, 40),
+        },
+      });
+  if (!conversation) {
+    return new Response(JSON.stringify({ error: 'Conversation not found' }), { status: 404 });
+  }
+
+  // Historia tej rozmowy jako kontekst (ostatnie 12 tur USER/ASSISTANT).
+  const past = await prisma.message.findMany({
+    where: { conversationId: conversation.id, role: { in: ['USER', 'ASSISTANT'] } },
+    orderBy: { createdAt: 'desc' },
+    take: 12,
+    select: { role: true, content: true },
+  });
+  const history: LlmMessage[] = past
+    .reverse()
+    .map((m) => ({ role: m.role === 'USER' ? 'user' : 'assistant', content: m.content }) as LlmMessage);
+
+  await prisma.message.create({
+    data: { conversationId: conversation.id, role: 'USER', content: opts.message },
+  });
+
+  const ctx: FarmContext = {
+    farmId: opts.farm.id,
+    farmName: opts.farm.name,
+    address: opts.farm.address,
+    fields: opts.farm.fields,
+  };
+
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      let closed = false;
+      const safeClose = () => {
+        if (closed) return;
+        closed = true;
+        try {
+          controller.close();
+        } catch {
+          /* już zamknięty */
+        }
+      };
+      const send = (obj: Record<string, unknown>) => {
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+        } catch {
+          /* klient rozłączony */
+        }
+      };
+      const keepAlive = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(`: ping\n\n`));
+        } catch {
+          /* zamknięte */
+        }
+      }, 15_000);
+      const onAbort = () => {
+        clearInterval(keepAlive);
+        safeClose();
+      };
+      req.signal.addEventListener('abort', onAbort);
+
+      try {
+        send({ type: 'start', conversationId: conversation.id });
+        const result = await runAgroAgent({
+          farmId: opts.farm.id,
+          ctx,
+          history,
+          userMessage: opts.message,
+          onDelta: (text) => send({ type: 'delta', text }),
+        });
+
+        await prisma.message.create({
+          data: {
+            conversationId: conversation.id,
+            role: 'ASSISTANT',
+            content: result.content,
+            metadata: JSON.stringify({
+              engine: 'agroagent',
+              model: result.model,
+              toolRounds: result.toolRounds,
+              tools: result.toolNames,
+            }),
+          },
+        });
+        send({ type: 'done', conversationId: conversation.id, model: result.model });
+      } catch (err) {
+        console.error('agro-agent v2:', err);
+        send({
+          type: 'error',
+          error: 'AgroAgent chwilowo niedostępny. Spróbuj ponownie za chwilę.',
+        });
       } finally {
         clearInterval(keepAlive);
         req.signal.removeEventListener('abort', onAbort);

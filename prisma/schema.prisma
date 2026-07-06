@@ -310,14 +310,18 @@ model InstalledSkill {
 model Conversation {
   id         String   @id @default(uuid())
   farmId     String   @map("farm_id")
-  agentId    String   @map("agent_id")
-  sessionKey String   @unique @map("session_key") // OpenClaw session key
+  // Nullable: rozmowy wbudowanego AgroAgenta v2 (MiniMax tool-calling w aplikacji)
+  // nie mają wiersza Agent. SetNull — usunięcie agenta OpenClaw nie kasuje historii.
+  agentId    String?  @map("agent_id")
+  // Silnik rozmowy: "openclaw" (agent na VM) | "agroagent" (wbudowany v2)
+  engine     String   @default("openclaw")
+  sessionKey String   @unique @map("session_key")
   title      String   @default("Nowa rozmowa")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   farm     Farm      @relation(fields: [farmId], references: [id], onDelete: Cascade)
-  agent    Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agent    Agent?    @relation(fields: [agentId], references: [id], onDelete: SetNull)
   messages Message[]
 
   @@index([farmId])
@@ -327,7 +331,7 @@ model Conversation {
 
 model Message {
   id             String   @id @default(uuid())
-  agentId        String   @map("agent_id")
+  agentId        String?  @map("agent_id") // null dla wbudowanego AgroAgenta v2
   conversationId String?  @map("conversation_id")
   role           String   @default("USER") // USER, ASSISTANT, TOOL
   content        String   @db.Text
@@ -335,7 +339,7 @@ model Message {
   metadata       String?  @db.Text
   createdAt      DateTime @default(now()) @map("created_at")
 
-  agent        Agent         @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agent        Agent?        @relation(fields: [agentId], references: [id], onDelete: SetNull)
   conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
 
   @@index([agentId])

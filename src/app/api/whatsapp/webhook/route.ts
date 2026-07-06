@@ -16,6 +16,7 @@ import { prisma } from '@/lib/prisma';
 import { OpenClawClient } from '@/lib/openclaw';
 import { buildAgriclawSystemPrompt } from '@/lib/openclaw-prompt';
 import { withAdvisoryDisclaimer } from '@/lib/advisory';
+import { runAgroAgent } from '@/lib/agent/agro-agent';
 import { fetchWithTimeout } from '@/lib/satellite/http';
 
 export const dynamic = 'force-dynamic';
@@ -151,15 +152,58 @@ async function handleInbound(msg: InboundMessage): Promise<void> {
   }
 
   const agent = farm.agents[0];
+
+  // Brak agenta OpenClaw → wbudowany AgroAgent v2 (MiniMax). Rolnik z Beta 100
+  // rozmawia na WhatsApp od pierwszej sekundy, bez stawiania VM.
   if (!agent || !agent.serverIp) {
-    await sendWhatsappText(
-      msg.from,
-      'Twój AgroAgent nie jest jeszcze uruchomiony. Wejdź na AgriClaw → AgroAgent, aby go aktywować.',
-    );
+    if (!process.env.MINIMAX_API_KEY) {
+      await sendWhatsappText(
+        msg.from,
+        'Czat AI jest chwilowo niedostępny (konfiguracja w toku). Spróbuj później.',
+      );
+      return;
+    }
+    const sessionKey = `agro:wa:${farm.id}`;
+    const conversation =
+      (await prisma.conversation.findFirst({ where: { farmId: farm.id, sessionKey } })) ??
+      (await prisma.conversation.create({
+        data: { farmId: farm.id, engine: 'agroagent', sessionKey, title: 'WhatsApp' },
+      }));
+    const past = await prisma.message.findMany({
+      where: { conversationId: conversation.id, role: { in: ['USER', 'ASSISTANT'] } },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      select: { role: true, content: true },
+    });
+    await prisma.message.create({
+      data: { conversationId: conversation.id, role: 'USER', content: msg.text },
+    });
+    const result = await runAgroAgent({
+      farmId: farm.id,
+      ctx: {
+        farmId: farm.id,
+        farmName: farm.name,
+        address: farm.address,
+        fields: farm.fields.map((f) => ({ id: f.id, name: f.name, crop: f.crop, areaHectares: f.areaHectares })),
+      },
+      history: past
+        .reverse()
+        .map((m) => ({ role: m.role === 'USER' ? 'user' : 'assistant', content: m.content }) as import('@/lib/ai/minimax').LlmMessage),
+      userMessage: msg.text,
+    });
+    await prisma.message.create({
+      data: {
+        conversationId: conversation.id,
+        role: 'ASSISTANT',
+        content: result.content,
+        metadata: JSON.stringify({ engine: 'agroagent', channel: 'whatsapp', model: result.model }),
+      },
+    });
+    await sendWhatsappText(msg.from, result.content);
     return;
   }
 
-  // Zapisz/znajdź konwersację WhatsApp dla tej farmy.
+  // Zapisz/znajdź konwersację WhatsApp dla tej farmy (ścieżka OpenClaw).
   const sessionKey = `agriclaw:wa:${farm.id}`;
   const conversation =
     (await prisma.conversation.findFirst({ where: { farmId: farm.id, sessionKey } })) ??
