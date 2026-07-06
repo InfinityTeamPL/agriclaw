@@ -52,14 +52,14 @@ Poziom dofinansowania: badania przemysłowe 80% (MŚP), prace rozwojowe 60%, jed
 ## 6. Dlaczego wygramy (mapowanie na kryteria oceny)
 
 1. **Istota innowacji:** nie „kolejny dashboard NDVI" — zmiana interfejsu na konwersacyjny + benchmark halucynacji agro-PL (pierwszy taki); przewaga zweryfikowana analizą konkurencji (SatAgro/Cropwise/eAgronom — żaden nie ma AI-first PL).
-2. **Wykonalność:** produkt JUŻ DZIAŁA na produkcji (TRL6, demo dla panelu ekspertów na żywo!), zespół dowiózł 15 releasów w 3 mies. (historia repo), architektura kosztowa policzona.
+2. **Wykonalność:** produkt JUŻ DZIAŁA na produkcji pod adresem **agripol.xyz** (TRL6, demo dla panelu ekspertów na żywo!), zespół dowiózł 20+ releasów w 3 mies. (historia repo), architektura kosztowa policzona (agent ~0,01 zł/rozmowę). **Kluczowy guardrail WP2 jest już zaimplementowany na produkcji:** agent waliduje każdy proponowany środek w czasie rzeczywistym względem oficjalnego rejestru ŚOR MRiRW (import otwartych danych dane.gov.pl: ~3 tys. produktów, ~18,5 tys. zastosowań; status prawny, dawka i fazy BBCH z rejestru, link do etykiety) — zapis rzeczywistej rozmowy w załączniku dowodowym `agroagent-rejestr-sor-dowod.pdf`. Framing „wsparcie decyzji, nie polecenie" **zrecenzowany przez eksperta akademickiego (lipiec 2026)**, wdrożony systemowo (zabezpieczenie poza modelem) i pokryty testami niezmienników.
 3. **Kadra:** konsorcjum łączy EO+AI (lider), agronomię (IUNG), NLP (uczelnia), dostęp do rolnika (ODR).
 4. **Komercjalizacja:** model SaaS 99–149 zł/mies. z policzonym CAC z kampanii beta (dane realne z sierpnia–października!), kanał B2B2F przez doradców.
 5. **Szeroki wpływ:** otwarte rezultaty (benchmark, publikacje), zgodność z WPR/Zielonym Ładem.
 
 ## 7. Ryzyka do wniosku
 
-Halucynacje LLM (→ WP2 guardraile + rejestr ŚOR jako jedyne źródło zaleceń środków) · zachmurzenie (→ fuzja S1 radar, już wdrożona) · adopcja (→ ODR w konsorcjum + WhatsApp zamiast appki) · zmiany API dostawców (→ abstrakcja multi-provider, już w kodzie).
+Halucynacje LLM (→ WP2 guardraile + rejestr ŚOR jako jedyne źródło zaleceń środków — **integracja z rejestrem MRiRW już działa na produkcji**) · zachmurzenie (→ fuzja S1 radar, już wdrożona) · adopcja (→ ODR w konsorcjum + WhatsApp zamiast appki) · zmiany API dostawców (→ abstrakcja multi-provider **zrealizowana**: dwa wymienne silniki agenta — wbudowany MiniMax i autonomiczny OpenClaw, wybór per gospodarstwo).
 
 ## 8. Załączniki do skompletowania
 
@@ -86,3 +86,12 @@ Nadal DO POTWIERDZENIA (weryfikacja przerwana limitem sesji — źródła zebran
 - [ ] ścieżki równoległe (niekolidujące): PARP Platformy Startowe FEPW (🟡 IIa ~30.06–17.09.2026, Polska Wschodnia), ESA BIC Poland (nabór ciągły), CASSINI/myEUspace, ESA InCubed — patrz pełny ranking w `docs/funding/` / [poland-market-grants-2026.md](../competition/poland-market-grants-2026.md)
 
 *Sekcje 1–3 są gotowe jako one-pager do PIERWSZYCH ROZMÓW z IUNG-PIB / SGGW / ODR — wysłać niezwłocznie (deadline 28.08 wymaga zdomkniętego konsorcjum do ~połowy sierpnia).*
+
+## 10. Stan wdrożenia produktu (aktualizacja 06.07.2026) — amunicja do sekcji „wykonalność"
+
+Od powstania szkicu (03.07) na produkcji przybyło — wszystko zweryfikowane E2E:
+
+- **Rejestr ŚOR MRiRW zintegrowany i DZIAŁA** (WP2-guardrail dowieziony przed projektem!): comiesięczny import z dane.gov.pl (dataset CC0; 2 983 produkty, 18 444 zastosowania, wydanie 26.06.2026), walidacja w agencie (`check_sor_product`: status prawny liczony kalendarzowo, zastosowania per uprawa z dopasowaniem tokenowym, dawka/fazy BBCH z rejestru, link do etykiety) oraz adnotacje przy diagnozie z kamery. Załącznik dowodowy: `agroagent-rejestr-sor-dowod.pdf`.
+- **Wbudowany agent konwersacyjny (MiniMax-M3)** — czat i WhatsApp działają dla każdego gospodarstwa bez własnego serwera (koszt ~0,01 zł/rozmowę); OpenClaw pozostaje drugim, wymiennym silnikiem (wybór per gospodarstwo). Wspólne reguły agronomiczne obu silników w jednym module.
+- **Framing „wsparcie decyzji" wdrożony po recenzji eksperta akademickiego** (lipiec 2026): dyscyplina w promptach + deterministyczny bezpiecznik poza modelem + testy niezmienników; audyt usunął z bazy zaleceń substancję wycofaną z UE (chlorotalonil).
+- **Domena produkcyjna: agripol.xyz** (marka: AgriClaw). Kampania „Beta 100" wystartowała: landing `/beta`, demo 1-klik, rekrutacja pilotów = listy intencyjne do NINIEJSZEGO wniosku.
