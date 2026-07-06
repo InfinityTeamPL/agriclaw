@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { getOpenRouterClient } from '@/lib/ai/openrouter';
+import { PROMPT_ADVISORY_DISCIPLINE, ADVISORY_SHORT } from '@/lib/advisory';
 
 const bodySchema = z.object({
   imageBase64: z.string().startsWith('data:image/'),
@@ -23,12 +24,13 @@ const DIAGNOSIS_SCHEMA = `{
   "objawy": ["konkretne obserwacje z obrazu, np. 'plamy chlorotyczne na górnych liściach', 'zwinięcie brzegów liścia', 'żerowanie larwy na nerwie liścia'"],
   "rekomendacja": {
     "pilnosc": "pilne | w_ciagu_tygodnia | monitoruj",
-    "akcja": "konkretna akcja — co zrobić DZIŚ",
+    "akcja": "co rozważyć — sformułowane jako wsparcie decyzji, nie rozkaz (np. 'najpierw potwierdź w 2-3 miejscach łanu, potem rozważ zabieg')",
     "srodki": [
-      { "typ": "fungicyd | herbicyd | insektycyd | nawoz | inne", "substancja_czynna": "pełna nazwa", "przyklad_handlowy": "nazwa handlowa PL (np. Falcon 460 EC)", "dawka": "z etykiety, np. 0.6 l/ha" }
+      { "typ": "fungicyd | herbicyd | insektycyd | nawoz | inne", "substancja_czynna": "kierunek do potwierdzenia z etykietą (nie jako ostateczny)", "przyklad_handlowy": "przykład orientacyjny — sprawdź aktualną rejestrację MRiRW", "dawka": "DO WERYFIKACJI z aktualną etykietą — nie podawaj jako pewnej" }
     ],
-    "okno_oprysku": "np. jutro rano 5:30-9:00, bez wiatru >15 km/h"
+    "okno_oprysku": "okno DO ROZWAŻENIA jeśli rolnik zdecyduje się na zabieg (np. jutro 5:30-9:00, wiatr <15 km/h) — nie jako polecenie"
   },
+  "zastrzezenie": "OBOWIĄZKOWE, dokładnie ta treść: '${ADVISORY_SHORT}'",
   "porada_dodatkowa": "np. gdzie jeszcze się rozejrzeć, co obserwować w następnych dniach"
 }`;
 
@@ -87,11 +89,13 @@ ZADANIE:
    - jeśli widzisz COKOLWIEK nietypowego (przebarwienie, plamka, chwast na brzegu, zagęszczenie) — OPISZ dokładnie co widać
    - NIE odpowiadaj "brak problemów" bez sprawdzenia min 3 rzeczy: kolor liści, struktura, obecność szkodników, chwastów, uszkodzeń
 4. **Daj najbardziej prawdopodobną diagnozę** — nawet przy niskiej pewności wymień top 1-2 możliwości. Rolnik woli dowiedzieć się "może być septoria albo plamistość siatkowa" niż "nie wiem".
-5. **Konkretna rekomendacja**: nazwa handlowa ŚOR zarejestrowanego w Polsce (MRiRW), dawka z etykiety, okno oprysku.
+5. **Rekomendacja jako WSPARCIE DECYZJI**: wskaż KIERUNEK (typ zabiegu, przykładową substancję/nazwę handlową ORIENTACYJNIE) — ale ZAWSZE jako propozycję do potwierdzenia z aktualną etykietą (rejestr MRiRW) i przepisami, nie jako ostateczne polecenie. Zabieg proponuj po potwierdzeniu w polu.
 
 Jeśli zdjęcie faktycznie jest zbyt słabe/dalekie — zwróć fazy rozwoju i uprawy + powiedz "zrób zbliżenie liścia 20-30 cm od rośliny" w poradzie_dodatkowa.
 
-Unikaj generycznych rad typu "stosuj fungicyd". Podaj KONKRET: substancja czynna + nazwa handlowa + dawka.`;
+Nie podawaj środka ani dawki jako pewnika. Konkret pomaga, ale dobór i dawka zależą od aktualnej rejestracji, uprawy i patogenu — rolnik weryfikuje je z etykietą. Pole "zastrzezenie" wypełnij DOKŁADNIE podaną treścią.
+
+${PROMPT_ADVISORY_DISCIPLINE}`;
 
   let rawResponse: string;
   try {
@@ -151,6 +155,12 @@ Unikaj generycznych rad typu "stosuj fungicyd". Podaj KONKRET: substancja czynna
       },
       { status: 502 },
     );
+  }
+
+  // Gwarancja zastrzeżenia — nawet gdy model go nie zwróci, dokładamy je zawsze,
+  // żeby każda diagnoza z rekomendacją ŚOR miała framing „wsparcie decyzji".
+  if (typeof diagnosis.zastrzezenie !== 'string' || !diagnosis.zastrzezenie) {
+    diagnosis.zastrzezenie = ADVISORY_SHORT;
   }
 
   // Log event

@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { OpenClawClient } from '@/lib/openclaw';
 import { buildAgriclawSystemPrompt } from '@/lib/openclaw-prompt';
+import { withAdvisoryDisclaimer } from '@/lib/advisory';
 import { chatMessageSchema } from '@/lib/schemas';
 
 export const dynamic = 'force-dynamic';
@@ -153,12 +154,26 @@ export async function POST(req: NextRequest) {
         );
 
         if (result.success && result.output) {
+          // TWARDY BEZPIECZNIK (poza LLM): zalecenie ŚOR bez odwołania do etykiety
+          // dostaje doklejone zastrzeżenie — i w streamie, i w zapisie do bazy.
+          const finalOutput = withAdvisoryDisclaimer(result.output);
+          const appended = finalOutput.slice(result.output.length);
+          if (appended) {
+            try {
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: 'delta', text: appended })}\n\n`),
+              );
+            } catch {
+              /* controller zamknięty */
+            }
+          }
+
           await prisma.message.create({
             data: {
               agentId: agent.id,
               conversationId: conversation.id,
               role: 'ASSISTANT',
-              content: result.output,
+              content: finalOutput,
               metadata: JSON.stringify({
                 tokensUsed: result.tokensUsed,
                 model: result.model,

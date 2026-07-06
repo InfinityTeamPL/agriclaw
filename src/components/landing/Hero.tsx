@@ -40,7 +40,7 @@ export function Hero() {
             <p className="mt-7 text-lg sm:text-xl text-muted-foreground max-w-xl leading-relaxed">
               Obraz z góry + pogoda + historia Twojego pola →
               <span className="text-foreground font-medium"> konkretna rada po polsku</span>.
-              WhatsApp: „pole 3 pryskaj jutro 5:30". Tyle.
+              WhatsApp: „pole 3 — dobre okno na oprysk jutro 5:30". Ty decydujesz.
             </p>
 
             <p className="mt-4 text-base text-muted-foreground/80 max-w-xl">
