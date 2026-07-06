@@ -103,7 +103,10 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
     .join('') || 'AG';
 
   return (
-    <div className="min-h-screen flex bg-background relative">
+    // h-dvh (nie min-h-screen): main dostaje SKOŃCZONĄ wysokość — strony
+    // scrollują wewnątrz main, a instrumenty pełnoekranowe (czat) używają
+    // h-full/flex-1 bez rozpychania layoutu. dvh = poprawny viewport mobile.
+    <div className="h-dvh flex bg-background relative">
       {/* Desktop sidebar */}
       <aside
         className={cn(
