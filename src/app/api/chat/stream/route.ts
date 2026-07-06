@@ -5,6 +5,7 @@ import { OpenClawClient } from '@/lib/openclaw';
 import { buildAgriclawSystemPrompt, type FarmContext } from '@/lib/openclaw-prompt';
 import { withAdvisoryDisclaimer } from '@/lib/advisory';
 import { runAgroAgent } from '@/lib/agent/agro-agent';
+import { resolveChatEngine } from '@/lib/agent/engine';
 import type { LlmMessage } from '@/lib/ai/minimax';
 import { chatMessageSchema } from '@/lib/schemas';
 
@@ -42,9 +43,20 @@ export async function POST(req: NextRequest) {
 
   const agent = farm.agents[0];
 
-  // Brak wdrożonego agenta OpenClaw → wbudowany AgroAgent v2 (MiniMax).
-  // Chat działa dla KAŻDEGO gospodarstwa od pierwszej sekundy (koniec 409).
-  if (!agent || !agent.serverIp) {
+  // Wybór silnika należy do rolnika (Farm.chatEngine): auto / wbudowany / OpenClaw.
+  const engine = resolveChatEngine(farm.chatEngine, Boolean(agent?.serverIp));
+
+  if (engine === 'openclaw_unavailable') {
+    return new Response(
+      JSON.stringify({
+        error:
+          'Wybrany silnik OpenClaw wymaga wdrożonego agenta. Uruchom agenta w zakładce AgroAgent albo przełącz silnik na wbudowany.',
+      }),
+      { status: 409, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  if (engine === 'agroagent') {
     return runBuiltinAgentStream(req, {
       farm: {
         id: farm.id,
@@ -54,6 +66,14 @@ export async function POST(req: NextRequest) {
       },
       conversationId,
       message,
+    });
+  }
+
+  // engine === 'openclaw' — resolver gwarantuje wdrożonego agenta (zawężenie typu).
+  if (!agent || !agent.serverIp) {
+    return new Response(JSON.stringify({ error: 'Agent niedostępny' }), {
+      status: 409,
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 

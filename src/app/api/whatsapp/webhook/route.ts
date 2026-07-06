@@ -17,6 +17,7 @@ import { OpenClawClient } from '@/lib/openclaw';
 import { buildAgriclawSystemPrompt } from '@/lib/openclaw-prompt';
 import { withAdvisoryDisclaimer } from '@/lib/advisory';
 import { runAgroAgent } from '@/lib/agent/agro-agent';
+import { resolveChatEngine } from '@/lib/agent/engine';
 import { fetchWithTimeout } from '@/lib/satellite/http';
 
 export const dynamic = 'force-dynamic';
@@ -153,9 +154,20 @@ async function handleInbound(msg: InboundMessage): Promise<void> {
 
   const agent = farm.agents[0];
 
-  // Brak agenta OpenClaw → wbudowany AgroAgent v2 (MiniMax). Rolnik z Beta 100
-  // rozmawia na WhatsApp od pierwszej sekundy, bez stawiania VM.
-  if (!agent || !agent.serverIp) {
+  // Wybór silnika rolnika (Farm.chatEngine). Jawny wybór OpenClaw bez wdrożonego
+  // agenta → czytelna informacja, nie cichy fallback.
+  const engine = resolveChatEngine(farm.chatEngine, Boolean(agent?.serverIp));
+
+  if (engine === 'openclaw_unavailable') {
+    await sendWhatsappText(
+      msg.from,
+      'Wybrany silnik OpenClaw wymaga uruchomionego agenta. Wejdź na AgriClaw → AgroAgent, aby go wdrożyć, albo przełącz silnik na wbudowany.',
+    );
+    return;
+  }
+
+  // Wbudowany AgroAgent v2 (MiniMax) — rolnik rozmawia od pierwszej sekundy, bez VM.
+  if (engine === 'agroagent') {
     if (!process.env.MINIMAX_API_KEY) {
       await sendWhatsappText(
         msg.from,
@@ -202,6 +214,9 @@ async function handleInbound(msg: InboundMessage): Promise<void> {
     await sendWhatsappText(msg.from, result.content);
     return;
   }
+
+  // engine === 'openclaw' — resolver gwarantuje wdrożonego agenta (zawężenie typu).
+  if (!agent || !agent.serverIp) return;
 
   // Zapisz/znajdź konwersację WhatsApp dla tej farmy (ścieżka OpenClaw).
   const sessionKey = `agriclaw:wa:${farm.id}`;

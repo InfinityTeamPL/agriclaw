@@ -61,6 +61,9 @@ model Farm {
   lon       Float
   apiKey    String   @unique @map("api_key") // do zewnętrznych integracji
   plan      String   @default("free") // free, standard, premium
+  // Silnik czatu AI — wybór rolnika: "auto" (OpenClaw jeśli wdrożony, inaczej
+  // wbudowany) | "agroagent" (wbudowany MiniMax) | "openclaw" (autonomiczny VM)
+  chatEngine String  @default("auto") @map("chat_engine")
   suspended Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
