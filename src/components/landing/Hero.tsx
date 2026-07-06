@@ -66,6 +66,15 @@ export function Hero() {
               </Link>
             </div>
 
+            {/* Zerowy próg wejścia: demo bez rejestracji (auto-login przez ?demo=1) */}
+            <Link
+              href="/login?demo=1"
+              className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-signal-healthy hover:underline underline-offset-4"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-signal-healthy" />
+              Albo zobacz gotowe gospodarstwo demo — bez rejestracji →
+            </Link>
+
             {/* Metryki jako telemetria — mono, tabular */}
             <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-3">
               <div className="flex items-center gap-2 hud-label">

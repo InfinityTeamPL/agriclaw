@@ -115,7 +115,15 @@ export default function BetaPage() {
             </Link>
           </div>
 
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+          <Link
+            href="/login?demo=1"
+            className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-signal-healthy hover:underline underline-offset-4"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-signal-healthy" />
+            Najpierw rzuć okiem: gotowe gospodarstwo demo →
+          </Link>
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
             <span className="hud-label">bez karty</span>
             <span className="hud-label">bez umowy</span>
             <span className="hud-label">rezygnujesz kiedy chcesz</span>
