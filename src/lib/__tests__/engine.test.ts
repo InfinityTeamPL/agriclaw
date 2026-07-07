@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { resolveChatEngine, isChatEnginePreference } from '../agent/engine';
 
 describe('resolveChatEngine — wybór silnika należy do rolnika', () => {
-  it('auto: OpenClaw gdy wdrożony, inaczej wbudowany', () => {
-    expect(resolveChatEngine('auto', true)).toBe('openclaw');
+  it('auto (legacy default w DB): zawsze wbudowany — OpenClaw tylko przy jawnym wyborze', () => {
+    expect(resolveChatEngine('auto', true)).toBe('agroagent');
     expect(resolveChatEngine('auto', false)).toBe('agroagent');
   });
 
@@ -17,8 +17,8 @@ describe('resolveChatEngine — wybór silnika należy do rolnika', () => {
     expect(resolveChatEngine('openclaw', false)).toBe('openclaw_unavailable');
   });
 
-  it('nieznana/pusta preferencja traktowana jak auto', () => {
-    expect(resolveChatEngine(null, true)).toBe('openclaw');
+  it('nieznana/pusta preferencja → wbudowany (bezpieczny default)', () => {
+    expect(resolveChatEngine(null, true)).toBe('agroagent');
     expect(resolveChatEngine(undefined, false)).toBe('agroagent');
     expect(resolveChatEngine('cokolwiek', false)).toBe('agroagent');
   });

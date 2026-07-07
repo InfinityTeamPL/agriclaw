@@ -1,5 +1,6 @@
 // Wybór silnika czatu AI — decyzja rolnika per gospodarstwo (Farm.chatEngine).
-// "auto": OpenClaw jeśli wdrożony i READY, inaczej wbudowany AgroAgent v2.
+// Domyślnie (brak preferencji lub odziedziczone "auto") działa wbudowany AgroAgent v2
+// (MiniMax) — OpenClaw wyłącznie przy jawnym wyborze, nawet gdy jest wdrożony.
 // Jedno źródło prawdy dla /api/chat/stream, webhooka WhatsApp i strony agenta.
 
 export type ChatEnginePreference = 'auto' | 'agroagent' | 'openclaw';
@@ -22,7 +23,7 @@ export function resolveChatEngine(
   hasReadyOpenclawAgent: boolean,
 ): ResolvedChatEngine {
   const pref: ChatEnginePreference = isChatEnginePreference(preference) ? preference : 'auto';
-  if (pref === 'agroagent') return 'agroagent';
   if (pref === 'openclaw') return hasReadyOpenclawAgent ? 'openclaw' : 'openclaw_unavailable';
-  return hasReadyOpenclawAgent ? 'openclaw' : 'agroagent';
+  // 'agroagent' oraz 'auto' (legacy default w DB) → wbudowany MiniMax.
+  return 'agroagent';
 }

@@ -76,7 +76,7 @@ export default async function AgentPage() {
         </p>
       </div>
 
-      {/* Wybór silnika — decyzja rolnika, dwie pełnoprawne opcje + auto */}
+      {/* Wybór silnika — zwinięty do jednej linijki, żeby nie zabierać miejsca czatowi */}
       <EngineSelector
         farmId={farm.id}
         current={(farm.chatEngine as ChatEnginePreference) ?? 'auto'}
