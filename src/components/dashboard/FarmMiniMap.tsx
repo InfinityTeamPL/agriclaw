@@ -2,12 +2,21 @@
 
 // Statyczna mapa całego gospodarstwa — wszystkie pola jako poligony.
 // Non-interactive (disable panning/zoom) — dekoracyjna miniatura w dashboardzie.
+//
+// Kadr: pola gospodarstwa potrafią leżeć w oddalonych okolicach (np. działka
+// z importu ULDK 300 km dalej). Dopasowanie do WSZYSTKICH pól dawało wtedy
+// widok całej Polski, na którym hektarowe poligony są mniejsze niż piksel.
+// Dlatego: klastrujemy pola po odległości i kadrujemy największe skupisko;
+// pola poza kadrem sygnalizuje plakietka. Przy średnim oddaleniu widoczność
+// zapewniają kropki centroidów (znikają przy zbliżeniu, gdy widać poligony).
 
 import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { ndviColorHex } from '@/lib/design/ndvi-scale';
 import { hybridStyle } from '@/lib/map-style';
+import { pluralPL } from '@/lib/ui/format';
+import { centroidOf, clusterByDistance, pickMainCluster, type LngLat } from '@/lib/geo/cluster';
 import { Loader2 } from 'lucide-react';
 
 interface FieldPoly {
@@ -27,6 +36,7 @@ export function FarmMiniMap({ fields, center, className }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [ready, setReady] = useState(false);
+  const [hiddenCount, setHiddenCount] = useState(0);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -76,19 +86,61 @@ export function FarmMiniMap({ fields, center, className }: Props) {
         },
       });
 
-      // Fit to all fields
-      if (features.length > 0) {
-        const allCoords: [number, number][] = [];
-        for (const feat of features) {
-          const geom = feat.geometry as GeoJSON.Polygon;
-          for (const c of geom.coordinates[0] as [number, number][]) {
-            allCoords.push(c);
-          }
+      // Kropki centroidów — pola widoczne też przy oddaleniu, gdy poligony
+      // są sub-pikselowe; znikają płynnie przy zbliżeniu (widać już poligony).
+      const centroids = fields.map((f) => centroidOf(f.polygon));
+      const centroidFeatures: GeoJSON.Feature[] = fields.flatMap((f, i) => {
+        const c = centroids[i];
+        if (!c) return [];
+        return [
+          {
+            type: 'Feature' as const,
+            geometry: { type: 'Point' as const, coordinates: c },
+            properties: {
+              color: f.ndviMean !== null ? ndviColorHex(f.ndviMean) : '#64748b',
+            },
+          },
+        ];
+      });
+      map.addSource('field-centroids', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: centroidFeatures },
+      });
+      map.addLayer({
+        id: 'field-centroid-dots',
+        type: 'circle',
+        source: 'field-centroids',
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 4, 11, 5, 13, 0],
+          'circle-opacity': ['interpolate', ['linear'], ['zoom'], 12, 1, 13, 0],
+          'circle-stroke-opacity': ['interpolate', ['linear'], ['zoom'], 12, 1, 13, 0],
+          'circle-color': ['get', 'color'],
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 1.5,
+        },
+      });
+
+      // Kadr: największe skupisko pól (nie wszystkie — patrz komentarz u góry).
+      const validIdx = centroids.map((c, i) => (c ? i : -1)).filter((i) => i >= 0);
+      if (validIdx.length > 0) {
+        const clusters = clusterByDistance(
+          validIdx.map((i) => centroids[i]!),
+          25,
+        ).map((g) => g.map((k) => validIdx[k]));
+        // Największe skupisko; przy remisie — bliższe adresowi gospodarstwa.
+        const farmCenter: LngLat = [center.lon, center.lat];
+        const main = pickMainCluster(clusters, centroids, farmCenter);
+        setHiddenCount(fields.length - main.length);
+
+        const coords: LngLat[] = [];
+        for (const i of main) {
+          const ring = (fields[i].polygon?.coordinates?.[0] ?? []) as LngLat[];
+          coords.push(...ring);
         }
-        if (allCoords.length >= 2) {
-          const bounds = new maplibregl.LngLatBounds(allCoords[0], allCoords[0]);
-          for (const c of allCoords) bounds.extend(c);
-          map.fitBounds(bounds, { padding: 25, duration: 0, maxZoom: 17 });
+        if (coords.length >= 2) {
+          const bounds = new maplibregl.LngLatBounds(coords[0], coords[0]);
+          for (const c of coords) bounds.extend(c);
+          map.fitBounds(bounds, { padding: 40, duration: 0, maxZoom: 15.5 });
         }
       }
 
@@ -112,8 +164,16 @@ export function FarmMiniMap({ fields, center, className }: Props) {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="flex items-center gap-2 text-signal-healthy text-sm">
             <Loader2 className="w-4 h-4 animate-spin" />
-            Ładuję mapę...
+            Ładuję mapę…
           </div>
+        </div>
+      )}
+      {hiddenCount > 0 && (
+        <div className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-card/95 border border-border">
+          <span className="w-1.5 h-1.5 rounded-full bg-signal-heat" />
+          <span className="hud-label">
+            +{hiddenCount} {pluralPL(hiddenCount, 'pole', 'pola', 'pól')} w innej okolicy
+          </span>
         </div>
       )}
       {/* Gradient overlay for readability */}
