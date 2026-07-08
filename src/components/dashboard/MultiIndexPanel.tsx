@@ -109,9 +109,9 @@ export function MultiIndexPanel({ ndvi, ndre, ndwi, savi, crop }: Props) {
       name: 'NDVI',
       what: 'Ogólne zdrowie roślin',
       icon: Sprout,
-      accent: 'text-emerald-700',
-      bg: 'bg-emerald-50',
-      ring: 'ring-emerald-200',
+      accent: 'text-signal-healthy',
+      bg: 'bg-signal-healthy/10',
+      ring: 'ring-signal-healthy/30',
       value: ndvi,
       interpretation: ndviInterp(ndvi.mean),
     },
@@ -120,9 +120,9 @@ export function MultiIndexPanel({ ndvi, ndre, ndwi, savi, crop }: Props) {
       name: 'NDRE',
       what: 'Niedobór azotu (Red Edge)',
       icon: Leaf,
-      accent: 'text-amber-700',
-      bg: 'bg-amber-50',
-      ring: 'ring-amber-200',
+      accent: 'text-signal-heat',
+      bg: 'bg-signal-heat/10',
+      ring: 'ring-signal-heat/30',
       value: ndre,
       interpretation: ndre ? ndreInterp(ndre.mean, crop) : '',
     },
@@ -131,9 +131,9 @@ export function MultiIndexPanel({ ndvi, ndre, ndwi, savi, crop }: Props) {
       name: 'NDWI',
       what: 'Stres wodny w liściach',
       icon: Droplets,
-      accent: 'text-sky-700',
-      bg: 'bg-sky-50',
-      ring: 'ring-sky-200',
+      accent: 'text-signal-frost',
+      bg: 'bg-signal-frost/10',
+      ring: 'ring-signal-frost/30',
       value: ndwi,
       interpretation: ndwi ? ndwiInterp(ndwi.mean) : '',
     },
@@ -142,9 +142,9 @@ export function MultiIndexPanel({ ndvi, ndre, ndwi, savi, crop }: Props) {
       name: 'SAVI',
       what: 'Biomasa skorygowana o glebę',
       icon: MountainSnow,
-      accent: 'text-stone-700',
-      bg: 'bg-stone-50',
-      ring: 'ring-stone-200',
+      accent: 'text-muted-foreground',
+      bg: 'bg-secondary',
+      ring: 'ring-border',
       value: savi,
       interpretation: savi ? saviInterp(savi.mean, ndvi.mean) : '',
     },
@@ -153,8 +153,8 @@ export function MultiIndexPanel({ ndvi, ndre, ndwi, savi, crop }: Props) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <Info className="w-4 h-4 text-gray-400" />
-        <div className="text-xs text-gray-500">
+        <Info className="w-4 h-4 text-muted-foreground" />
+        <div className="text-xs text-muted-foreground">
           Wszystkie indeksy z jednego zdjęcia Sentinel-2 (10 m/piksel)
         </div>
       </div>
@@ -167,13 +167,13 @@ export function MultiIndexPanel({ ndvi, ndre, ndwi, savi, crop }: Props) {
             <div
               key={c.key}
               className={cn(
-                'rounded-2xl bg-white border border-gray-200 p-4 space-y-2 transition hover:shadow-md',
+                'rounded-lg bg-card border border-border shadow-card p-4 space-y-2 transition hover:shadow-pop',
               )}
             >
               <div className="flex items-start justify-between gap-2">
                 <div
                   className={cn(
-                    'inline-flex items-center justify-center w-9 h-9 rounded-xl ring-1',
+                    'inline-flex items-center justify-center w-9 h-9 rounded-md ring-1',
                     c.bg,
                     c.ring,
                   )}
@@ -181,25 +181,25 @@ export function MultiIndexPanel({ ndvi, ndre, ndwi, savi, crop }: Props) {
                   <Icon className={cn('w-4 h-4', c.accent)} />
                 </div>
                 <div className="text-right">
-                  <div className="text-[10px] uppercase tracking-wider text-gray-400">
+                  <div className="hud-label">
                     {c.name}
                   </div>
                   <div
-                    className="text-2xl font-bold tabular-nums"
+                    className="text-2xl font-bold font-mono tabular"
                     style={{ color }}
                   >
                     {hasValue ? c.value!.mean.toFixed(2) : '–'}
                   </div>
                 </div>
               </div>
-              <div className="text-xs font-semibold text-gray-700">{c.what}</div>
+              <div className="text-xs font-semibold text-foreground">{c.what}</div>
               {hasValue && (
                 <>
-                  <div className="flex items-center gap-2 text-[10px] text-gray-500 font-mono">
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono tabular">
                     min {c.value!.min.toFixed(2)} · max {c.value!.max.toFixed(2)}
                   </div>
                   <div
-                    className="h-1 rounded-full overflow-hidden bg-gray-100"
+                    className="h-1 rounded-full overflow-hidden bg-secondary"
                     title={`Min ${c.value!.min.toFixed(2)} — Max ${c.value!.max.toFixed(2)}`}
                   >
                     <div
@@ -213,7 +213,7 @@ export function MultiIndexPanel({ ndvi, ndre, ndwi, savi, crop }: Props) {
                 </>
               )}
               {c.interpretation && (
-                <div className="text-xs text-gray-600 leading-relaxed pt-1">
+                <div className="text-xs text-muted-foreground leading-relaxed pt-1">
                   {c.interpretation}
                 </div>
               )}

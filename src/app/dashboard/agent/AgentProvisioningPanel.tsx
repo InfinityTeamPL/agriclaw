@@ -58,25 +58,25 @@ export function AgentProvisioningPanel({ agentId, mock }: Props) {
   }, [agentId, router]);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-8 text-center space-y-4">
+    <div className="bg-card border border-border rounded-lg shadow-card p-8 text-center space-y-4">
       {nowReady ? (
         <>
-          <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
-          <h2 className="text-lg font-semibold text-gray-900">Agent gotowy</h2>
-          <p className="text-sm text-gray-500">Przeładowuję stronę...</p>
+          <CheckCircle2 className="w-12 h-12 text-signal-healthy mx-auto" />
+          <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">Agent gotowy</h2>
+          <p className="text-sm text-muted-foreground">Przeładowuję stronę...</p>
         </>
       ) : (
         <>
-          <Loader2 className="w-12 h-12 text-emerald-600 mx-auto animate-spin" />
-          <h2 className="text-lg font-semibold text-gray-900">
+          <Loader2 className="w-12 h-12 text-primary mx-auto animate-spin" />
+          <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">
             {mock ? 'Mock provisioning w toku' : 'Tworzę Twojego agenta'}
           </h2>
-          <p className="text-sm text-gray-500 max-w-md mx-auto">
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
             {mock
               ? 'Dev mode — symulacja, zwykle 3 sekundy.'
               : 'Tworzę VM na Hetznerze i stawiam OpenClaw Gateway. Zwykle 5-10 minut. Możesz zamknąć stronę — provisioning pracuje w tle.'}
           </p>
-          <div className="text-xs text-gray-400">
+          <div className="text-xs text-muted-foreground">
             {formatElapsed(elapsed)} · sprawdzam status co 5 sekund
           </div>
         </>

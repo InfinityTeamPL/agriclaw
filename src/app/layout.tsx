@@ -1,20 +1,22 @@
 import type { Metadata, Viewport } from 'next';
-import { Space_Grotesk, Inter, IBM_Plex_Mono } from 'next/font/google';
+import { Space_Grotesk, IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google';
 import { Toaster } from 'sonner';
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
 import './globals.css';
 
 // Typografia AgriClaw — trzy role:
 //  display  Space Grotesk — geometryczny grotesk, „techniczny", pełne PL znaki
-//  body     Inter — czytelny na telefonie w słońcu
+//  body     IBM Plex Sans — jedna rodzina z Plex Mono (rodowód instrumentacyjny),
+//           czytelny na telefonie w słońcu; celowo NIE Inter (sygnatura generyków)
 //  mono     IBM Plex Mono — TELEMETRIA: NDVI, ha, współrzędne, daty (tabular-nums)
 const display = Space_Grotesk({
   subsets: ['latin', 'latin-ext'],
   variable: '--font-display',
   display: 'swap',
 });
-const body = Inter({
+const body = IBM_Plex_Sans({
   subsets: ['latin', 'latin-ext'],
+  weight: ['400', '500', '600', '700'],
   variable: '--font-sans',
   display: 'swap',
 });

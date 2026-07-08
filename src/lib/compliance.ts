@@ -9,6 +9,8 @@
 //     - w ciągu 14 dni od zabiegu
 //     - przechowywanie 3 lata
 
+import { pluralPL } from '@/lib/ui/format';
+
 export type ComplianceStatus = 'pass' | 'warn' | 'fail' | 'info';
 
 export interface ComplianceRule {
@@ -155,7 +157,7 @@ export function evaluateCompliance(input: ComplianceInput): ComplianceReport {
       category: 'registration',
       title: 'Rejestracja zabiegów — braki',
       status: 'warn',
-      detail: `${fieldsWithoutTreatments.length} pól bez ani jednego zabiegu w sezonie: ${fieldsWithoutTreatments.map((f) => f.name).join(', ').slice(0, 200)}${fieldsWithoutTreatments.length > 5 ? '…' : ''}.`,
+      detail: `${fieldsWithoutTreatments.length} ${pluralPL(fieldsWithoutTreatments.length, 'pole', 'pola', 'pól')} bez ani jednego zabiegu w sezonie: ${fieldsWithoutTreatments.map((f) => f.name).join(', ').slice(0, 200)}${fieldsWithoutTreatments.length > 5 ? '…' : ''}.`,
       action: 'Dopisz zabiegi wstecz w Księdze Polowej (IJHARS toleruje do 14 dni ale nie więcej).',
       legalBasis: 'Dz.U. 2022 poz. 2453 art. 25',
     });
@@ -167,7 +169,7 @@ export function evaluateCompliance(input: ComplianceInput): ComplianceReport {
       category: 'registration',
       title: 'Ostatni wpis >30 dni temu',
       status: 'info',
-      detail: `${fieldsWithStaleRegistration.length} pól z ostatnim zabiegiem sprzed ponad miesiąca. Jeśli wykonywałeś prace — dopisz je.`,
+      detail: `${fieldsWithStaleRegistration.length} ${pluralPL(fieldsWithStaleRegistration.length, 'pole', 'pola', 'pól')} z ostatnim zabiegiem sprzed ponad miesiąca. Jeśli wykonywałeś prace — dopisz je.`,
       legalBasis: 'Dz.U. 2022 poz. 2453',
     });
   }

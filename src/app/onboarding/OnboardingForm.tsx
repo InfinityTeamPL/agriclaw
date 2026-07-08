@@ -134,13 +134,13 @@ export function OnboardingForm({ defaultName = '' }: { defaultName?: string }) {
             className="space-y-5"
           >
             <div className="text-center space-y-1">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-100 mx-auto flex items-center justify-center">
-                <Home className="w-5 h-5 text-emerald-700" />
+              <div className="w-12 h-12 rounded-md bg-secondary border border-border mx-auto flex items-center justify-center">
+                <Home className="w-5 h-5 text-signal-healthy" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="font-display text-xl font-semibold tracking-tight text-foreground">
                 Jak nazywa się Twoje gospodarstwo?
               </h2>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Tak będzie widoczne w panelu i w rozmowie z agentem.
               </p>
             </div>
@@ -163,7 +163,7 @@ export function OnboardingForm({ defaultName = '' }: { defaultName?: string }) {
                   }
                 }}
                 placeholder="np. Gospodarstwo Kowalski"
-                className="w-full px-4 py-3 text-lg border border-gray-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition placeholder:text-gray-400"
+                className="w-full px-4 py-3 text-lg border border-input rounded-md bg-card focus:outline-none focus:ring-2 focus:ring-ring transition"
               />
             </div>
             <StepNav
@@ -184,20 +184,20 @@ export function OnboardingForm({ defaultName = '' }: { defaultName?: string }) {
             className="space-y-5"
           >
             <div className="text-center space-y-1">
-              <div className="w-12 h-12 rounded-2xl bg-sky-100 mx-auto flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-sky-700" />
+              <div className="w-12 h-12 rounded-md bg-secondary border border-border mx-auto flex items-center justify-center">
+                <MapPin className="w-5 h-5 text-signal-frost" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="font-display text-xl font-semibold tracking-tight text-foreground">
                 Gdzie jest Twoje gospodarstwo?
               </h2>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Miejscowość i województwo wystarczą — znajdziemy współrzędne.
               </p>
             </div>
 
             <div className="space-y-3">
               <div className="relative">
-                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
                   id="farm-address"
                   type="text"
@@ -215,17 +215,17 @@ export function OnboardingForm({ defaultName = '' }: { defaultName?: string }) {
                     }
                   }}
                   placeholder="np. Zamość, Lubelskie"
-                  className="w-full pl-11 pr-32 py-3 text-base border border-gray-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition placeholder:text-gray-400"
+                  className="w-full pl-11 pr-32 py-3 text-base border border-input rounded-md bg-card focus:outline-none focus:ring-2 focus:ring-ring transition"
                 />
                 <button
                   type="button"
                   onClick={handleGeocode}
                   disabled={geocoding || address.trim().length < 3}
                   className={cn(
-                    'absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition',
+                    'absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition',
                     geocoding || address.trim().length < 3
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-emerald-600 text-white hover:bg-emerald-700',
+                      ? 'bg-secondary text-muted-foreground font-medium cursor-not-allowed'
+                      : 'bg-primary text-primary-foreground font-semibold shadow-card hover:brightness-110',
                   )}
                 >
                   {geocoding ? (
@@ -241,14 +241,14 @@ export function OnboardingForm({ defaultName = '' }: { defaultName?: string }) {
                 <motion.div
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-start gap-3 rounded-2xl bg-emerald-50 border border-emerald-200 p-3"
+                  className="flex items-start gap-3 rounded-lg bg-secondary border border-border p-3"
                 >
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="w-5 h-5 text-signal-healthy shrink-0 mt-0.5" />
                   <div className="min-w-0 flex-1 text-sm">
-                    <div className="font-medium text-emerald-900 truncate">
+                    <div className="font-medium text-foreground truncate">
                       {geo.displayName ?? address}
                     </div>
-                    <div className="text-[11px] text-emerald-700/80 font-mono mt-0.5">
+                    <div className="text-[11px] text-muted-foreground font-mono mt-0.5">
                       {geo.lat.toFixed(5)}°N, {geo.lon.toFixed(5)}°E
                     </div>
                   </div>
@@ -276,19 +276,19 @@ export function OnboardingForm({ defaultName = '' }: { defaultName?: string }) {
             className="space-y-5"
           >
             <div className="text-center space-y-1">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 mx-auto flex items-center justify-center shadow-[0_10px_25px_-10px_rgba(16,185,129,0.7)]">
-                <Sprout className="w-5 h-5 text-white" />
+              <div className="w-12 h-12 rounded-md bg-primary mx-auto flex items-center justify-center shadow-card">
+                <Sprout className="w-5 h-5 text-primary-foreground" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900">Wszystko gotowe?</h2>
-              <p className="text-sm text-gray-500">
+              <h2 className="font-display text-xl font-semibold tracking-tight text-foreground">Wszystko gotowe?</h2>
+              <p className="text-sm text-muted-foreground">
                 Sprawdź dane i potwierdź. Pola dorysujesz potem na mapie.
               </p>
             </div>
 
-            <div className="rounded-3xl bg-gradient-to-br from-emerald-50 via-white to-sky-50 border border-white p-5 space-y-4 shadow-[0_10px_40px_-20px_rgba(15,23,42,0.2)]">
-              <SummaryRow icon={<Home className="w-4 h-4 text-emerald-700" />} label="Nazwa" value={name} />
+            <div className="rounded-lg bg-card border border-border p-5 space-y-4 shadow-card">
+              <SummaryRow icon={<Home className="w-4 h-4 text-signal-healthy" />} label="Nazwa" value={name} />
               <SummaryRow
-                icon={<MapPin className="w-4 h-4 text-sky-700" />}
+                icon={<MapPin className="w-4 h-4 text-signal-frost" />}
                 label="Adres"
                 value={geo.displayName ?? address}
                 sub={`${geo.lat.toFixed(5)}°N, ${geo.lon.toFixed(5)}°E`}
@@ -331,9 +331,9 @@ function StepIndicator({ step }: { step: Step }) {
               <div
                 className={cn(
                   'w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300',
-                  isActive && 'bg-gradient-to-br from-emerald-600 to-emerald-500 text-white shadow-[0_6px_16px_-4px_rgba(16,185,129,0.7)] scale-110',
-                  isDone && 'bg-emerald-600 text-white',
-                  !isActive && !isDone && 'bg-gray-100 text-gray-400',
+                  isActive && 'bg-primary text-primary-foreground shadow-card scale-110',
+                  isDone && 'bg-primary text-primary-foreground',
+                  !isActive && !isDone && 'bg-secondary text-muted-foreground',
                 )}
               >
                 {isDone ? <CheckCircle2 className="w-4 h-4" /> : s.n}
@@ -341,14 +341,14 @@ function StepIndicator({ step }: { step: Step }) {
               <span
                 className={cn(
                   'text-xs font-medium hidden sm:block',
-                  isActive ? 'text-gray-900' : 'text-gray-400',
+                  isActive ? 'text-foreground' : 'text-muted-foreground',
                 )}
               >
                 {s.label}
               </span>
             </div>
             {i < steps.length - 1 && (
-              <div className="w-8 sm:w-12 h-px bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200" />
+              <div className="w-8 sm:w-12 h-px bg-border" />
             )}
           </div>
         );
@@ -380,7 +380,7 @@ function StepNav({
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-2xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition"
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-md text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition"
         >
           <ArrowLeft className="w-4 h-4" />
           Wstecz
@@ -393,12 +393,12 @@ function StepNav({
         onClick={onNext}
         disabled={!canNext}
         className={cn(
-          'inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-medium transition',
+          'inline-flex items-center gap-2 px-5 py-2.5 rounded-md text-sm transition',
           canNext
             ? primary
-              ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white hover:shadow-xl hover:-translate-y-0.5 shadow-[0_10px_25px_-10px_rgba(16,185,129,0.7)]'
-              : 'bg-gray-900 text-white hover:bg-gray-800'
-            : 'bg-gray-100 text-gray-400 cursor-not-allowed',
+              ? 'bg-primary text-primary-foreground font-semibold shadow-card hover:brightness-110'
+              : 'bg-primary text-primary-foreground font-semibold shadow-card hover:brightness-110'
+            : 'bg-secondary text-muted-foreground font-medium cursor-not-allowed',
         )}
       >
         {loading && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -422,15 +422,15 @@ function SummaryRow({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="w-8 h-8 rounded-xl bg-white/80 border border-white flex items-center justify-center shrink-0">
+      <div className="w-8 h-8 rounded-md bg-secondary border border-border flex items-center justify-center shrink-0">
         {icon}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-[11px] uppercase tracking-[0.15em] text-gray-500 font-semibold">
+        <div className="hud-label">
           {label}
         </div>
-        <div className="text-sm font-medium text-gray-900 truncate">{value}</div>
-        {sub && <div className="text-[11px] text-gray-500 font-mono mt-0.5">{sub}</div>}
+        <div className="text-sm font-medium text-foreground truncate">{value}</div>
+        {sub && <div className="text-[11px] text-muted-foreground font-mono mt-0.5">{sub}</div>}
       </div>
     </div>
   );
@@ -440,7 +440,7 @@ function MiniMapPreview({ lat, lon }: { lat: number; lon: number }) {
   // Prosty CSS-based podgląd lokalizacji bez zewnętrznego tile serwera.
   // Wyśrodkowana ikona pinezki na gradient-gridzie — dekoracyjnie.
   return (
-    <div className="relative h-36 rounded-2xl overflow-hidden border border-white/70 bg-gradient-to-br from-sky-100 via-emerald-50 to-lime-100">
+    <div className="relative h-36 rounded-lg overflow-hidden border border-border bg-secondary">
       {/* Grid */}
       <svg
         className="absolute inset-0 w-full h-full opacity-40"
@@ -448,7 +448,7 @@ function MiniMapPreview({ lat, lon }: { lat: number; lon: number }) {
       >
         <defs>
           <pattern id="onb-grid" width="28" height="28" patternUnits="userSpaceOnUse">
-            <path d="M 28 0 L 0 0 0 28" fill="none" stroke="#10b981" strokeOpacity="0.22" strokeWidth="1" />
+            <path d="M 28 0 L 0 0 0 28" fill="none" stroke="hsl(var(--primary))" strokeOpacity="0.22" strokeWidth="1" />
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#onb-grid)" />
@@ -457,16 +457,16 @@ function MiniMapPreview({ lat, lon }: { lat: number; lon: number }) {
       {/* Concentric glow */}
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
         <div className="relative w-24 h-24">
-          <div className="absolute inset-0 rounded-full bg-emerald-500/15 animate-pulse" />
-          <div className="absolute inset-4 rounded-full bg-emerald-500/25" />
-          <div className="absolute inset-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-[0_10px_25px_-6px_rgba(16,185,129,0.7)]">
-            <MapPin className="w-4 h-4 text-white" />
+          <div className="absolute inset-0 rounded-full bg-primary/15 animate-pulse" />
+          <div className="absolute inset-4 rounded-full bg-primary/25" />
+          <div className="absolute inset-8 rounded-full bg-primary flex items-center justify-center shadow-card">
+            <MapPin className="w-4 h-4 text-primary-foreground" />
           </div>
         </div>
       </div>
 
       {/* Coords label */}
-      <div className="absolute bottom-2 left-2 text-[10px] font-mono text-emerald-900/80 bg-white/80 backdrop-blur rounded-lg px-1.5 py-0.5 border border-white">
+      <div className="absolute bottom-2 left-2 text-[10px] font-mono text-foreground/80 bg-card rounded-md px-1.5 py-0.5 border border-border">
         {lat.toFixed(3)}°N, {lon.toFixed(3)}°E
       </div>
     </div>

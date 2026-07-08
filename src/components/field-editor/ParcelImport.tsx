@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import { MapPin, Loader2, Check, Info } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatHa } from '@/lib/ui/format';
 
 interface ParcelResult {
   teryt: string;
@@ -39,7 +40,7 @@ export function ParcelImport({ onImported }: Props) {
         return;
       }
       setResult(data as ParcelResult);
-      toast.success(`Pobrano działkę ${trimmed} (${data.areaHectares.toFixed(2)} ha)`);
+      toast.success(`Pobrano działkę ${trimmed} (${formatHa(data.areaHectares)} ha)`);
     } catch (err) {
       toast.error(String(err));
     } finally {
@@ -52,21 +53,21 @@ export function ParcelImport({ onImported }: Props) {
   };
 
   return (
-    <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-3">
+    <div className="rounded-lg bg-card border border-border shadow-card p-4 space-y-3">
       <div className="flex items-start gap-3">
-        <div className="w-9 h-9 rounded-xl bg-emerald-50 ring-1 ring-emerald-100 flex items-center justify-center shrink-0">
-          <MapPin className="w-4 h-4 text-emerald-700" />
+        <div className="w-9 h-9 rounded-md bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center shrink-0">
+          <MapPin className="w-4 h-4 text-primary" />
         </div>
         <div className="flex-1">
-          <h3 className="font-semibold text-gray-900">Import z ARiMR</h3>
-          <p className="text-xs text-gray-500">
+          <h3 className="font-display font-semibold tracking-tight text-foreground">Import z ARiMR</h3>
+          <p className="text-xs text-muted-foreground">
             Masz numer działki z wniosku JPO? Wklej — pobierzemy granicę 1:1 z ewidencji.
           </p>
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-gray-700 mb-1">
+        <label className="block text-xs font-semibold text-foreground mb-1">
           Numer TERYT działki
         </label>
         <div className="flex gap-2">
@@ -76,17 +77,17 @@ export function ParcelImport({ onImported }: Props) {
             onChange={(e) => setTeryt(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && fetchParcel()}
             placeholder="np. 141201_2.0001.123/4"
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="flex-1 px-3 py-2 border border-input rounded-md text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <button
             onClick={fetchParcel}
             disabled={loading || !teryt.trim()}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 transition"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-semibold shadow-card hover:brightness-110 disabled:opacity-50 transition"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Pobierz'}
           </button>
         </div>
-        <p className="text-[10px] text-gray-400 mt-1.5 flex items-start gap-1">
+        <p className="text-[10px] text-muted-foreground mt-1.5 flex items-start gap-1">
           <Info className="w-3 h-3 mt-0.5 shrink-0" />
           <span>
             Format: SSXXXX_Y.ZZZZ.NNNNN/NN. Znajdziesz w eWniosek ARiMR (kolumna "Identyfikator działki")
@@ -96,24 +97,24 @@ export function ParcelImport({ onImported }: Props) {
       </div>
 
       {result && (
-        <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 space-y-2">
+        <div className="rounded-md bg-signal-healthy/5 border border-signal-healthy/30 p-3 space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-emerald-700" />
-              <span className="font-semibold text-emerald-900 text-sm">
+              <Check className="w-4 h-4 text-signal-healthy" />
+              <span className="font-semibold text-foreground text-sm">
                 Działka znaleziona
               </span>
             </div>
-            <span className="text-xs font-mono text-emerald-800">{result.teryt}</span>
+            <span className="text-xs font-mono text-muted-foreground">{result.teryt}</span>
           </div>
-          <div className="text-xs text-emerald-900">
+          <div className="text-xs text-foreground">
             Powierzchnia: <b>{result.areaHectares.toFixed(3)} ha</b>
             <br />
             Centroid: {result.centroid.lat.toFixed(5)}, {result.centroid.lon.toFixed(5)}
           </div>
           <button
             onClick={accept}
-            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-emerald-700 text-white text-sm font-semibold hover:bg-emerald-800 transition"
+            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-primary text-primary-foreground text-sm font-semibold shadow-card hover:brightness-110 transition"
           >
             <Check className="w-4 h-4" />
             Użyj tej działki

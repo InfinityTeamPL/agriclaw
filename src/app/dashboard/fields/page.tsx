@@ -7,6 +7,7 @@ import { Plus, Sprout } from 'lucide-react';
 import { requireFarm } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
+import { formatHa, pluralPL } from '@/lib/ui/format';
 import { FieldsList, type FieldListItem } from './FieldsList';
 
 export const dynamic = 'force-dynamic';
@@ -77,8 +78,8 @@ export default async function FieldsPage() {
             {items.length > 0 ? (
               <>
                 <span className="font-mono tabular text-foreground">{items.length}</span>{' '}
-                {items.length === 1 ? 'pole' : 'pól'} w gospodarstwie ·{' '}
-                <span className="font-mono tabular text-foreground">{totalHa.toFixed(2)}</span> ha
+                {pluralPL(items.length, 'pole', 'pola', 'pól')} w gospodarstwie ·{' '}
+                <span className="font-mono tabular text-foreground">{formatHa(totalHa)}</span> ha
                 łącznie.
               </>
             ) : (

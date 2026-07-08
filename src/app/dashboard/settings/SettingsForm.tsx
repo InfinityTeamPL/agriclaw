@@ -57,10 +57,10 @@ export function SettingsForm({ defaultValues }: Props) {
   return (
     <form
       onSubmit={onSubmit}
-      className="bg-white border border-gray-200 rounded-xl p-4 space-y-4"
+      className="bg-card border border-border rounded-lg shadow-card p-4 space-y-4"
     >
       <div>
-        <label htmlFor="settings-email" className="block text-sm font-medium mb-1 text-gray-800">
+        <label htmlFor="settings-email" className="block text-sm font-medium mb-1 text-foreground">
           Email
         </label>
         <input
@@ -68,15 +68,15 @@ export function SettingsForm({ defaultValues }: Props) {
           type="email"
           value={defaultValues.email}
           disabled
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500"
+          className="w-full px-3 py-2 border border-input rounded-md bg-muted text-muted-foreground"
         />
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-muted-foreground">
           Email nie może zostać zmieniony. Skontaktuj się z pomocą, aby go zmienić.
         </p>
       </div>
 
       <div>
-        <label htmlFor="settings-name" className="block text-sm font-medium mb-1 text-gray-800">
+        <label htmlFor="settings-name" className="block text-sm font-medium mb-1 text-foreground">
           Imię i nazwisko
         </label>
         <input
@@ -86,12 +86,12 @@ export function SettingsForm({ defaultValues }: Props) {
           onChange={(e) => setName(e.target.value)}
           maxLength={100}
           placeholder="np. Jan Kowalski"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
 
       <div>
-        <label htmlFor="settings-phone" className="block text-sm font-medium mb-1 text-gray-800">
+        <label htmlFor="settings-phone" className="block text-sm font-medium mb-1 text-foreground">
           Telefon (WhatsApp)
         </label>
         <input
@@ -101,9 +101,9 @@ export function SettingsForm({ defaultValues }: Props) {
           onChange={(e) => setPhoneNumber(e.target.value)}
           maxLength={32}
           placeholder="np. +48 600 123 456"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
         />
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-muted-foreground">
           Użyjemy tego numeru do wysyłania rekomendacji na WhatsApp.
         </p>
       </div>
@@ -112,7 +112,7 @@ export function SettingsForm({ defaultValues }: Props) {
         <button
           type="submit"
           disabled={saving}
-          className="inline-flex items-center gap-2 bg-emerald-600 text-white font-medium px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-60 transition"
+          className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-md shadow-card hover:brightness-110 disabled:opacity-60 transition"
         >
           {saving ? (
             <Loader2 className="w-4 h-4 animate-spin" />

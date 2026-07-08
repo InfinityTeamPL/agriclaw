@@ -37,7 +37,7 @@ const FarmMiniMap = dynamic(
 import { classifyNdvi } from '@/lib/satellite/ndvi';
 import { ndviColorHex } from '@/lib/design/ndvi-scale';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
-import { cropLabel, formatHa, formatDatePL, formatDateTimePL, severityStyle } from '@/lib/ui/format';
+import { cropLabel, formatHa, formatDatePL, formatDateTimePL, severityStyle, pluralPL } from '@/lib/ui/format';
 
 interface FieldItem {
   id: string;
@@ -113,7 +113,7 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
   const runScan = async () => {
     if (scanning) return;
     setScanning(true);
-    toast.info(`Skanuję ${fields.length} pól — frost, heat, choroby, bilans wodny…`);
+    toast.info(`Skanuję ${fields.length} ${pluralPL(fields.length, 'pole', 'pola', 'pól')} — przymrozki, upały, choroby, bilans wodny…`);
     try {
       const res = await fetch('/api/alerts/scan', { method: 'POST' });
       const data = await res.json();
@@ -299,9 +299,9 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
             accent={stats.complianceScore >= 80 ? 'healthy' : stats.complianceScore >= 50 ? 'heat' : 'drought'}
             trend={
               stats.complianceFails > 0
-                ? `${stats.complianceFails} naruszenia`
+                ? `${stats.complianceFails} ${pluralPL(stats.complianceFails, 'naruszenie', 'naruszenia', 'naruszeń')}`
                 : stats.complianceWarns > 0
-                  ? `${stats.complianceWarns} ostrzeżenia`
+                  ? `${stats.complianceWarns} ${pluralPL(stats.complianceWarns, 'ostrzeżenie', 'ostrzeżenia', 'ostrzeżeń')}`
                   : 'WPR 2023-2027'
             }
           />
@@ -314,7 +314,7 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
         <div className="relative rounded-lg overflow-hidden bg-card border border-border shadow-card">
           <div className="absolute top-4 left-4 z-10 flex items-center gap-2 px-3 py-1.5 rounded-md bg-card/95 border border-border">
             <div className="w-1.5 h-1.5 rounded-full bg-signal-healthy animate-pulse" />
-            <span className="hud-label">Widok z satelity · {fields.length} {fields.length === 1 ? 'pole' : 'pól'}</span>
+            <span className="hud-label">Widok z satelity · {fields.length} {pluralPL(fields.length, 'pole', 'pola', 'pól')}</span>
           </div>
           {fields.length > 0 ? (
             <FarmMiniMap

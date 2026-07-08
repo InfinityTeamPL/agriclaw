@@ -82,7 +82,7 @@ function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
         out.push(
           <code
             key={`${keyPrefix}-c-${key++}`}
-            className="rounded bg-gray-100 text-emerald-700 px-1 py-0.5 text-[0.9em] font-mono"
+            className="rounded bg-muted text-primary px-1 py-0.5 text-[0.9em] font-mono"
           >
             {decodeEntities(buffer)}
           </code>,
@@ -96,7 +96,7 @@ function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
         break;
       case '__BOLD_END__':
         out.push(
-          <strong key={`${keyPrefix}-b-${key++}`} className="font-semibold text-gray-900">
+          <strong key={`${keyPrefix}-b-${key++}`} className="font-semibold text-foreground">
             {decodeEntities(buffer)}
           </strong>,
         );
@@ -132,7 +132,7 @@ function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
             href={decodeEntities(buffer)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-emerald-700 underline underline-offset-2 hover:text-emerald-800"
+            className="text-primary underline underline-offset-2 hover:brightness-110"
           >
             {decodeEntities(linkText)}
           </a>,
@@ -178,7 +178,7 @@ export function SimpleMarkdown({ text, className }: Props) {
         }
       >
         {listBuf.items.map((li, i) => (
-          <li key={i} className="marker:text-gray-400">
+          <li key={i} className="marker:text-muted-foreground">
             {renderInline(li, `li-${i}`)}
           </li>
         ))}
@@ -200,14 +200,14 @@ export function SimpleMarkdown({ text, className }: Props) {
     if (mH3) {
       flushList();
       blocks.push(
-        <h3 key={`h3-${key++}`} className="font-semibold text-gray-900 mt-2 text-[0.95em]">
+        <h3 key={`h3-${key++}`} className="font-display font-semibold tracking-tight text-foreground mt-2 text-[0.95em]">
           {renderInline(mH3[1], `h3-${key}`)}
         </h3>,
       );
     } else if (mH2) {
       flushList();
       blocks.push(
-        <h2 key={`h2-${key++}`} className="font-semibold text-gray-900 mt-2 text-[1em]">
+        <h2 key={`h2-${key++}`} className="font-display font-semibold tracking-tight text-foreground mt-2 text-[1em]">
           {renderInline(mH2[1], `h2-${key}`)}
         </h2>,
       );

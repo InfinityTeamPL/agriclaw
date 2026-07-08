@@ -204,9 +204,9 @@ export function FieldMapEditor({ farmId, center }: Props) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-4">
       {/* Lewa kolumna — formularz */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4 h-fit">
+      <div className="bg-card border border-border rounded-lg shadow-card p-4 space-y-4 h-fit">
         <div>
-          <label htmlFor="field-name" className="block text-sm font-medium mb-1 text-gray-800">
+          <label htmlFor="field-name" className="block text-sm font-medium mb-1 text-foreground">
             Nazwa pola
           </label>
           <input
@@ -216,19 +216,19 @@ export function FieldMapEditor({ farmId, center }: Props) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="np. Pole za stodołą"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
 
         <div>
-          <label htmlFor="field-crop" className="block text-sm font-medium mb-1 text-gray-800">
+          <label htmlFor="field-crop" className="block text-sm font-medium mb-1 text-foreground">
             Uprawa
           </label>
           <select
             id="field-crop"
             value={crop}
             onChange={(e) => setCrop(e.target.value as (typeof CROPS)[number]['value'])}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+            className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-card"
           >
             {CROPS.map((c) => (
               <option key={c.value} value={c.value}>
@@ -238,7 +238,7 @@ export function FieldMapEditor({ farmId, center }: Props) {
           </select>
         </div>
 
-        <div className="rounded-lg bg-emerald-50 border border-emerald-100 p-3 text-xs text-emerald-900 leading-relaxed">
+        <div className="rounded-md bg-signal-healthy/5 border border-signal-healthy/30 p-3 text-xs text-foreground leading-relaxed">
           <div className="font-medium mb-1 flex items-center gap-1.5">
             <MapIcon className="w-3.5 h-3.5" />
             Jak rysować
@@ -247,7 +247,7 @@ export function FieldMapEditor({ farmId, center }: Props) {
           zostanie zamknięty automatycznie przy zapisie.
         </div>
 
-        <div className="text-sm text-gray-700 space-y-1">
+        <div className="text-sm text-foreground space-y-1">
           <div>
             Wierzchołków: <span className="font-medium">{points.length}</span>
           </div>
@@ -266,7 +266,7 @@ export function FieldMapEditor({ farmId, center }: Props) {
             type="button"
             onClick={undo}
             disabled={points.length === 0 || saving}
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-border bg-card text-sm text-foreground hover:border-foreground/30 disabled:opacity-50 transition"
           >
             <Undo2 className="w-4 h-4" />
             Cofnij
@@ -275,7 +275,7 @@ export function FieldMapEditor({ farmId, center }: Props) {
             type="button"
             onClick={clear}
             disabled={points.length === 0 || saving}
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md border border-border bg-card text-sm text-foreground hover:border-foreground/30 disabled:opacity-50 transition"
           >
             <Trash2 className="w-4 h-4" />
             Wyczyść
@@ -286,7 +286,7 @@ export function FieldMapEditor({ farmId, center }: Props) {
           type="button"
           onClick={handleSave}
           disabled={!polygonReady || !name.trim() || saving}
-          className="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 text-white font-medium py-2.5 rounded-lg hover:bg-emerald-700 disabled:opacity-60 transition"
+          className="w-full inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-semibold py-2.5 rounded-md shadow-card hover:brightness-110 disabled:opacity-60 transition"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           {saving ? 'Zapisuję...' : 'Zapisz pole'}
@@ -294,11 +294,11 @@ export function FieldMapEditor({ farmId, center }: Props) {
       </div>
 
       {/* Prawa kolumna — mapa */}
-      <div className="relative w-full h-[420px] sm:h-[560px] rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
+      <div className="relative w-full h-[420px] sm:h-[560px] rounded-lg overflow-hidden border border-border bg-muted">
         <div ref={mapContainerRef} className="w-full h-full" />
         {!mapReady && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-emerald-50/80 to-white/80 backdrop-blur-sm">
-            <div className="flex items-center gap-2 text-emerald-700 text-sm">
+          <div className="absolute inset-0 flex items-center justify-center bg-card/80">
+            <div className="flex items-center gap-2 text-primary text-sm">
               <Loader2 className="w-4 h-4 animate-spin" />
               Ładuję mapę...
             </div>

@@ -68,7 +68,7 @@ export default async function FieldDetailPage({
       <div>
         <Link
           href="/dashboard/fields"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-emerald-700 transition"
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-primary transition"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Wszystkie pola

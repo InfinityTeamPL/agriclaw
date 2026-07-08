@@ -38,17 +38,17 @@ interface Props {
 }
 
 const levelBg: Record<HeatLevel, string> = {
-  safe: 'bg-emerald-500',
-  watch: 'bg-amber-300',
-  warning: 'bg-orange-500',
-  critical: 'bg-red-600',
+  safe: 'bg-signal-healthy',
+  watch: 'bg-signal-heat/50',
+  warning: 'bg-signal-heat',
+  critical: 'bg-destructive',
 };
 
 const levelBgSoft: Record<HeatLevel, string> = {
-  safe: 'bg-emerald-50 text-emerald-900 border-emerald-200',
-  watch: 'bg-amber-50 text-amber-900 border-amber-200',
-  warning: 'bg-orange-50 text-orange-900 border-orange-200',
-  critical: 'bg-red-50 text-red-900 border-red-200',
+  safe: 'bg-signal-healthy/10 text-signal-healthy border-signal-healthy/30',
+  watch: 'bg-signal-heat/10 text-signal-heat border-signal-heat/30',
+  warning: 'bg-signal-heat/10 text-signal-heat border-signal-heat/30',
+  critical: 'bg-destructive/10 text-destructive border-destructive/30',
 };
 
 const levelIcon: Record<HeatLevel, typeof Flame> = {
@@ -119,12 +119,12 @@ export function HeatAlert({ fieldId }: Props) {
   return (
     <div
       className={cn(
-        'rounded-xl border p-5 space-y-4',
+        'rounded-lg border bg-card shadow-card p-5 space-y-4',
         data.worstLevel === 'critical'
-          ? 'bg-white border-red-200'
+          ? 'border-destructive/30'
           : data.worstLevel === 'warning'
-            ? 'bg-white border-orange-200'
-            : 'bg-white border-gray-200',
+            ? 'border-signal-heat/30'
+            : 'border-border',
       )}
     >
       {/* Header */}
@@ -132,42 +132,42 @@ export function HeatAlert({ fieldId }: Props) {
         <div className="flex items-start gap-3">
           <div
             className={cn(
-              'w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border',
+              'w-9 h-9 rounded-md flex items-center justify-center shrink-0 border',
               data.worstLevel === 'critical'
-                ? 'bg-red-50 text-red-700 border-red-200'
+                ? 'bg-destructive/10 text-destructive border-destructive/30'
                 : data.worstLevel === 'warning'
-                  ? 'bg-orange-50 text-orange-700 border-orange-200'
-                  : 'bg-amber-50 text-amber-700 border-amber-200',
+                  ? 'bg-signal-heat/10 text-signal-heat border-signal-heat/30'
+                  : 'bg-signal-heat/10 text-signal-heat border-signal-heat/30',
             )}
           >
             <Icon className="w-4 h-4" />
           </div>
           <div>
-            <div className="font-semibold text-gray-900">
+            <div className="font-semibold text-foreground">
               {data.worstLevel === 'critical'
                 ? 'Krytyczny stres cieplny'
                 : data.worstLevel === 'warning'
                   ? 'Stres cieplny'
                   : 'Upalne dni — obserwuj'}
             </div>
-            <div className="text-xs text-gray-500 mt-0.5">
+            <div className="text-xs text-muted-foreground mt-0.5">
               Faza: {data.sensitivityPhase} · próg {data.stressThreshold}°C
               {data.consecutiveStressDays >= 2 && ` · ${data.consecutiveStressDays} dni pod rząd`}
             </div>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">
+          <div className="hud-label">
             Maksimum
           </div>
           <div
             className={cn(
-              'text-2xl font-bold tabular-nums',
+              'text-2xl font-bold font-mono tabular',
               data.maxTempC >= data.criticalThreshold
-                ? 'text-red-700'
+                ? 'text-destructive'
                 : data.maxTempC >= data.stressThreshold
-                  ? 'text-orange-700'
-                  : 'text-amber-700',
+                  ? 'text-signal-heat'
+                  : 'text-signal-heat',
             )}
           >
             {data.maxTempC.toFixed(0)}°C
@@ -190,12 +190,12 @@ export function HeatAlert({ fieldId }: Props) {
             >
               <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-[9px] font-semibold leading-tight">
                 <div>{new Date(d.date).getDate()}</div>
-                <div className="font-mono tabular-nums">{d.tMax.toFixed(0)}°</div>
+                <div className="font-mono tabular">{d.tMax.toFixed(0)}°</div>
               </div>
             </div>
           ))}
         </div>
-        <div className="flex items-center justify-between text-[10px] text-gray-400 mt-1.5 font-mono">
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground mt-1.5 font-mono">
           <span>{dayLabel(data.days[0]?.date ?? '')}</span>
           <span>{dayLabel(data.days[data.days.length - 1]?.date ?? '')}</span>
         </div>
@@ -205,7 +205,7 @@ export function HeatAlert({ fieldId }: Props) {
       {(data.worstLevel === 'warning' || data.worstLevel === 'critical') && (
         <div
           className={cn(
-            'rounded-2xl border p-3 text-sm leading-relaxed',
+            'rounded-lg border p-3 text-sm leading-relaxed',
             levelBgSoft[data.worstLevel],
           )}
         >
@@ -214,14 +214,14 @@ export function HeatAlert({ fieldId }: Props) {
       )}
 
       {/* Legenda */}
-      <div className="flex items-center gap-3 text-[10px] text-gray-500 flex-wrap pt-1 border-t border-gray-100">
+      <div className="flex items-center gap-3 text-[10px] text-muted-foreground flex-wrap pt-1 border-t border-border">
         {(['critical', 'warning', 'watch', 'safe'] as const).map((l) => (
           <div key={l} className="inline-flex items-center gap-1.5">
             <span className={cn('w-2.5 h-2.5 rounded-sm', levelBg[l])} />
             <span>{levelLabel[l]}</span>
           </div>
         ))}
-        <span className="inline-flex items-center gap-1 text-gray-400 ml-auto">
+        <span className="inline-flex items-center gap-1 text-muted-foreground ml-auto">
           <Thermometer className="w-3 h-3" />
           Open-Meteo · 10 dni
         </span>

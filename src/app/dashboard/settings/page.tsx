@@ -23,8 +23,8 @@ export default async function SettingsPage() {
   return (
     <div className="max-w-2xl mx-auto p-4 sm:p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Ustawienia</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">Ustawienia</h1>
+        <p className="text-sm text-muted-foreground">
           Dane kontaktowe i profil rolnika. Numer telefonu jest używany do WhatsApp.
         </p>
       </div>
@@ -38,19 +38,19 @@ export default async function SettingsPage() {
       />
 
       {farm && (
-        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
-          <h2 className="text-sm font-semibold text-gray-900">Gospodarstwo</h2>
-          <dl className="text-sm text-gray-700 space-y-1">
+        <div className="bg-card border border-border rounded-lg shadow-card p-4 space-y-2">
+          <h2 className="font-display text-sm font-semibold tracking-tight text-foreground">Gospodarstwo</h2>
+          <dl className="text-sm text-foreground space-y-1">
             <div className="flex justify-between gap-2">
-              <dt className="text-gray-500">Nazwa</dt>
+              <dt className="text-muted-foreground">Nazwa</dt>
               <dd className="text-right">{farm.name}</dd>
             </div>
             <div className="flex justify-between gap-2">
-              <dt className="text-gray-500">Adres</dt>
+              <dt className="text-muted-foreground">Adres</dt>
               <dd className="text-right">{farm.address}</dd>
             </div>
             <div className="flex justify-between gap-2">
-              <dt className="text-gray-500">Plan</dt>
+              <dt className="text-muted-foreground">Plan</dt>
               <dd className="text-right capitalize">{farm.plan}</dd>
             </div>
           </dl>

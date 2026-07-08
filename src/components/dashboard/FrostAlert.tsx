@@ -37,17 +37,17 @@ interface Props {
 }
 
 const levelBg: Record<FrostLevel, string> = {
-  safe: 'bg-emerald-500',
-  watch: 'bg-sky-400',
-  warning: 'bg-amber-500',
-  critical: 'bg-red-600',
+  safe: 'bg-signal-healthy',
+  watch: 'bg-signal-frost',
+  warning: 'bg-signal-heat',
+  critical: 'bg-destructive',
 };
 
 const levelBgSoft: Record<FrostLevel, string> = {
-  safe: 'bg-emerald-50 text-emerald-900 border-emerald-200',
-  watch: 'bg-sky-50 text-sky-900 border-sky-200',
-  warning: 'bg-amber-50 text-amber-900 border-amber-200',
-  critical: 'bg-red-50 text-red-900 border-red-200',
+  safe: 'bg-signal-healthy/10 text-signal-healthy border-signal-healthy/30',
+  watch: 'bg-signal-frost/10 text-signal-frost border-signal-frost/30',
+  warning: 'bg-signal-heat/10 text-signal-heat border-signal-heat/30',
+  critical: 'bg-destructive/10 text-destructive border-destructive/30',
 };
 
 const levelIcon: Record<FrostLevel, typeof Snowflake> = {
@@ -104,8 +104,8 @@ export function FrostAlert({ fieldId }: Props) {
 
   if (loading) {
     return (
-      <div className="rounded-xl bg-white border border-gray-200 p-4 flex items-center gap-2.5 text-sm text-gray-500">
-        <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+      <div className="rounded-lg bg-card border border-border shadow-card p-4 flex items-center gap-2.5 text-sm text-muted-foreground">
+        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
         Sprawdzam prognozę przymrozków na 10 nocy…
       </div>
     );
@@ -113,7 +113,7 @@ export function FrostAlert({ fieldId }: Props) {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+      <div className="rounded-lg border border-border bg-secondary p-4 text-sm text-muted-foreground">
         Prognoza przymrozków niedostępna: {error}
       </div>
     );
@@ -134,12 +134,12 @@ export function FrostAlert({ fieldId }: Props) {
   return (
     <div
       className={cn(
-        'rounded-xl border p-5 space-y-4',
+        'rounded-lg border bg-card shadow-card p-5 space-y-4',
         data.worstLevel === 'critical'
-          ? 'bg-white border-red-200'
+          ? 'border-destructive/30'
           : data.worstLevel === 'warning'
-            ? 'bg-white border-amber-200'
-            : 'bg-white border-gray-200',
+            ? 'border-signal-heat/30'
+            : 'border-border',
       )}
     >
       {/* Header */}
@@ -147,20 +147,20 @@ export function FrostAlert({ fieldId }: Props) {
         <div className="flex items-start gap-3">
           <div
             className={cn(
-              'w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border',
+              'w-9 h-9 rounded-md flex items-center justify-center shrink-0 border',
               data.worstLevel === 'critical'
-                ? 'bg-red-50 text-red-700 border-red-200'
+                ? 'bg-destructive/10 text-destructive border-destructive/30'
                 : data.worstLevel === 'warning'
-                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                  ? 'bg-signal-heat/10 text-signal-heat border-signal-heat/30'
                   : data.worstLevel === 'watch'
-                    ? 'bg-sky-50 text-sky-700 border-sky-200'
-                    : 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                    ? 'bg-signal-frost/10 text-signal-frost border-signal-frost/30'
+                    : 'bg-signal-healthy/10 text-signal-healthy border-signal-healthy/30',
             )}
           >
             <Icon className="w-4 h-4" />
           </div>
           <div>
-            <div className="font-semibold text-gray-900">
+            <div className="font-semibold text-foreground">
               {data.worstLevel === 'critical'
                 ? 'Krytyczne ryzyko przymrozków'
                 : data.worstLevel === 'warning'
@@ -169,23 +169,23 @@ export function FrostAlert({ fieldId }: Props) {
                     ? 'Chłodne noce — obserwuj'
                     : 'Prognoza: bezpiecznie'}
             </div>
-            <div className="text-xs text-gray-500 mt-0.5">
+            <div className="text-xs text-muted-foreground mt-0.5">
               Faza: {data.sensitivityPhase} · próg −{Math.abs(data.damageThreshold)}°C
             </div>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">
+          <div className="hud-label">
             Minimum
           </div>
           <div
             className={cn(
-              'text-2xl font-bold tabular-nums',
+              'text-2xl font-bold font-mono tabular',
               data.minTempC <= data.damageThreshold
-                ? 'text-red-700'
+                ? 'text-destructive'
                 : data.minTempC <= 2
-                  ? 'text-amber-700'
-                  : 'text-sky-700',
+                  ? 'text-signal-heat'
+                  : 'text-signal-frost',
             )}
           >
             {data.minTempC.toFixed(1)}°C
@@ -208,12 +208,12 @@ export function FrostAlert({ fieldId }: Props) {
             >
               <div className="absolute inset-0 flex flex-col items-center justify-center text-white text-[9px] font-semibold leading-tight">
                 <div>{new Date(n.date).getDate()}</div>
-                <div className="font-mono tabular-nums">{n.tMin.toFixed(0)}°</div>
+                <div className="font-mono tabular">{n.tMin.toFixed(0)}°</div>
               </div>
             </div>
           ))}
         </div>
-        <div className="flex items-center justify-between text-[10px] text-gray-400 mt-1.5 font-mono">
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground mt-1.5 font-mono">
           <span>{dayLabel(data.nights[0]?.date ?? '')}</span>
           <span>{dayLabel(data.nights[data.nights.length - 1]?.date ?? '')}</span>
         </div>
@@ -223,7 +223,7 @@ export function FrostAlert({ fieldId }: Props) {
       {(data.worstLevel === 'warning' || data.worstLevel === 'critical') && (
         <div
           className={cn(
-            'rounded-2xl border p-3 text-sm leading-relaxed',
+            'rounded-lg border p-3 text-sm leading-relaxed',
             levelBgSoft[data.worstLevel],
           )}
         >
@@ -232,14 +232,14 @@ export function FrostAlert({ fieldId }: Props) {
       )}
 
       {/* Legenda mini */}
-      <div className="flex items-center gap-3 text-[10px] text-gray-500 flex-wrap pt-1 border-t border-gray-100">
+      <div className="flex items-center gap-3 text-[10px] text-muted-foreground flex-wrap pt-1 border-t border-border">
         {(['critical', 'warning', 'watch', 'safe'] as const).map((l) => (
           <div key={l} className="inline-flex items-center gap-1.5">
             <span className={cn('w-2.5 h-2.5 rounded-sm', levelBg[l])} />
             <span>{levelLabel[l]}</span>
           </div>
         ))}
-        <span className="inline-flex items-center gap-1 text-gray-400 ml-auto">
+        <span className="inline-flex items-center gap-1 text-muted-foreground ml-auto">
           <Wind className="w-3 h-3" />
           Open-Meteo · 10 nocy
         </span>

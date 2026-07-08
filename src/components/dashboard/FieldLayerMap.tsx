@@ -35,11 +35,11 @@ const LAYERS: Array<{
   color: string;
   hint: string;
 }> = [
-  { id: 'ndvi', label: 'NDVI', icon: Sprout, color: 'text-emerald-700', hint: 'Zdrowie roślin' },
-  { id: 'ndre', label: 'NDRE', icon: Leaf, color: 'text-amber-700', hint: 'Azot' },
-  { id: 'ndwi', label: 'NDWI', icon: Droplets, color: 'text-sky-700', hint: 'Woda' },
-  { id: 'savi', label: 'SAVI', icon: MountainSnow, color: 'text-stone-700', hint: 'Biomasa+gleba' },
-  { id: 'truecolor', label: 'Sentinel', icon: Camera, color: 'text-violet-700', hint: 'RGB Sentinel-2 10m (świeże)' },
+  { id: 'ndvi', label: 'NDVI', icon: Sprout, color: 'text-signal-healthy', hint: 'Zdrowie roślin' },
+  { id: 'ndre', label: 'NDRE', icon: Leaf, color: 'text-signal-heat', hint: 'Azot' },
+  { id: 'ndwi', label: 'NDWI', icon: Droplets, color: 'text-signal-frost', hint: 'Woda' },
+  { id: 'savi', label: 'SAVI', icon: MountainSnow, color: 'text-muted-foreground', hint: 'Biomasa+gleba' },
+  { id: 'truecolor', label: 'Sentinel', icon: Camera, color: 'text-signal-disease', hint: 'RGB Sentinel-2 10m (świeże)' },
 ];
 
 const LEGENDS: Record<LayerType, Array<{ color: string; label: string }>> = {
@@ -278,12 +278,12 @@ export function FieldLayerMap({ fieldId, polygon, centroid, className }: Props) 
 
   return (
     <div className={className ?? 'relative w-full h-[480px]'}>
-      <div className="absolute inset-0 overflow-hidden bg-gradient-to-br from-emerald-50 to-slate-100 rounded-3xl">
+      <div className="absolute inset-0 overflow-hidden bg-secondary rounded-lg">
         <div ref={containerRef} className="w-full h-full" />
       </div>
 
       {/* Layer switcher — lewy górny */}
-      <div className="absolute top-3 left-3 rounded-2xl bg-white/95 backdrop-blur-md shadow-lg ring-1 ring-black/5 p-1.5 flex gap-1 flex-wrap max-w-[calc(100%-24px)]">
+      <div className="absolute top-3 left-3 rounded-lg bg-card/95 backdrop-blur-md shadow-card ring-1 ring-border p-1.5 flex gap-1 flex-wrap max-w-[calc(100%-24px)]">
         {LAYERS.map((l) => {
           const Icon = l.icon;
           const isActive = activeLayer === l.id;
@@ -295,16 +295,16 @@ export function FieldLayerMap({ fieldId, polygon, centroid, className }: Props) 
               onClick={() => setActiveLayer(l.id)}
               title={l.hint}
               className={cn(
-                'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition',
+                'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition',
                 isActive
-                  ? 'bg-gray-900 text-white shadow-sm'
-                  : 'text-gray-700 hover:bg-gray-100',
+                  ? 'bg-foreground text-background'
+                  : 'text-muted-foreground hover:bg-secondary',
               )}
             >
               {isLoading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
-                <Icon className={cn('w-3.5 h-3.5', isActive ? 'text-emerald-300' : l.color)} />
+                <Icon className={cn('w-3.5 h-3.5', isActive ? 'text-background' : l.color)} />
               )}
               {l.label}
             </button>
@@ -314,14 +314,14 @@ export function FieldLayerMap({ fieldId, polygon, centroid, className }: Props) 
 
       {/* Stan ładowania / błąd */}
       {layerLoading && (
-        <div className="absolute top-16 left-3 rounded-xl bg-white/95 backdrop-blur-md shadow-md ring-1 ring-black/5 px-3 py-2 text-xs flex items-center gap-2">
-          <Loader2 className="w-3 h-3 animate-spin text-emerald-600" />
+        <div className="absolute top-16 left-3 rounded-md bg-card/95 backdrop-blur-md shadow-card ring-1 ring-border px-3 py-2 text-xs flex items-center gap-2">
+          <Loader2 className="w-3 h-3 animate-spin text-signal-healthy" />
           Pobieram warstwę {LAYERS.find((l) => l.id === layerLoading)?.label} z Sentinel-2…
         </div>
       )}
 
       {layerError && !layerLoading && (
-        <div className="absolute top-16 left-3 rounded-xl bg-red-50 text-red-800 shadow-md ring-1 ring-red-200 px-3 py-2 text-xs max-w-sm">
+        <div className="absolute top-16 left-3 rounded-md bg-destructive/10 text-destructive border border-destructive/30 shadow-card px-3 py-2 text-xs max-w-sm">
           Błąd: {layerError.slice(0, 120)}
         </div>
       )}
@@ -329,8 +329,8 @@ export function FieldLayerMap({ fieldId, polygon, centroid, className }: Props) 
       {/* Legenda — lewy dolny */}
       {current && (
         <div className="absolute bottom-3 left-3 pointer-events-none">
-          <div className="rounded-2xl bg-white/95 backdrop-blur-md shadow-lg ring-1 ring-black/5 p-3 text-xs space-y-2 max-w-[200px]">
-            <div className="flex items-center gap-1.5 font-semibold text-gray-900">
+          <div className="rounded-lg bg-card/95 backdrop-blur-md shadow-card ring-1 ring-border p-3 text-xs space-y-2 max-w-[200px]">
+            <div className="flex items-center gap-1.5 font-semibold text-foreground">
               <Layers className="w-3.5 h-3.5" />
               Legenda · {activeLabel.label}
             </div>
@@ -341,11 +341,11 @@ export function FieldLayerMap({ fieldId, polygon, centroid, className }: Props) 
                     className="w-3 h-3 rounded-sm shrink-0"
                     style={{ backgroundColor: entry.color }}
                   />
-                  <span className="text-[10px] text-gray-600 leading-tight">{entry.label}</span>
+                  <span className="text-[10px] text-muted-foreground leading-tight">{entry.label}</span>
                 </div>
               ))}
             </div>
-            <div className="text-[9px] text-gray-400 pt-1 border-t border-gray-100">
+            <div className="text-[9px] text-muted-foreground pt-1 border-t border-border">
               Sentinel-2 · 10 m/piksel · {new Date(current.observedAt).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw' })}
             </div>
           </div>
