@@ -21,6 +21,7 @@ interface FieldRow {
   centroid_lat: number;
   centroid_lon: number;
   created_at: Date;
+  sowing_date: Date | null;
 }
 
 export default async function FieldDetailPage({
@@ -36,7 +37,7 @@ export default async function FieldDetailPage({
   const { farm } = await requireFarm();
 
   const rows = await prisma.$queryRaw<FieldRow[]>`
-    SELECT f.id, f.farm_id, f.name, f.crop, f.area_hectares, f.created_at,
+    SELECT f.id, f.farm_id, f.name, f.crop, f.area_hectares, f.created_at, f.sowing_date,
            ST_AsGeoJSON(f.polygon)::text AS polygon,
            ST_Y(ST_Centroid(f.polygon)) AS centroid_lat,
            ST_X(ST_Centroid(f.polygon)) AS centroid_lon
@@ -87,6 +88,10 @@ export default async function FieldDetailPage({
             lon: Number(row.centroid_lon),
           },
           createdAt: row.created_at.toISOString(),
+          // @db.Date → tylko dzień; ISO 'YYYY-MM-DD' dla inputu type=date
+          sowingDate: row.sowing_date
+            ? row.sowing_date.toISOString().slice(0, 10)
+            : null,
         }}
         ndviHistory={ndviHistory.map((r) => ({
           id: r.id,
@@ -95,6 +100,9 @@ export default async function FieldDetailPage({
           min: r.ndviMin,
           max: r.ndviMax,
           cloudCover: r.cloudCover,
+          // 'mock' = brak realnych danych CDSE (dev/demo). Pochodne NDRE/NDWI/SAVI
+          // to wtedy estymaty z mocka NDVI, więc oznaczamy je uczciwie w UI.
+          isMock: r.source === 'mock',
           indices: {
             ndvi: { mean: r.ndviMean, min: r.ndviMin, max: r.ndviMax },
             ndre: r.ndreMean !== null && r.ndreMin !== null && r.ndreMax !== null

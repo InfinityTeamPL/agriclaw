@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
-import { deriveBbchStatus, defaultSowingDate, type Crop } from '@/lib/bbch';
+import { deriveBbchStatus, resolveSowingDate, type Crop } from '@/lib/bbch';
 import { assessDiseaseRisks } from '@/lib/disease-models';
 import { fetchSprayForecast, fetchWeatherForecast } from '@/lib/satellite/weather';
 
@@ -20,11 +20,12 @@ export async function GET(
   const { user } = await requireAuth();
 
   const rows = await prisma.$queryRaw<
-    Array<{ id: string; name: string; crop: string; lat: number; lon: number }>
+    Array<{ id: string; name: string; crop: string; lat: number; lon: number; sowing_date: Date | null }>
   >`
     SELECT f.id, f.name, f.crop,
            ST_Y(ST_Centroid(f.polygon)) AS lat,
-           ST_X(ST_Centroid(f.polygon)) AS lon
+           ST_X(ST_Centroid(f.polygon)) AS lon,
+           f.sowing_date
     FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
     WHERE f.id = ${params.id} AND fa.user_id = ${user.id} AND f.deleted_at IS NULL
@@ -49,7 +50,11 @@ export async function GET(
   }
 
   // 2. BBCH
-  const sowingDate = defaultSowingDate(crop, new Date().getFullYear());
+  const { sowingDate, isEstimate: sowingDateIsEstimate } = resolveSowingDate(
+    field.sowing_date,
+    crop,
+    new Date().getFullYear(),
+  );
   const tempDays: Array<{ date: string; tMax: number; tMin: number }> = [];
   try {
     const histUrl = `${OPEN_METEO_HISTORY}?latitude=${field.lat}&longitude=${field.lon}&start_date=${sowingDate.toISOString().slice(0, 10)}&end_date=${new Date().toISOString().slice(0, 10)}&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
@@ -96,6 +101,8 @@ export async function GET(
     crop,
     bbch: bbchStatus?.currentBbch ?? null,
     bbchLabel: bbchStatus?.currentLabel ?? null,
+    // Bramkowanie ryzyka chorób zależy od BBCH — sygnalizuj estymatę fazy.
+    sowingDateIsEstimate,
     ndviMean,
     ndviObservedAt: latestReading?.observedAt ?? null,
     risks,

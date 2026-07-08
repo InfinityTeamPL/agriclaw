@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
-import { deriveBbchStatus, defaultSowingDate, type Crop } from '@/lib/bbch';
+import { deriveBbchStatus, resolveSowingDate, type Crop } from '@/lib/bbch';
 import { assessHeatStress } from '@/lib/heat-stress';
 
 const OPEN_METEO_HISTORY = 'https://archive-api.open-meteo.com/v1/archive';
@@ -20,11 +20,12 @@ export async function GET(
   const { user } = await requireAuth();
 
   const rows = await prisma.$queryRaw<
-    Array<{ id: string; name: string; crop: string; lat: number; lon: number }>
+    Array<{ id: string; name: string; crop: string; lat: number; lon: number; sowing_date: Date | null }>
   >`
     SELECT f.id, f.name, f.crop,
            ST_Y(ST_Centroid(f.polygon)) AS lat,
-           ST_X(ST_Centroid(f.polygon)) AS lon
+           ST_X(ST_Centroid(f.polygon)) AS lon,
+           f.sowing_date
     FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
     WHERE f.id = ${params.id} AND fa.user_id = ${user.id} AND f.deleted_at IS NULL
@@ -34,7 +35,11 @@ export async function GET(
   if (!field) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const crop = field.crop as Crop;
-  const sowingDate = defaultSowingDate(crop, new Date().getFullYear());
+  const { sowingDate, isEstimate: sowingDateIsEstimate } = resolveSowingDate(
+    field.sowing_date,
+    crop,
+    new Date().getFullYear(),
+  );
   const sowingStr = sowingDate.toISOString().slice(0, 10);
   const today = new Date().toISOString().slice(0, 10);
   const dailyTemps: Array<{ date: string; tMax: number; tMin: number }> = [];
@@ -136,6 +141,7 @@ export async function GET(
     crop,
     bbch,
     bbchLabel: bbchStatus?.currentLabel ?? 'nieznana',
+    sowingDateIsEstimate,
     sensitivityPhase: assessment.thresholds.sensitivityPhase,
     stressThreshold: assessment.thresholds.stressThreshold,
     criticalThreshold: assessment.thresholds.criticalThreshold,

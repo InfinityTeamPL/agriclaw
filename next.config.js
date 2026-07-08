@@ -11,6 +11,12 @@ const nextConfig = {
     // i /api/chat/stream (WebSocket do OpenClaw Gateway).
     serverComponentsExternalPackages: ['ssh2', 'ws'],
   },
+  // Osadzone lokalnie czcionki (src/assets/fonts) czytane w runtime przez
+  // /api/treatments/export/pdf muszą trafić do bundla funkcji serverless,
+  // inaczej po `next build` fs.readFile ich nie znajdzie.
+  outputFileTracingIncludes: {
+    '/api/treatments/export/pdf': ['./src/assets/fonts/**'],
+  },
 };
 
 module.exports = nextConfig;

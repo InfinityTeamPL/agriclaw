@@ -41,6 +41,7 @@ const FieldLayerMap = dynamic(
   { ssr: false, loading: () => <ScanLine className="h-full w-full min-h-[300px]" label="Ładowanie mapy…" /> },
 );
 import { BbchTracker } from '@/components/dashboard/BbchTracker';
+import { FieldSettings } from '@/components/dashboard/FieldSettings';
 import { HistoryChart } from '@/components/dashboard/HistoryChart';
 import { ThermalBadge } from '@/components/dashboard/ThermalBadge';
 import { RadarBadge } from '@/components/dashboard/RadarBadge';
@@ -62,6 +63,7 @@ interface Field {
   polygon: GeoJSON.Polygon;
   centroid: { lat: number; lon: number };
   createdAt: string;
+  sowingDate: string | null;
 }
 
 interface IndexVal {
@@ -77,6 +79,7 @@ interface NdviPoint {
   min: number;
   max: number;
   cloudCover: number;
+  isMock?: boolean;
   indices?: {
     ndvi: IndexVal;
     ndre: IndexVal | null;
@@ -180,19 +183,25 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
             )}
           </div>
         </div>
-        <div>
+        <div className="flex flex-col items-stretch sm:items-end gap-3">
           <button
             type="button"
             onClick={handleRunAnalysis}
             disabled={running}
             className={cn(
-              'inline-flex items-center gap-2 px-5 py-3 rounded-md font-semibold bg-primary text-primary-foreground shadow-card transition-all hover:brightness-110',
+              'inline-flex items-center justify-center gap-2 px-5 py-3 rounded-md font-semibold bg-primary text-primary-foreground shadow-card transition-all hover:brightness-110',
               running && 'cursor-not-allowed opacity-90',
             )}
           >
             {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Satellite className="w-4 h-4" />}
             {running ? 'Analizuję...' : 'Uruchom analizę'}
           </button>
+          <FieldSettings
+            fieldId={field.id}
+            initialName={field.name}
+            initialCrop={field.crop}
+            initialSowingDate={field.sowingDate}
+          />
         </div>
       </motion.div>
 
@@ -396,6 +405,7 @@ function AnalysisTab({
           ndwi={idx.ndwi}
           savi={idx.savi}
           crop={crop}
+          isMock={latest.isMock}
         />
       )}
 

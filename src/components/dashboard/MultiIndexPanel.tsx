@@ -18,6 +18,9 @@ interface Props {
   ndwi: IndexValue | null;
   savi: IndexValue | null;
   crop: string;
+  // true = brak realnych danych CDSE. NDVI to mock, a NDRE/NDWI/SAVI liniowe
+  // estymaty z niego — oznaczamy uczciwie, żeby nie udawać pomiaru satelitarnego.
+  isMock?: boolean;
 }
 
 interface CardData {
@@ -102,7 +105,7 @@ function colorForValue(key: CardData['key'], v: number): string {
   return '#14532d';
 }
 
-export function MultiIndexPanel({ ndvi, ndre, ndwi, savi, crop }: Props) {
+export function MultiIndexPanel({ ndvi, ndre, ndwi, savi, crop, isMock = false }: Props) {
   const cards: CardData[] = [
     {
       key: 'ndvi',
@@ -155,7 +158,9 @@ export function MultiIndexPanel({ ndvi, ndre, ndwi, savi, crop }: Props) {
       <div className="flex items-center gap-2">
         <Info className="w-4 h-4 text-muted-foreground" />
         <div className="text-xs text-muted-foreground">
-          Wszystkie indeksy z jednego zdjęcia Sentinel-2 (10 m/piksel)
+          {isMock
+            ? 'Dane demo — brak zdjęcia satelitarnego (Copernicus nieskonfigurowany). Wartości orientacyjne, nie pomiar.'
+            : 'Wszystkie indeksy z jednego zdjęcia Sentinel-2 (10 m/piksel)'}
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -180,7 +185,7 @@ export function MultiIndexPanel({ ndvi, ndre, ndwi, savi, crop }: Props) {
                 >
                   <Icon className={cn('w-4 h-4', c.accent)} />
                 </div>
-                <div className="text-right">
+                <div className="flex flex-col items-end text-right">
                   <div className="hud-label">
                     {c.name}
                   </div>
@@ -190,6 +195,14 @@ export function MultiIndexPanel({ ndvi, ndre, ndwi, savi, crop }: Props) {
                   >
                     {hasValue ? c.value!.mean.toFixed(2) : '–'}
                   </div>
+                  {isMock && hasValue && (
+                    <span
+                      className="hud-label mt-1 inline-flex items-center rounded border border-border bg-secondary px-1.5 py-0.5 text-muted-foreground"
+                      title="Wartość orientacyjna — brak zdjęcia satelitarnego (Copernicus nieskonfigurowany). To nie jest pomiar."
+                    >
+                      dane demo
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="text-xs font-semibold text-foreground">{c.what}</div>
