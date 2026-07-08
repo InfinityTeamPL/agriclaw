@@ -47,11 +47,11 @@ interface Props {
 }
 
 const statusMeta: Record<Status, { bg: string; label: string; accent: string }> = {
-  surplus: { bg: 'bg-sky-500', label: 'Nadwyżka', accent: 'text-sky-700' },
-  balanced: { bg: 'bg-emerald-500', label: 'Wyrównany', accent: 'text-emerald-700' },
-  'mild-deficit': { bg: 'bg-amber-400', label: 'Lekki deficyt', accent: 'text-amber-700' },
-  drought: { bg: 'bg-orange-500', label: 'Susza', accent: 'text-orange-700' },
-  'severe-drought': { bg: 'bg-red-600', label: 'Silna susza', accent: 'text-red-700' },
+  surplus: { bg: 'bg-signal-frost', label: 'Nadwyżka', accent: 'text-signal-frost' },
+  balanced: { bg: 'bg-signal-healthy', label: 'Wyrównany', accent: 'text-signal-healthy' },
+  'mild-deficit': { bg: 'bg-signal-heat', label: 'Lekki deficyt', accent: 'text-signal-heat' },
+  drought: { bg: 'bg-signal-heat', label: 'Susza', accent: 'text-signal-heat' },
+  'severe-drought': { bg: 'bg-signal-drought', label: 'Silna susza', accent: 'text-signal-drought' },
 };
 
 export function WaterBalance({ fieldId }: Props) {
@@ -86,8 +86,8 @@ export function WaterBalance({ fieldId }: Props) {
 
   if (loading) {
     return (
-      <div className="rounded-3xl bg-white border border-gray-200 p-5 flex items-center gap-3 text-sm text-gray-500">
-        <Loader2 className="w-4 h-4 animate-spin text-sky-600" />
+      <div className="rounded-lg bg-card border border-border shadow-card p-5 flex items-center gap-3 text-sm text-muted-foreground">
+        <Loader2 className="w-4 h-4 animate-spin text-signal-frost" />
         Liczę bilans wodny (FAO-56) 21 dni wstecz + 7 dni do przodu…
       </div>
     );
@@ -95,7 +95,7 @@ export function WaterBalance({ fieldId }: Props) {
 
   if (error) {
     return (
-      <div className="rounded-3xl bg-sky-50 border border-sky-200 p-4 text-sm text-sky-900">
+      <div className="rounded-lg bg-signal-frost/10 border border-signal-frost/30 p-4 text-sm text-signal-frost">
         Bilans wodny niedostępny: {error}
       </div>
     );
@@ -132,12 +132,12 @@ export function WaterBalance({ fieldId }: Props) {
   return (
     <div
       className={cn(
-        'rounded-xl border p-5 space-y-4',
+        'rounded-lg border bg-card shadow-card p-5 space-y-4',
         b.status === 'severe-drought' || b.status === 'drought'
-          ? 'bg-white border-orange-200'
+          ? 'border-signal-drought/30'
           : b.status === 'surplus'
-            ? 'bg-white border-sky-200'
-            : 'bg-white border-gray-200',
+            ? 'border-signal-frost/30'
+            : 'border-border',
       )}
     >
       {/* Header */}
@@ -145,33 +145,33 @@ export function WaterBalance({ fieldId }: Props) {
         <div className="flex items-start gap-3">
           <div
             className={cn(
-              'w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border',
+              'w-9 h-9 rounded-md flex items-center justify-center shrink-0 border',
               b.status === 'severe-drought' || b.status === 'drought'
-                ? 'bg-orange-50 text-orange-700 border-orange-200'
+                ? 'bg-signal-drought/10 text-signal-drought border-signal-drought/30'
                 : b.status === 'surplus'
-                  ? 'bg-sky-50 text-sky-700 border-sky-200'
+                  ? 'bg-signal-frost/10 text-signal-frost border-signal-frost/30'
                   : b.status === 'mild-deficit'
-                    ? 'bg-amber-50 text-amber-700 border-amber-200'
-                    : 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                    ? 'bg-signal-heat/10 text-signal-heat border-signal-heat/30'
+                    : 'bg-signal-healthy/10 text-signal-healthy border-signal-healthy/30',
             )}
           >
             <Droplets className="w-4 h-4" />
           </div>
           <div>
-            <div className="font-semibold text-gray-900">
+            <div className="font-semibold text-foreground">
               Bilans wodny · {meta.label}
             </div>
-            <div className="text-xs text-gray-500 mt-0.5">
+            <div className="text-xs text-muted-foreground mt-0.5">
               FAO-56 · Kc {b.kcCurrent.toFixed(2)}
               {data.bbchLabel && ` · BBCH ${data.bbch} (${data.bbchLabel})`}
             </div>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">
+          <div className="hud-label">
             Netto {b.periodDays} dni
           </div>
-          <div className={cn('text-3xl font-bold tabular-nums', meta.accent)}>
+          <div className={cn('text-3xl font-bold font-mono tabular', meta.accent)}>
             {b.netBalanceMm >= 0 ? '+' : ''}
             {b.netBalanceMm.toFixed(0)} mm
           </div>
@@ -181,25 +181,25 @@ export function WaterBalance({ fieldId }: Props) {
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-2">
         <StatCard
-          icon={<CloudRain className="w-3.5 h-3.5 text-sky-600" />}
+          icon={<CloudRain className="w-3.5 h-3.5 text-signal-frost" />}
           label="Opady"
           value={`${b.totalRainMm.toFixed(0)} mm`}
         />
         <StatCard
-          icon={<CloudSun className="w-3.5 h-3.5 text-amber-600" />}
+          icon={<CloudSun className="w-3.5 h-3.5 text-signal-heat" />}
           label="ETc rośliny"
           value={`${b.totalEtcMm.toFixed(0)} mm`}
         />
         <StatCard
-          icon={<Droplets className="w-3.5 h-3.5 text-emerald-600" />}
+          icon={<Droplets className="w-3.5 h-3.5 text-signal-healthy" />}
           label="Suggerowane nawod."
           value={b.irrigationSuggestionMm > 0 ? `${b.irrigationSuggestionMm} mm` : '—'}
         />
       </div>
 
       {/* SVG cumulative */}
-      <div className="rounded-2xl bg-gray-50 border border-gray-100 p-3">
-        <div className="flex items-center justify-between text-[10px] text-gray-500 mb-1">
+      <div className="rounded-lg bg-secondary border border-border p-3">
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1">
           <span>Skumulowany bilans dzień-po-dniu</span>
           <span className="font-mono">
             {b.daily[0]?.date.slice(5)} → {b.daily[b.daily.length - 1]?.date.slice(5)}
@@ -254,14 +254,14 @@ export function WaterBalance({ fieldId }: Props) {
       {/* Rekomendacja */}
       <div
         className={cn(
-          'rounded-2xl border p-3 text-sm leading-relaxed flex gap-2',
+          'rounded-lg border p-3 text-sm leading-relaxed flex gap-2',
           b.status === 'severe-drought'
-            ? 'bg-red-50 border-red-200 text-red-900'
+            ? 'bg-signal-drought/10 border-signal-drought/30 text-signal-drought'
             : b.status === 'drought'
-              ? 'bg-orange-50 border-orange-200 text-orange-900'
+              ? 'bg-signal-heat/10 border-signal-heat/30 text-signal-heat'
               : b.status === 'mild-deficit'
-                ? 'bg-amber-50 border-amber-200 text-amber-900'
-                : 'bg-gray-50 border-gray-200 text-gray-800',
+                ? 'bg-signal-heat/10 border-signal-heat/30 text-signal-heat'
+                : 'bg-secondary border-border text-foreground',
         )}
       >
         {(b.status === 'drought' || b.status === 'severe-drought') && (
@@ -272,16 +272,16 @@ export function WaterBalance({ fieldId }: Props) {
 
       {/* Irrigation box */}
       {b.irrigationSuggestionMm > 0 && (
-        <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3">
+        <div className="rounded-lg bg-signal-healthy/10 border border-signal-healthy/30 p-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
-              <div className="text-[10px] uppercase tracking-wider text-emerald-700 font-semibold">
+              <div className="text-[10px] uppercase tracking-wider text-signal-healthy font-semibold">
                 Sugerowana dawka nawodnienia
               </div>
-              <div className="text-2xl font-bold text-emerald-900 tabular-nums">
+              <div className="text-2xl font-bold text-signal-healthy font-mono tabular">
                 {b.irrigationSuggestionMm} mm · {b.irrigationTotalM3.toLocaleString('pl-PL')} m³
               </div>
-              <div className="text-xs text-emerald-800">
+              <div className="text-xs text-signal-healthy">
                 Na polu {data.areaHectares.toFixed(1)} ha · najlepsza pora: wieczór 18-21 lub rano 4-7
               </div>
             </div>
@@ -302,12 +302,12 @@ function StatCard({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl bg-white border border-gray-100 p-2.5">
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold">
+    <div className="rounded-lg bg-card border border-border p-2.5">
+      <div className="hud-label flex items-center gap-1.5">
         {icon}
         {label}
       </div>
-      <div className="mt-1 text-sm font-bold text-gray-900 tabular-nums">{value}</div>
+      <div className="mt-1 text-sm font-bold text-foreground font-mono tabular">{value}</div>
     </div>
   );
 }

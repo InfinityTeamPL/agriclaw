@@ -22,7 +22,7 @@ import {
   getTreatmentTypeIcon,
   type CommonProduct,
 } from '@/lib/treatment-types';
-import { cropLabel, formatDatePL } from '@/lib/ui/format';
+import { cropLabel, formatDatePL, formatHa } from '@/lib/ui/format';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 
 interface FieldOpt {
@@ -276,7 +276,7 @@ function TreatmentRow({ t }: { t: Treatment }) {
                 {t.productName}
                 {t.doseValue && (
                   <span className="ml-2 text-sm font-normal font-mono tabular text-muted-foreground">
-                    · {t.doseValue} {t.doseUnit} × {t.areaTreated.toFixed(2)} ha
+                    · {t.doseValue} {t.doseUnit} × {formatHa(t.areaTreated)} ha
                   </span>
                 )}
               </div>
@@ -438,7 +438,7 @@ function AddTreatmentModal({
               >
                 {fields.map((f) => (
                   <option key={f.id} value={f.id}>
-                    {f.name} — {f.areaHectares.toFixed(2)} ha
+                    {f.name} — {formatHa(f.areaHectares)} ha
                   </option>
                 ))}
               </select>

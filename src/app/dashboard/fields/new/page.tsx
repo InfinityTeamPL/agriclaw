@@ -5,6 +5,7 @@
 import Link from 'next/link';
 import { ArrowLeft, Zap, PencilLine } from 'lucide-react';
 import { requireFarm } from '@/lib/session';
+import { NdviKeyline } from '@/components/brand/NdviKeyline';
 import { FieldMapEditor } from '@/components/field-editor/FieldMapEditor';
 import { ParcelImportSave } from '@/components/field-editor/ParcelImportSave';
 
@@ -18,28 +19,31 @@ export default async function NewFieldPage() {
       <div>
         <Link
           href="/dashboard/fields"
-          className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-emerald-700"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="w-4 h-4" />
           Wróć do listy pól
         </Link>
       </div>
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dodaj pole</h1>
-        <p className="text-sm text-gray-500">Dwie drogi — wybierz łatwiejszą dla Ciebie.</p>
+      {/* Karta nagłówkowa z sygnaturą NDVI — jak w /dashboard/fields */}
+      <div className="relative rounded-lg bg-card border border-border p-5 shadow-card overflow-hidden">
+        <NdviKeyline className="absolute top-0 left-0" rounded={false} height={3} />
+        <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">Dodaj pole</h1>
+        <p className="text-sm text-muted-foreground">Dwie drogi — wybierz łatwiejszą dla Ciebie.</p>
       </div>
 
       {/* Opcja A: Import z ARiMR (preferowana) */}
-      <section className="rounded-3xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50/50 to-white p-5 space-y-3">
+      <section className="relative rounded-lg border border-border bg-card p-5 space-y-3 shadow-card overflow-hidden">
+        <NdviKeyline className="absolute top-0 left-0" rounded={false} height={2} />
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+          <div className="w-9 h-9 rounded-md bg-primary text-primary-foreground flex items-center justify-center">
             <Zap className="w-4 h-4" />
           </div>
           <div>
-            <div className="font-semibold text-gray-900">
+            <div className="font-semibold text-foreground">
               A. Import z ARiMR / Geoportal (1 sekunda)
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-xs text-muted-foreground">
               Jeśli masz numer działki z wniosku JPO — pobierz granicę 1:1 z ewidencji gruntów.
             </div>
           </div>
@@ -48,14 +52,14 @@ export default async function NewFieldPage() {
       </section>
 
       {/* Opcja B: Rysuj ręcznie */}
-      <section className="rounded-3xl border border-gray-200 bg-white p-5 space-y-3">
+      <section className="rounded-lg border border-border bg-card p-5 space-y-3">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center">
-            <PencilLine className="w-4 h-4 text-gray-700" />
+          <div className="w-9 h-9 rounded-md bg-secondary flex items-center justify-center">
+            <PencilLine className="w-4 h-4 text-foreground" />
           </div>
           <div>
-            <div className="font-semibold text-gray-900">B. Narysuj granicę na mapie</div>
-            <div className="text-xs text-gray-500">
+            <div className="font-semibold text-foreground">B. Narysuj granicę na mapie</div>
+            <div className="text-xs text-muted-foreground">
               Klikaj punkty na mapie, min. 3 wierzchołki. Dla nieregularnych pól albo jeśli nie masz numeru TERYT.
             </div>
           </div>

@@ -105,19 +105,19 @@ export function FarmMiniMap({ fields, center, className }: Props) {
 
   return (
     <div className={className ?? 'relative w-full h-[280px]'}>
-      <div className="absolute inset-0 rounded-3xl overflow-hidden bg-gradient-to-br from-emerald-50 to-slate-100">
+      <div className="absolute inset-0 rounded-lg overflow-hidden bg-secondary">
         <div ref={containerRef} className="w-full h-full" />
       </div>
       {!ready && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="flex items-center gap-2 text-emerald-700 text-sm">
+          <div className="flex items-center gap-2 text-signal-healthy text-sm">
             <Loader2 className="w-4 h-4 animate-spin" />
             Ładuję mapę...
           </div>
         </div>
       )}
       {/* Gradient overlay for readability */}
-      <div className="absolute inset-x-0 bottom-0 h-20 rounded-b-3xl bg-gradient-to-t from-slate-900/30 to-transparent pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 h-20 rounded-b-lg bg-gradient-to-t from-foreground/30 to-transparent pointer-events-none" />
     </div>
   );
 }

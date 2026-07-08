@@ -36,13 +36,13 @@ export function AgentErrorPanel({ agentId }: Props) {
   };
 
   return (
-    <div className="bg-white border border-red-200 rounded-xl p-8 text-center space-y-4">
-      <AlertTriangle className="w-12 h-12 text-red-500 mx-auto" />
+    <div className="bg-card border border-destructive/30 rounded-lg shadow-card p-8 text-center space-y-4">
+      <AlertTriangle className="w-12 h-12 text-destructive mx-auto" />
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">
+        <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">
           Agent wymaga ponownego wdrożenia
         </h2>
-        <p className="text-sm text-gray-500 mt-1 max-w-md mx-auto">
+        <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
           Ostatni provisioning się nie udał. Usuniemy uszkodzonego agenta (i jego VM) i zaczniemy od
           nowa — zajmie to kilka minut.
         </p>
@@ -51,7 +51,7 @@ export function AgentErrorPanel({ agentId }: Props) {
         type="button"
         onClick={handleRetry}
         disabled={busy}
-        className="inline-flex items-center gap-2 bg-emerald-600 text-white font-medium px-4 py-2 rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition"
+        className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-md shadow-card hover:brightness-110 disabled:opacity-50 transition"
       >
         <RotateCcw className={busy ? 'w-4 h-4 animate-spin' : 'w-4 h-4'} />
         {busy ? 'Usuwam...' : 'Uruchom ponownie'}

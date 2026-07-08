@@ -112,12 +112,12 @@ export function FieldPolygonMap({ polygon, centroid, ndviMean, className }: Prop
 
   return (
     <div className={className ?? 'relative w-full h-[400px]'}>
-      <div className="absolute inset-0 bg-gray-100">
+      <div className="absolute inset-0 bg-muted">
         <div ref={containerRef} className="w-full h-full" />
       </div>
       {!ready && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/60">
-          <div className="flex items-center gap-2 text-emerald-700 text-sm">
+        <div className="absolute inset-0 flex items-center justify-center bg-card/60">
+          <div className="flex items-center gap-2 text-primary text-sm">
             <Loader2 className="w-4 h-4 animate-spin" />
             Ładuję mapę...
           </div>

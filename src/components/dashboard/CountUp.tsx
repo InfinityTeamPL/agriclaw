@@ -1,7 +1,11 @@
 'use client';
 
-// Animowany licznik od 0 do value (ease-out).
-// Przyjmuje format dla liczby (np. ha z 2 miejsc).
+// Animowany licznik do value (ease-out). Przyjmuje format dla liczby (np. ha z 2 miejsc).
+//
+// Ważne: stan początkowy = wartość KOŃCOWA, nie 0. SSR i pierwszy paint pokazują
+// prawdziwą liczbę; animacja 0→value startuje dopiero gdy karta jest realnie
+// widoczna (rAF w ukrytej karcie nie odpala i rolnik widziałby zamrożone zera).
+// Przy prefers-reduced-motion nie animujemy wcale.
 
 import { useEffect, useRef, useState } from 'react';
 
@@ -13,33 +17,42 @@ interface Props {
 }
 
 export function CountUp({ value, duration = 900, format, className }: Props) {
-  const [display, setDisplay] = useState(0);
+  const [display, setDisplay] = useState(value);
   const rafRef = useRef<number | null>(null);
-  const startRef = useRef<number | null>(null);
-  const fromRef = useRef(0);
 
   useEffect(() => {
-    fromRef.current = display;
-    startRef.current = null;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduced || document.visibilityState !== 'visible') {
+      setDisplay(value);
+      return;
+    }
 
+    let start: number | null = null;
+    const from = 0;
     const tick = (t: number) => {
-      if (startRef.current === null) startRef.current = t;
-      const elapsed = t - startRef.current;
-      const progress = Math.min(1, elapsed / duration);
+      if (start === null) start = t;
+      const progress = Math.min(1, (t - start) / duration);
       // easeOutCubic
       const eased = 1 - Math.pow(1 - progress, 3);
-      const current = fromRef.current + (value - fromRef.current) * eased;
-      setDisplay(current);
+      setDisplay(from + (value - from) * eased);
       if (progress < 1) {
         rafRef.current = requestAnimationFrame(tick);
       }
     };
 
+    // Gdy karta traci widoczność w trakcie animacji — dobij do wartości końcowej.
+    const onVisibility = () => {
+      if (document.visibilityState !== 'visible') {
+        if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+        setDisplay(value);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
     rafRef.current = requestAnimationFrame(tick);
     return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, duration]);
 
   const text = format ? format(display) : Math.round(display).toString();

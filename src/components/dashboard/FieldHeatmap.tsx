@@ -151,12 +151,12 @@ export function FieldHeatmap({ polygon, centroid, ndviMean, className }: Props) 
 
   return (
     <div className={className ?? 'relative w-full h-[480px]'}>
-      <div className="absolute inset-0 overflow-hidden bg-gradient-to-br from-emerald-50 to-slate-100">
+      <div className="absolute inset-0 overflow-hidden bg-secondary">
         <div ref={containerRef} className="w-full h-full" />
       </div>
       {!ready && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-sm">
-          <div className="flex items-center gap-2 text-emerald-700 text-sm">
+        <div className="absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-sm">
+          <div className="flex items-center gap-2 text-signal-healthy text-sm">
             <Loader2 className="w-4 h-4 animate-spin" />
             Ładuję mapę...
           </div>
@@ -165,8 +165,8 @@ export function FieldHeatmap({ polygon, centroid, ndviMean, className }: Props) 
       {/* NDVI legend */}
       {ready && ndviMean !== null && (
         <div className="absolute bottom-3 left-3 pointer-events-none">
-          <div className="rounded-xl bg-white/90 backdrop-blur border border-white shadow-lg px-3 py-2 text-[11px] space-y-1.5">
-            <div className="font-semibold text-gray-700">Skala NDVI</div>
+          <div className="rounded-lg bg-card/90 backdrop-blur border border-border shadow-card px-3 py-2 text-[11px] space-y-1.5">
+            <div className="font-semibold text-foreground">Skala NDVI</div>
             <div className="flex items-center gap-1 w-40">
               <div
                 className="h-2 flex-1 rounded-full"
@@ -176,7 +176,7 @@ export function FieldHeatmap({ polygon, centroid, ndviMean, className }: Props) 
                 }}
               />
             </div>
-            <div className="flex justify-between text-gray-500">
+            <div className="flex justify-between text-muted-foreground">
               <span>0.0</span>
               <span>0.5</span>
               <span>1.0</span>

@@ -50,9 +50,9 @@ export function ThermalBadge({ fieldId }: { fieldId: string }) {
       <button
         onClick={check}
         disabled={loading}
-        className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 text-gray-800 transition text-sm font-medium disabled:opacity-60"
+        className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-border bg-card hover:border-foreground/30 hover:bg-secondary text-foreground transition text-sm font-medium disabled:opacity-60"
       >
-        {loading ? <Loader2 className="w-4 h-4 animate-spin text-gray-500" /> : <Thermometer className="w-4 h-4 text-gray-500" />}
+        {loading ? <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /> : <Thermometer className="w-4 h-4 text-muted-foreground" />}
         {loading ? 'Landsat sprawdza temperaturę…' : 'Sprawdź temperaturę powierzchni (Landsat)'}
       </button>
     );
@@ -61,14 +61,14 @@ export function ThermalBadge({ fieldId }: { fieldId: string }) {
   // Stan 2: błąd / niedostępne
   if (error) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-2">
+      <div className="rounded-lg border border-border bg-secondary p-4 space-y-2">
         <div className="flex items-start gap-2">
-          <Info className="w-4 h-4 text-gray-500 shrink-0 mt-0.5" />
+          <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
           <div className="flex-1">
-            <div className="text-sm font-medium text-gray-900">Landsat niedostępny</div>
-            <div className="text-xs text-gray-600 mt-1 leading-relaxed">{error.error}</div>
+            <div className="text-sm font-medium text-foreground">Landsat niedostępny</div>
+            <div className="text-xs text-muted-foreground mt-1 leading-relaxed">{error.error}</div>
             {error.fallbackHint && (
-              <div className="text-xs text-gray-500 mt-1">{error.fallbackHint}</div>
+              <div className="text-xs text-muted-foreground mt-1">{error.fallbackHint}</div>
             )}
           </div>
         </div>
@@ -77,7 +77,7 @@ export function ThermalBadge({ fieldId }: { fieldId: string }) {
             setError(null);
             check();
           }}
-          className="text-xs text-gray-600 hover:text-gray-900 underline"
+          className="text-xs text-muted-foreground hover:text-foreground underline"
         >
           Spróbuj ponownie
         </button>
@@ -97,15 +97,15 @@ export function ThermalBadge({ fieldId }: { fieldId: string }) {
 
   const colorClass =
     interpretation.status === 'high'
-      ? 'text-red-700 bg-red-50/70 border-red-200'
+      ? 'text-destructive bg-destructive/10 border-destructive/30'
       : interpretation.status === 'cold'
-        ? 'text-sky-700 bg-sky-50/70 border-sky-200'
+        ? 'text-signal-frost bg-signal-frost/10 border-signal-frost/30'
         : interpretation.status === 'elevated'
-          ? 'text-amber-700 bg-amber-50/70 border-amber-200'
-          : 'text-emerald-700 bg-emerald-50/70 border-emerald-200';
+          ? 'text-signal-heat bg-signal-heat/10 border-signal-heat/30'
+          : 'text-signal-healthy bg-signal-healthy/10 border-signal-healthy/30';
 
   return (
-    <div className={`rounded-xl border p-4 space-y-3 ${colorClass}`}>
+    <div className={`rounded-lg border p-4 space-y-3 ${colorClass}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2">
           <Icon className="w-5 h-5 shrink-0 mt-0.5" />
@@ -113,19 +113,19 @@ export function ThermalBadge({ fieldId }: { fieldId: string }) {
             <div className="text-[10px] uppercase tracking-wider opacity-70 font-semibold">
               Temperatura (Landsat 8/9)
             </div>
-            <div className="text-2xl font-semibold tabular-nums mt-0.5">
+            <div className="text-2xl font-semibold font-mono tabular mt-0.5">
               {thermal.meanC.toFixed(1)}°C
             </div>
           </div>
         </div>
-        <div className="text-right text-[10px] font-mono opacity-70 shrink-0">
+        <div className="text-right text-[10px] font-mono tabular opacity-70 shrink-0">
           <div>min {thermal.minC.toFixed(1)}°</div>
           <div>max {thermal.maxC.toFixed(1)}°</div>
           <div>Δ {thermal.spread.toFixed(1)}°</div>
         </div>
       </div>
       <p className="text-sm leading-relaxed">{interpretation.diagnosis}</p>
-      <div className="rounded-lg bg-white/70 p-2.5 text-xs leading-relaxed">
+      <div className="rounded-md bg-card/70 p-2.5 text-xs leading-relaxed">
         <span className="font-semibold">Działanie: </span>
         {interpretation.action}
       </div>

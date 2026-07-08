@@ -1,7 +1,7 @@
 'use client';
 
 // Dashboard shell — sidebar nawigacja (desktop + mobile drawer) + topbar.
-// Glass morphism, collapsible sidebar, animowane hover stany, profile menu.
+// Design system „stacja naziemna": płaskie tokeny, collapsible sidebar, profile menu.
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
@@ -138,26 +138,26 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
                 href={link.href}
                 title={collapsed ? link.label : undefined}
                 className={cn(
-                  'group relative flex items-center gap-3 px-3 py-2.5 rounded-2xl text-sm font-medium transition-all duration-200',
+                  'group relative flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all duration-200',
                   active
-                    ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-[0_10px_25px_-10px_rgba(16,185,129,0.8)]'
-                    : 'text-gray-700 hover:bg-white/70 hover:text-emerald-700 hover:shadow-sm',
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
                 )}
               >
-                <Icon className={cn('w-[18px] h-[18px] shrink-0', active ? 'text-white' : 'text-gray-500 group-hover:text-emerald-600')} />
+                <Icon className={cn('w-[18px] h-[18px] shrink-0', active ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-foreground')} />
                 {!collapsed && <span className="truncate">{link.label}</span>}
                 {active && !collapsed && (
-                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-white/80" aria-hidden="true" />
+                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary-foreground/80" aria-hidden="true" />
                 )}
               </Link>
             );
           })}
         </nav>
 
-        <div className="border-t border-white/50 p-3 space-y-2">
+        <div className="border-t border-border p-3 space-y-2">
           <button
             onClick={toggleCollapsed}
-            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-2xl text-xs font-medium text-gray-500 hover:bg-white/70 hover:text-emerald-700 transition"
+            className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition"
             aria-label={collapsed ? 'Rozwiń menu' : 'Zwiń menu'}
           >
             {collapsed ? <ChevronsRight className="w-4 h-4" /> : <ChevronsLeft className="w-4 h-4" />}
@@ -175,7 +175,7 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="md:hidden fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30"
+              className="md:hidden fixed inset-0 bg-foreground/40 z-30"
               onClick={() => setDrawerOpen(false)}
               aria-hidden="true"
             />
@@ -184,21 +184,23 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 260 }}
-              className="md:hidden fixed top-0 left-0 bottom-0 w-72 bg-white/95 backdrop-blur-xl z-40 shadow-2xl flex flex-col border-r border-white/50"
+              className="md:hidden fixed top-0 left-0 bottom-0 w-72 bg-card z-40 shadow-pop flex flex-col border-r border-border"
             >
-              <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200/60">
+              {/* Sygnatura: keyline rampy NDVI — jak w desktopowym sidebarze */}
+              <NdviKeyline height={3} rounded={false} />
+              <div className="h-16 flex items-center justify-between px-4 border-b border-border">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-emerald-500 via-emerald-600 to-teal-700 shadow-lg flex items-center justify-center">
-                    <span className="text-white font-semibold text-sm">Ag</span>
+                  <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
+                    <span className="text-primary-foreground font-display font-semibold tracking-tight text-sm">Ag</span>
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900 tracking-tight">AgriClaw</div>
-                    <div className="text-[10px] uppercase tracking-[0.18em] text-emerald-700/80">Cyfrowy agronom</div>
+                    <div className="font-display font-semibold text-foreground tracking-tight">AgriClaw</div>
+                    <div className="hud-label">Cyfrowy agronom</div>
                   </div>
                 </div>
                 <button
                   onClick={() => setDrawerOpen(false)}
-                  className="p-1.5 rounded-xl text-gray-500 hover:bg-gray-100"
+                  className="p-1.5 rounded-md text-muted-foreground hover:bg-secondary"
                   aria-label="Zamknij menu"
                 >
                   <X className="w-5 h-5" />
@@ -214,10 +216,10 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
                       href={link.href}
                       onClick={() => setDrawerOpen(false)}
                       className={cn(
-                        'flex items-center gap-3 px-3 py-3 rounded-2xl text-sm font-medium transition',
+                        'flex items-center gap-3 px-3 py-3 rounded-md text-sm font-medium transition',
                         active
-                          ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-md'
-                          : 'text-gray-700 hover:bg-gray-100',
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:bg-secondary hover:text-foreground',
                       )}
                     >
                       <Icon className="w-[18px] h-[18px]" />
@@ -226,21 +228,21 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
                   );
                 })}
               </nav>
-              <div className="border-t border-gray-200/60 p-4 space-y-3">
-                <div className="flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-br from-emerald-50 to-white border border-emerald-100">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-semibold text-sm shrink-0">
+              <div className="border-t border-border p-4 space-y-3">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary border border-border">
+                  <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-sm shrink-0">
                     {initials}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium text-gray-900 truncate">
+                    <div className="text-sm font-medium text-foreground truncate">
                       {user.name || user.email}
                     </div>
-                    <div className="text-xs text-gray-500 truncate">{farm.name}</div>
+                    <div className="text-xs text-muted-foreground truncate">{farm.name}</div>
                   </div>
                 </div>
                 <button
                   onClick={handleSignOut}
-                  className="w-full inline-flex items-center gap-2 px-3 py-2.5 rounded-2xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition"
+                  className="w-full inline-flex items-center gap-2 px-3 py-2.5 rounded-md text-sm font-medium text-foreground hover:bg-secondary transition"
                 >
                   <LogOut className="w-4 h-4" />
                   Wyloguj
@@ -253,10 +255,10 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
 
       {/* Main column */}
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
-        <header className="sticky top-0 z-20 h-16 border-b border-white/40 bg-white/60 backdrop-blur-xl flex items-center gap-3 px-4 sm:px-6">
+        <header className="sticky top-0 z-20 h-16 border-b border-border bg-card flex items-center gap-3 px-4 sm:px-6">
           <button
             onClick={() => setDrawerOpen(true)}
-            className="md:hidden p-2 rounded-xl text-gray-600 hover:bg-white/70"
+            className="md:hidden p-2 rounded-md text-muted-foreground hover:bg-secondary"
             aria-label="Otwórz menu"
           >
             <Menu className="w-5 h-5" />
@@ -264,16 +266,16 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
 
           {/* Farm switcher */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="hidden sm:flex w-9 h-9 rounded-2xl bg-gradient-to-br from-emerald-50 to-lime-50 border border-emerald-100 items-center justify-center shrink-0">
-              <MapIcon className="w-4 h-4 text-emerald-700" />
+            <div className="hidden sm:flex w-9 h-9 rounded-md bg-secondary border border-border items-center justify-center shrink-0">
+              <MapIcon className="w-4 h-4 text-signal-healthy" />
             </div>
             <div className="min-w-0">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-gray-400 font-medium">
+              <div className="hud-label">
                 Gospodarstwo
               </div>
               <div className="flex items-center gap-1.5 min-w-0">
-                <div className="text-sm font-semibold text-gray-900 truncate">{farm.name}</div>
-                <ChevronDown className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                <div className="text-sm font-semibold text-foreground truncate">{farm.name}</div>
+                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               </div>
             </div>
           </div>
@@ -282,7 +284,7 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
           <div className="flex items-center gap-2">
             <Link
               href="/dashboard"
-              className="hidden sm:inline-flex relative items-center justify-center w-10 h-10 rounded-2xl text-gray-600 hover:bg-white/70 hover:text-emerald-700 transition"
+              className="hidden sm:inline-flex relative items-center justify-center w-10 h-10 rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground transition"
               aria-label="Alerty i pilne sygnały"
               title="Alerty i pilne sygnały"
             >
@@ -293,15 +295,15 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
             <div className="relative" ref={profileRef}>
               <button
                 onClick={() => setProfileOpen((v) => !v)}
-                className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-2xl hover:bg-white/70 transition"
+                className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-md hover:bg-secondary transition"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-semibold text-xs">
+                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-xs">
                   {initials}
                 </div>
-                <span className="hidden sm:inline text-sm font-medium text-gray-700 max-w-[140px] truncate">
+                <span className="hidden sm:inline text-sm font-medium text-foreground max-w-[140px] truncate">
                   {user.name || user.email.split('@')[0]}
                 </span>
-                <ChevronDown className={cn('hidden sm:block w-4 h-4 text-gray-400 transition-transform', profileOpen && 'rotate-180')} />
+                <ChevronDown className={cn('hidden sm:block w-4 h-4 text-muted-foreground transition-transform', profileOpen && 'rotate-180')} />
               </button>
 
               <AnimatePresence>
@@ -311,28 +313,28 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -6, scale: 0.98 }}
                     transition={{ duration: 0.15, ease: 'easeOut' }}
-                    className="absolute right-0 top-full mt-2 w-64 rounded-2xl bg-white/95 backdrop-blur-xl border border-gray-200/70 shadow-2xl overflow-hidden"
+                    className="absolute right-0 top-full mt-2 w-64 rounded-lg bg-card border border-border shadow-pop overflow-hidden"
                   >
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <div className="text-sm font-semibold text-gray-900 truncate">
+                    <div className="px-4 py-3 border-b border-border">
+                      <div className="text-sm font-semibold text-foreground truncate">
                         {user.name || user.email}
                       </div>
-                      <div className="text-xs text-gray-500 truncate">{user.email}</div>
+                      <div className="text-xs text-muted-foreground truncate">{user.email}</div>
                     </div>
                     <div className="p-1.5">
                       <Link
                         href="/dashboard/settings"
                         onClick={() => setProfileOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-gray-100 transition"
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-foreground hover:bg-secondary transition"
                       >
-                        <Settings className="w-4 h-4 text-gray-500" />
+                        <Settings className="w-4 h-4 text-muted-foreground" />
                         Ustawienia
                       </Link>
                       <button
                         onClick={handleSignOut}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 transition"
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-sm text-foreground hover:bg-destructive/10 hover:text-destructive transition"
                       >
-                        <LogOut className="w-4 h-4 text-gray-500" />
+                        <LogOut className="w-4 h-4 text-muted-foreground" />
                         Wyloguj się
                       </button>
                     </div>

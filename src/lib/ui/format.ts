@@ -22,6 +22,19 @@ export function cropLabel(slug: string): string {
   return cropMap.get(slug as (typeof CROPS)[number]['value']) ?? slug;
 }
 
+/**
+ * Polska odmiana rzeczownika po liczebniku: pluralPL(4, 'pole', 'pola', 'pól') → 'pola'.
+ * Reguła: 1 → one; końcówka 2–4 poza 12–14 → few; reszta → many.
+ */
+export function pluralPL(n: number, one: string, few: string, many: string): string {
+  const abs = Math.abs(Math.trunc(n));
+  if (abs === 1) return one;
+  const mod10 = abs % 10;
+  const mod100 = abs % 100;
+  if (mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)) return few;
+  return many;
+}
+
 export function formatHa(ha: number): string {
   if (!Number.isFinite(ha)) return '0';
   return ha.toLocaleString('pl-PL', {
@@ -66,27 +79,28 @@ export interface SeverityStyle {
 }
 
 export function severityStyle(severity: string): SeverityStyle {
+  // Kolory z tokenów sygnałów agronomicznych — te same co dane na mapie/wykresach.
   switch (severity) {
     case 'high':
       return {
         label: 'Pilne',
-        pill: 'bg-red-50 text-red-700 border-red-200',
+        pill: 'bg-destructive/10 text-destructive border-destructive/30',
       };
     case 'medium':
       return {
         label: 'Ważne',
-        pill: 'bg-amber-50 text-amber-700 border-amber-200',
+        pill: 'bg-signal-heat/10 text-signal-heat border-signal-heat/30',
       };
     case 'low':
       return {
         label: 'Do uwagi',
-        pill: 'bg-yellow-50 text-yellow-800 border-yellow-200',
+        pill: 'bg-signal-frost/10 text-signal-frost border-signal-frost/30',
       };
     case 'none':
     default:
       return {
         label: 'OK',
-        pill: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        pill: 'bg-signal-healthy/10 text-signal-healthy border-signal-healthy/30',
       };
   }
 }
