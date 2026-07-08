@@ -23,8 +23,9 @@ const LINE = rgb(0.85, 0.87, 0.85);
 
 const doc = await PDFDocument.create();
 doc.registerFontkit(fontkit);
-const regular = await doc.embedFont(readFileSync('C:/Windows/Fonts/arial.ttf'), { subset: true });
-const bold = await doc.embedFont(readFileSync('C:/Windows/Fonts/arialbd.ttf'), { subset: true });
+// Wolna czcionka DejaVu Sans (OFL) — spójnie z eksportem PDF księgi; pełne polskie znaki.
+const regular = await doc.embedFont(readFileSync('src/assets/fonts/pl-regular.ttf'), { subset: true });
+const bold = await doc.embedFont(readFileSync('src/assets/fonts/pl-bold.ttf'), { subset: true });
 
 const page = doc.addPage([595.28, 841.89]); // A4
 const M = 46; // margines
@@ -103,12 +104,13 @@ text('83% firm agrotech wskazuje deficyt kompetencji cyfrowych rolników jako g�
 heading('Punkt startu: działający produkt (TRL 6)');
 bullet('Platforma DZIAŁA na produkcji: NDVI/NDRE/NDWI/SAVI z maską chmur SCL, radar Sentinel-1 (widzi przez chmury), Planet 3 m, diagnoza chorób ze zdjęcia (LLM), e-księga zabiegów, zgodność GAEC/ARiMR, plan azotowy.');
 bullet('Agent AI na WhatsApp z dyscypliną „wsparcie decyzji, nie polecenie" — framing zweryfikowany z ekspertem akademickim (lipiec 2026) i zabezpieczony systemowo poza modelem.');
+bullet('Rzetelność merytoryczna: faza BBCH liczona od faktycznej daty siewu (nie z kalendarza), uczciwe oznaczanie danych szacunkowych, edytowalna księga polowa, eksport PDF do kontroli w pełni offline z polskimi znakami.');
 bullet('Cel projektu: TRL 6 → 9. Badania: polskojęzyczny agent agronomiczny odporny na halucynacje (benchmark „AgroHalu-PL" — pierwszy taki), modele predykcji chorób kalibrowane do PL, walidacja polowa 2 sezony.');
 
 // ── Konsorcjum ──
 heading('Proponowane konsorcjum (budżet ~9,4 mln zł / 36 mies.)');
 const rows = [
-  ['AgriClaw (lider, przedsiębiorca)', '45%', 'platforma, agent AI, komercjalizacja'],
+  ['Infinity Tech Group (lider, AgriClaw)', '45%', 'platforma, agent AI, komercjalizacja'],
   ['IUNG-PIB Puławy', '28%', 'modele agronomiczne, kalibracja progów PL, dane suszowe'],
   ['SGGW / Politechnika Poznańska', '15%', 'badania NLP/LLM, benchmark halucynacji, publikacje'],
   ['ODR wojewódzki', '12%', 'rekrutacja 100 gospodarstw, walidacja polowa, szkolenia'],
@@ -138,7 +140,7 @@ bullet('Realny kanał wdrożenia wyników do praktyki rolniczej (platforma na pr
 // ── Stopka ──
 y = M + 26;
 page.drawLine({ start: { x: M, y: y + 14 }, end: { x: M + W, y: y + 14 }, thickness: 0.6, color: LINE });
-page.drawText('Kontakt: Infinity Tech · contact@infinityteam.io · demo: agripol.xyz (konto testowe na życzenie)', {
+page.drawText('Infinity Tech Group sp. z o.o. (KRS 0001236454, Zamość) · contact@infinityteam.io · demo: agripol.xyz', {
   x: M, y, size: 9, font: bold, color: INK,
 });
 page.drawText('Proponowany następny krok: 30-min rozmowa o zakresie WP2/WP3 i liście intencyjnym — do połowy sierpnia 2026.', {
