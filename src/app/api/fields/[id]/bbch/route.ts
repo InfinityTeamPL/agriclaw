@@ -22,7 +22,7 @@ export async function GET(
     SELECT f.id, f.crop,
            ST_Y(ST_Centroid(f.polygon)) AS lat,
            ST_X(ST_Centroid(f.polygon)) AS lon,
-           NULL::timestamp AS sowing_date
+           f.sowing_date
     FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
     WHERE f.id = ${params.id} AND fa.user_id = ${user.id} AND f.deleted_at IS NULL

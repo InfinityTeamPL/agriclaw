@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
-import { deriveBbchStatus, defaultSowingDate, type Crop } from '@/lib/bbch';
+import { deriveBbchStatus, resolveSowingDate, type Crop } from '@/lib/bbch';
 import { assessFrostRisk } from '@/lib/frost';
 
 const OPEN_METEO_HISTORY = 'https://archive-api.open-meteo.com/v1/archive';
@@ -20,11 +20,12 @@ export async function GET(
   const { user } = await requireAuth();
 
   const rows = await prisma.$queryRaw<
-    Array<{ id: string; name: string; crop: string; lat: number; lon: number }>
+    Array<{ id: string; name: string; crop: string; lat: number; lon: number; sowing_date: Date | null }>
   >`
     SELECT f.id, f.name, f.crop,
            ST_Y(ST_Centroid(f.polygon)) AS lat,
-           ST_X(ST_Centroid(f.polygon)) AS lon
+           ST_X(ST_Centroid(f.polygon)) AS lon,
+           f.sowing_date
     FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
     WHERE f.id = ${params.id} AND fa.user_id = ${user.id} AND f.deleted_at IS NULL
@@ -35,7 +36,11 @@ export async function GET(
 
   const crop = field.crop as Crop;
   const currentYear = new Date().getFullYear();
-  const sowingDate = defaultSowingDate(crop, currentYear);
+  const { sowingDate, isEstimate: sowingDateIsEstimate } = resolveSowingDate(
+    field.sowing_date,
+    crop,
+    currentYear,
+  );
 
   // 1. Pobierz historyczne temperatury od siewu (dla GDD → BBCH)
   const today = new Date().toISOString().slice(0, 10);
@@ -142,6 +147,8 @@ export async function GET(
     crop,
     bbch,
     bbchLabel: bbchStatus?.currentLabel ?? 'nieznana',
+    // Faza wrażliwości zależy od BBCH — sygnalizuj, gdy liczona z kalendarza.
+    sowingDateIsEstimate,
     sensitivityPhase: assessment.thresholds.sensitivityPhase,
     damageThreshold: assessment.thresholds.damageThreshold,
     lethalThreshold: assessment.thresholds.lethalThreshold,

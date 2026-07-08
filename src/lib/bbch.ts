@@ -248,6 +248,23 @@ export function deriveBbchStatus(input: {
  * - Ziemniak: 25 IV
  * - Burak cukrowy: 5 IV
  */
+/**
+ * Rozstrzyga datę siewu do modeli fenologicznych: realna data rolnika, jeśli
+ * podana, inaczej generyczny kalendarz. `isEstimate` mówi UI/alertom, czy faza
+ * jest oszacowana (wtedy komunikaty muszą być ostrożniejsze).
+ */
+export function resolveSowingDate(
+  raw: Date | string | null | undefined,
+  crop: Crop,
+  currentYear: number,
+): { sowingDate: Date; isEstimate: boolean } {
+  if (raw) {
+    const d = raw instanceof Date ? raw : new Date(raw);
+    if (!Number.isNaN(d.getTime())) return { sowingDate: d, isEstimate: false };
+  }
+  return { sowingDate: defaultSowingDate(crop, currentYear), isEstimate: true };
+}
+
 export function defaultSowingDate(crop: Crop, currentYear: number): Date {
   const spring = (year: number, month: number, day: number) =>
     new Date(Date.UTC(year, month - 1, day));

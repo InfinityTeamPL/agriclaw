@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
-import { deriveBbchStatus, defaultSowingDate, type Crop } from '@/lib/bbch';
+import { deriveBbchStatus, resolveSowingDate, type Crop } from '@/lib/bbch';
 import { calculateWaterBalance } from '@/lib/water-balance';
 
 const OPEN_METEO_HISTORY = 'https://archive-api.open-meteo.com/v1/archive';
@@ -20,11 +20,12 @@ export async function GET(
   const { user } = await requireAuth();
 
   const rows = await prisma.$queryRaw<
-    Array<{ id: string; name: string; crop: string; area: number; lat: number; lon: number }>
+    Array<{ id: string; name: string; crop: string; area: number; lat: number; lon: number; sowing_date: Date | null }>
   >`
     SELECT f.id, f.name, f.crop, f.area_hectares AS area,
            ST_Y(ST_Centroid(f.polygon)) AS lat,
-           ST_X(ST_Centroid(f.polygon)) AS lon
+           ST_X(ST_Centroid(f.polygon)) AS lon,
+           f.sowing_date
     FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
     WHERE f.id = ${params.id} AND fa.user_id = ${user.id} AND f.deleted_at IS NULL
@@ -88,7 +89,7 @@ export async function GET(
   }
 
   // 3. BBCH
-  const sowingDate = defaultSowingDate(crop, today.getFullYear());
+  const { sowingDate } = resolveSowingDate(field.sowing_date, crop, today.getFullYear());
   const sowingStr = sowingDate.toISOString().slice(0, 10);
   const tempDays: Array<{ date: string; tMax: number; tMin: number }> = [];
   try {

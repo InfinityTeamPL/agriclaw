@@ -12,6 +12,9 @@ import {
   X,
   AlertCircle,
   CheckCircle2,
+  Pencil,
+  Trash2,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -61,6 +64,7 @@ interface Props {
 export function JournalClient({ fields, treatments: initial }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Treatment | null>(null);
   const [filterType, setFilterType] = useState<string>('all');
   const [filterField, setFilterField] = useState<string>('all');
 
@@ -192,19 +196,29 @@ export function JournalClient({ fields, treatments: initial }: Props) {
       ) : (
         <div className="space-y-2">
           {filtered.map((t) => (
-            <TreatmentRow key={t.id} t={t} />
+            <TreatmentRow
+              key={t.id}
+              t={t}
+              onEdit={() => setEditing(t)}
+              onDeleted={() => router.refresh()}
+            />
           ))}
         </div>
       )}
 
-      {open && (
-        <AddTreatmentModal
+      {(open || editing) && (
+        <TreatmentModal
           fields={fields}
-          onClose={() => setOpen(false)}
-          onSaved={() => {
+          editing={editing}
+          onClose={() => {
             setOpen(false);
+            setEditing(null);
+          }}
+          onSaved={(message) => {
+            setOpen(false);
+            setEditing(null);
             router.refresh();
-            toast.success('Zabieg zapisany.');
+            toast.success(message);
           }}
         />
       )}
@@ -249,7 +263,18 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
   );
 }
 
-function TreatmentRow({ t }: { t: Treatment }) {
+function TreatmentRow({
+  t,
+  onEdit,
+  onDeleted,
+}: {
+  t: Treatment;
+  onEdit: () => void;
+  onDeleted: () => void;
+}) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const karencjaActive =
     t.preHarvestIntervalDays &&
     new Date(t.performedAt).getTime() +
@@ -264,6 +289,25 @@ function TreatmentRow({ t }: { t: Treatment }) {
           864e5,
       )
     : 0;
+
+  const remove = async () => {
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/treatments/${t.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(extractError(data, 'Nie udało się usunąć wpisu.'));
+        setDeleting(false);
+        return;
+      }
+      toast.success('Wpis usunięty z księgi.');
+      onDeleted();
+    } catch (err) {
+      toast.error(String(err));
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="rounded-lg bg-card border border-border p-4 shadow-card hover:shadow-pop transition">
@@ -299,42 +343,99 @@ function TreatmentRow({ t }: { t: Treatment }) {
                 </div>
               )}
             </div>
-            {karencjaActive && daysLeft > 0 && (
-              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-signal-heat/10 text-signal-heat text-xs font-medium whitespace-nowrap">
-                <AlertCircle className="w-3 h-3" />
-                Karencja: <span className="font-mono tabular">{daysLeft}</span> dni
-              </span>
-            )}
+            <div className="flex items-center gap-2 shrink-0">
+              {karencjaActive && daysLeft > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-signal-heat/10 text-signal-heat text-xs font-medium whitespace-nowrap">
+                  <AlertCircle className="w-3 h-3" />
+                  Karencja: <span className="font-mono tabular">{daysLeft}</span> dni
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={onEdit}
+                aria-label="Edytuj wpis"
+                title="Edytuj wpis"
+                className="w-8 h-8 rounded-md border border-border hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                aria-label="Usuń wpis"
+                title="Usuń wpis"
+                className="w-8 h-8 rounded-md border border-border hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-destructive transition"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {confirmDelete && (
+        <div className="mt-3 pt-3 border-t border-border flex items-start justify-between gap-3 flex-wrap">
+          <p className="text-xs text-muted-foreground max-w-md">
+            Usunięcie jest trwałe — wpis zniknie z księgi polowej, dokumentu do kontroli
+            IJHARS/ARiMR. Tej operacji nie można cofnąć.
+          </p>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={remove}
+              disabled={deleting}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-destructive text-destructive-foreground text-sm font-semibold hover:brightness-110 transition disabled:opacity-50"
+            >
+              {deleting && <Loader2 className="w-4 h-4 animate-spin" />}
+              Tak, usuń
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(false)}
+              disabled={deleting}
+              className="px-3 py-1.5 rounded-md border border-border text-sm text-foreground hover:bg-secondary transition disabled:opacity-50"
+            >
+              Anuluj
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function AddTreatmentModal({
+function TreatmentModal({
   fields,
+  editing,
   onClose,
   onSaved,
 }: {
   fields: FieldOpt[];
+  editing: Treatment | null;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (message: string) => void;
 }) {
-  const [fieldId, setFieldId] = useState(fields[0]?.id ?? '');
-  const [type, setType] = useState<string>('spray');
+  const isEdit = editing !== null;
+  const [fieldId, setFieldId] = useState(editing?.fieldId ?? fields[0]?.id ?? '');
+  const [type, setType] = useState<string>(editing?.type ?? 'spray');
   const [performedAt, setPerformedAt] = useState(
-    new Date().toISOString().slice(0, 10),
+    editing ? editing.performedAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
   );
-  const [purpose, setPurpose] = useState('');
-  const [productName, setProductName] = useState('');
-  const [activeSubstance, setActiveSubstance] = useState('');
-  const [doseValue, setDoseValue] = useState<string>('');
-  const [doseUnit, setDoseUnit] = useState('l/ha');
-  const [areaTreated, setAreaTreated] = useState<string>('');
-  const [phi, setPhi] = useState<string>('');
-  const [operatorName, setOperatorName] = useState('');
-  const [notes, setNotes] = useState('');
+  const [purpose, setPurpose] = useState(editing?.purpose ?? '');
+  const [productName, setProductName] = useState(editing?.productName ?? '');
+  const [activeSubstance, setActiveSubstance] = useState(editing?.activeSubstance ?? '');
+  const [doseValue, setDoseValue] = useState<string>(
+    editing?.doseValue != null ? String(editing.doseValue) : '',
+  );
+  const [doseUnit, setDoseUnit] = useState(editing?.doseUnit ?? 'l/ha');
+  const [areaTreated, setAreaTreated] = useState<string>(
+    editing ? String(editing.areaTreated) : '',
+  );
+  const [phi, setPhi] = useState<string>(
+    editing?.preHarvestIntervalDays != null ? String(editing.preHarvestIntervalDays) : '',
+  );
+  const [operatorName, setOperatorName] = useState(editing?.operatorName ?? '');
+  const [notes, setNotes] = useState(editing?.notes ?? '');
   const [suggestions, setSuggestions] = useState<CommonProduct[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -360,6 +461,44 @@ function AddTreatmentModal({
       return;
     }
     setSaving(true);
+
+    // Tryb EDYCJI — PATCH obsługuje tylko podzbiór pól (bez fieldId/type/karencji).
+    // Wysyłamy tylko te pola; nullable czyścimy przez null, gdy rolnik je opróżni.
+    if (isEdit && editing) {
+      const patch: Record<string, unknown> = {
+        performedAt,
+        productName: productName.trim(),
+        purpose: purpose || null,
+        activeSubstance: activeSubstance.trim() || null,
+        doseValue: doseValue ? Number(doseValue) : null,
+        doseUnit: doseUnit || null,
+        operatorName: operatorName.trim() || null,
+        notes: notes.trim() || null,
+      };
+      const areaNum = Number(areaTreated);
+      if (areaNum > 0) patch.areaTreated = areaNum;
+
+      try {
+        const res = await fetch(`/api/treatments/${editing.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(patch),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          toast.error(extractError(data, 'Nie udało się zapisać zmian.'));
+          setSaving(false);
+          return;
+        }
+        onSaved('Zmiany zapisane.');
+      } catch (err) {
+        toast.error(String(err));
+        setSaving(false);
+      }
+      return;
+    }
+
+    // Tryb DODAWANIA — POST tworzy nowy wpis.
     const body: Record<string, unknown> = {
       fieldId,
       performedAt,
@@ -383,11 +522,11 @@ function AddTreatmentModal({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        toast.error(typeof data?.error === 'string' ? data.error : 'Nie udało się zapisać');
+        toast.error(extractError(data, 'Nie udało się zapisać.'));
         setSaving(false);
         return;
       }
-      onSaved();
+      onSaved('Zabieg zapisany.');
     } catch (err) {
       toast.error(String(err));
       setSaving(false);
@@ -413,12 +552,14 @@ function AddTreatmentModal({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Nowy zabieg"
+        aria-label={isEdit ? 'Edytuj zabieg' : 'Nowy zabieg'}
         className="relative bg-card border border-border rounded-lg shadow-pop w-full max-w-2xl max-h-[90vh] overflow-y-auto"
       >
         <NdviKeyline className="absolute top-0 left-0 right-0" height={3} />
         <div className="sticky top-0 bg-card z-10 flex items-center justify-between p-5 border-b border-border">
-          <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">Nowy zabieg</h2>
+          <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">
+            {isEdit ? 'Edytuj zabieg' : 'Nowy zabieg'}
+          </h2>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-md hover:bg-secondary flex items-center justify-center"
@@ -428,13 +569,21 @@ function AddTreatmentModal({
         </div>
 
         <div className="p-5 space-y-4">
+          {isEdit && (
+            <div className="rounded-md border border-border bg-secondary/50 px-3 py-2 text-xs text-muted-foreground">
+              Poprawiasz istniejący wpis w księdze. Pola „Pole", „Typ zabiegu" i „Karencja"
+              są zablokowane — aby je zmienić, usuń wpis i dodaj nowy.
+            </div>
+          )}
+
           {/* Field + Date */}
           <div className="grid grid-cols-2 gap-3">
             <Field label="Pole *">
               <select
                 value={fieldId}
                 onChange={(e) => setFieldId(e.target.value)}
-                className="w-full px-3 py-2 border border-input rounded-md bg-card text-foreground"
+                disabled={isEdit}
+                className="w-full px-3 py-2 border border-input rounded-md bg-card text-foreground disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {fields.map((f) => (
                   <option key={f.id} value={f.id}>
@@ -455,13 +604,14 @@ function AddTreatmentModal({
 
           {/* Type */}
           <Field label="Typ zabiegu *">
-            <div className="grid grid-cols-4 gap-2">
+            <div className={`grid grid-cols-4 gap-2 ${isEdit ? 'opacity-60' : ''}`}>
               {TREATMENT_TYPES.map((t) => (
                 <button
                   key={t.value}
                   type="button"
                   onClick={() => setType(t.value)}
-                  className={`p-2.5 rounded-md border text-xs font-medium transition ${
+                  disabled={isEdit}
+                  className={`p-2.5 rounded-md border text-xs font-medium transition disabled:cursor-not-allowed ${
                     type === t.value
                       ? 'border-primary bg-primary/10 text-primary'
                       : 'border-border hover:border-foreground/30'
@@ -576,8 +726,9 @@ function AddTreatmentModal({
                 max="365"
                 value={phi}
                 onChange={(e) => setPhi(e.target.value)}
+                disabled={isEdit}
                 placeholder="np. 35 (z etykiety)"
-                className="w-full px-3 py-2 border border-input rounded-md bg-card text-foreground font-mono tabular"
+                className="w-full px-3 py-2 border border-input rounded-md bg-card text-foreground font-mono tabular disabled:opacity-60 disabled:cursor-not-allowed"
               />
             </Field>
           )}
@@ -618,9 +769,14 @@ function AddTreatmentModal({
             <button
               onClick={submit}
               disabled={saving}
-              className="px-5 py-2 text-sm bg-primary text-primary-foreground font-semibold rounded-md hover:brightness-110 disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-5 py-2 text-sm bg-primary text-primary-foreground font-semibold rounded-md hover:brightness-110 disabled:opacity-50"
             >
-              {saving ? 'Zapisuję...' : 'Zapisz zabieg'}
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              {saving
+                ? 'Zapisuję...'
+                : isEdit
+                  ? 'Zapisz zmiany'
+                  : 'Zapisz zabieg'}
             </button>
           </div>
         </div>
@@ -642,4 +798,27 @@ function Field({
       {children}
     </label>
   );
+}
+
+// API zwraca błąd jako string (np. 'Not found') LUB jako Zod flatten()
+// ({ fieldErrors, formErrors }). Wyciągamy czytelny komunikat dla rolnika.
+function extractError(data: unknown, fallback: string): string {
+  if (data && typeof data === 'object' && 'error' in data) {
+    const err = (data as { error: unknown }).error;
+    if (typeof err === 'string') return err;
+    if (err && typeof err === 'object') {
+      const flat = err as {
+        fieldErrors?: Record<string, string[]>;
+        formErrors?: string[];
+      };
+      const firstField = flat.fieldErrors
+        ? Object.values(flat.fieldErrors).flat().find(Boolean)
+        : undefined;
+      if (typeof firstField === 'string') return firstField;
+      if (flat.formErrors && typeof flat.formErrors[0] === 'string') {
+        return flat.formErrors[0];
+      }
+    }
+  }
+  return fallback;
 }

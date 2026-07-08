@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculateGdd, deriveBbchStatus, defaultSowingDate } from '../bbch';
+import { calculateGdd, deriveBbchStatus, defaultSowingDate, resolveSowingDate } from '../bbch';
 
 describe('calculateGdd', () => {
   it('sumuje GDD powyżej tBase', () => {
@@ -61,6 +61,36 @@ describe('deriveBbchStatus', () => {
     });
     expect(status!.progress).toBeGreaterThanOrEqual(0);
     expect(status!.progress).toBeLessThanOrEqual(100);
+  });
+});
+
+describe('resolveSowingDate — realna data prostuje kaskadę BBCH', () => {
+  it('realna data rolnika wygrywa i NIE jest oszacowaniem', () => {
+    const r = resolveSowingDate(new Date('2025-09-20'), 'wheat', 2026);
+    expect(r.isEstimate).toBe(false);
+    expect(r.sowingDate.getUTCFullYear()).toBe(2025);
+    expect(r.sowingDate.getUTCDate()).toBe(20);
+  });
+
+  it('akceptuje datę jako string', () => {
+    const r = resolveSowingDate('2026-04-10', 'corn', 2026);
+    expect(r.isEstimate).toBe(false);
+    expect(r.sowingDate.getUTCMonth()).toBe(3);
+    expect(r.sowingDate.getUTCDate()).toBe(10);
+  });
+
+  it('null → kalendarz + flaga oszacowania', () => {
+    const r = resolveSowingDate(null, 'wheat', 2026);
+    expect(r.isEstimate).toBe(true);
+    // pokrywa się z defaultSowingDate dla pszenicy ozimej
+    expect(r.sowingDate.getUTCFullYear()).toBe(2025);
+    expect(r.sowingDate.getUTCMonth()).toBe(8);
+  });
+
+  it('niepoprawna data → traktowana jak brak (kalendarz + estymata)', () => {
+    const r = resolveSowingDate('nie-data', 'corn', 2026);
+    expect(r.isEstimate).toBe(true);
+    expect(r.sowingDate.getUTCMonth()).toBe(3);
   });
 });
 

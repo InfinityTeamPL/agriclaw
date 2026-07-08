@@ -56,9 +56,27 @@ export const createFieldSchema = z.object({
   crop: cropSchema,
 });
 
+// Data siewu: "YYYY-MM-DD", w rozsądnym zakresie (nie z przyszłości dalekiej,
+// nie sprzed dekad). null = wyczyszczenie (powrót do kalendarza). Koercja do
+// Date dla Prisma @db.Date.
+const sowingDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data w formacie RRRR-MM-DD')
+  .refine((s) => {
+    const d = new Date(`${s}T00:00:00Z`);
+    if (Number.isNaN(d.getTime())) return false;
+    const now = Date.now();
+    const in14d = now + 14 * 86_400_000;
+    const threeYearsAgo = now - 3 * 365 * 86_400_000;
+    return d.getTime() <= in14d && d.getTime() >= threeYearsAgo;
+  }, 'Data siewu musi być z ostatnich 3 lat i nie z odległej przyszłości')
+  .transform((s) => new Date(`${s}T00:00:00Z`));
+
 export const updateFieldSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   crop: cropSchema.optional(),
+  // nullable → jawne wyczyszczenie daty siewu; optional → brak zmiany
+  sowingDate: sowingDateSchema.nullable().optional(),
 });
 
 export const deployAgentSchema = z.object({

@@ -1,23 +1,30 @@
 // GET /api/treatments/export/pdf — eksport księgi polowej do PDF (IJHARS format).
 // Używamy pdf-lib (pure TS, serverless-friendly, nie wymaga Chromium).
-// Polska czcionka Noto Sans przez embeddedFont (Standard-font nie ma polskich znaków).
+// Polska czcionka DejaVu Sans (OFL) przez embeddedFont (Standard-font nie ma polskich znaków).
 
 import { NextRequest, NextResponse } from 'next/server';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
-import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from 'pdf-lib';
+import { PDFDocument, rgb, type PDFPage, type PDFFont } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
 
+// Route czyta pliki czcionek z dysku (fs) — wymagany runtime Node.js.
+export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-// Darmowa polska czcionka Noto Sans — embedujemy przez fetch CDN w runtime
-const NOTO_REGULAR_URL = 'https://raw.githubusercontent.com/googlefonts/noto-fonts/main/hinted/ttf/NotoSans/NotoSans-Regular.ttf';
-const NOTO_BOLD_URL = 'https://raw.githubusercontent.com/googlefonts/noto-fonts/main/hinted/ttf/NotoSans/NotoSans-Bold.ttf';
+// Polska czcionka osadzona LOKALNIE w repo (src/assets/fonts). PDF trafia do
+// kontroli IJHARS/ARiMR, więc generowanie NIE może zależeć od sieci/CDN — brak
+// odpowiedzi CDN wcześniej powodował dokument bez polskich znaków. DejaVu Sans
+// (licencja OFL, wolno redystrybuować) ma pełne pokrycie znaków polskich
+// (ą ć ę ł ń ó ś ź ż). Pliki muszą trafić do bundla funkcji serverless —
+// patrz outputFileTracingIncludes w next.config.js.
+const FONT_REGULAR_PATH = path.join(process.cwd(), 'src/assets/fonts/pl-regular.ttf');
+const FONT_BOLD_PATH = path.join(process.cwd(), 'src/assets/fonts/pl-bold.ttf');
 
-async function fetchFont(url: string): Promise<Uint8Array> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Font fetch failed: ${res.status}`);
-  return new Uint8Array(await res.arrayBuffer());
+async function readFontFile(absPath: string): Promise<Uint8Array> {
+  return new Uint8Array(await readFile(absPath));
 }
 
 // Simple text wrapper — zwraca tablicę linii mieszczących się w maxWidth
@@ -66,21 +73,34 @@ export async function GET(req: NextRequest) {
   const pdf = await PDFDocument.create();
   pdf.registerFontkit(fontkit);
 
-  // Załaduj polską czcionkę
-  let font: PDFFont;
-  let fontBold: PDFFont;
+  // Załaduj polską czcionkę z LOKALNYCH plików (bez sieci). Gdyby jeden z plików
+  // był nieczytelny, fallbackiem jest DRUGA lokalna czcionka (nadal z polskimi
+  // znakami) — nigdy Helvetica bez PL, bo to dokument kontrolny.
+  let regularBytes: Uint8Array | null = null;
+  let boldBytes: Uint8Array | null = null;
   try {
-    const [regularBytes, boldBytes] = await Promise.all([
-      fetchFont(NOTO_REGULAR_URL),
-      fetchFont(NOTO_BOLD_URL),
-    ]);
-    font = await pdf.embedFont(regularBytes);
-    fontBold = await pdf.embedFont(boldBytes);
+    regularBytes = await readFontFile(FONT_REGULAR_PATH);
   } catch {
-    // Fallback na standardową — brak polskich znaków ale PDF się wygeneruje
-    font = await pdf.embedFont(StandardFonts.Helvetica);
-    fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
+    regularBytes = null;
   }
+  try {
+    boldBytes = await readFontFile(FONT_BOLD_PATH);
+  } catch {
+    boldBytes = null;
+  }
+  // Fallback krzyżowy: brakującą odmianę zastępujemy tą, która się wczytała.
+  regularBytes ??= boldBytes;
+  boldBytes ??= regularBytes;
+  if (!regularBytes || !boldBytes) {
+    return NextResponse.json(
+      { error: 'Brak osadzonej czcionki z polskimi znakami (src/assets/fonts).' },
+      { status: 500 },
+    );
+  }
+
+  // { subset: true } — do PDF trafiają tylko realnie użyte glify (mały plik wyjściowy).
+  const font: PDFFont = await pdf.embedFont(regularBytes, { subset: true });
+  const fontBold: PDFFont = await pdf.embedFont(boldBytes, { subset: true });
 
   const pageWidth = 841.89; // A4 landscape
   const pageHeight = 595.28;

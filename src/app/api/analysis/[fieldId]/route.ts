@@ -239,18 +239,23 @@ export async function POST(
       min: indices.ndre.min,
       max: indices.ndre.max,
       interpretation: interpretNdre(indices.ndre.mean, field.crop),
+      // W trybie mock NDRE/NDWI/SAVI to liniowe estymaty z mocka NDVI, nie pomiar.
+      // Propagujemy istniejącą flagę isMock (bez zmiany wzorów) — patrz P0-trust.
+      mock: isMock,
     },
     ndwi: {
       mean: indices.ndwi.mean,
       min: indices.ndwi.min,
       max: indices.ndwi.max,
       interpretation: interpretNdwi(indices.ndwi.mean),
+      mock: isMock,
     },
     savi: {
       mean: indices.savi.mean,
       min: indices.savi.min,
       max: indices.savi.max,
       interpretation: interpretSavi(indices.savi.mean, indices.ndvi.mean),
+      mock: isMock,
     },
     weather: weather.status === 'fulfilled' ? {
       daysWithoutRain: weatherSummary.daysWithoutRain,
