@@ -187,6 +187,13 @@ model Recommendation {
   title           String
   message         String    @db.Text
   action          String    @db.Text
+  // Warstwa „dlaczego" (XAI): identyfikator reguły + przesłanki (wartość, próg,
+  // źródło), które uruchomiły zalecenie. Nullable — wpisy sprzed wdrożenia
+  // wyjaśnialności po prostu go nie mają i UI wtedy nic nie pokazuje.
+  // Zapisujemy, bo wyjaśnienie, które znika, nie jest śladem dowodowym przy
+  // pytaniu rolnika „czemu mi to wyszło w zeszłym tygodniu?".
+  ruleId          String?   @map("rule_id")
+  why             Json?
   sentViaWhatsapp Boolean   @default(false) @map("sent_via_whatsapp")
   sentAt          DateTime? @map("sent_at")
   createdAt       DateTime  @default(now()) @map("created_at")

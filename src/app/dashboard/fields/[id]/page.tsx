@@ -5,6 +5,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import type { EvidenceItem } from '@/components/dashboard/WhyPanel';
 import { requireFarm } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { FieldDetailView } from './FieldDetailView';
@@ -123,6 +124,9 @@ export default async function FieldDetailPage({
           message: r.message,
           action: r.action,
           createdAt: r.createdAt.toISOString(),
+          ruleId: r.ruleId,
+          // Json z Prismy — wpisy sprzed wyjaśnialności mają null i UI je pomija.
+          why: Array.isArray(r.why) ? (r.why as unknown as EvidenceItem[]) : null,
         }))}
       />
     </div>
