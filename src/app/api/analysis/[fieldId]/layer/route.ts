@@ -6,22 +6,10 @@ import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { getCopernicusClient } from '@/lib/satellite/copernicus';
 import { isCopernicusConfigured } from '@/lib/satellite/ndvi-mock';
+import { EO_LAYER_CACHE_HEADERS } from '@/lib/http/cache';
 
 const VALID_LAYERS = ['ndvi', 'ndre', 'ndwi', 'savi', 'truecolor'] as const;
 type Layer = (typeof VALID_LAYERS)[number];
-
-// Bez cache każde wejście na mapę pola paliło świeży kafel 1024×1024 w CDSE
-// (≈4× droższy niż bazowy 512², a limit darmowy to 10 000 PU/mies.). Scena
-// Sentinel-2 zmienia się co ~5 dni, więc 6 h świeżości nie gubi nic istotnego,
-// a wycina powtarzane pobrania przy każdym powrocie na stronę pola.
-//
-// `private` — odpowiedź dotyczy jednego gospodarstwa, nigdy CDN-u.
-// `Vary: Cookie` — klucz cache uwzględnia sesję, więc na współdzielonej
-// przeglądarce inny użytkownik NIE dostanie warstwy z cudzego pola.
-const LAYER_CACHE_HEADERS = {
-  'Cache-Control': 'private, max-age=21600, stale-while-revalidate=86400',
-  Vary: 'Cookie',
-} as const;
 
 export async function GET(
   req: NextRequest,
@@ -82,7 +70,7 @@ export async function GET(
         dataUrl: `data:image/png;base64,${base64}`,
         observedAt: today,
       },
-      { headers: LAYER_CACHE_HEADERS },
+      { headers: EO_LAYER_CACHE_HEADERS },
     );
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 502 });
