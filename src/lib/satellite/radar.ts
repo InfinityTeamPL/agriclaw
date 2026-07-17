@@ -29,16 +29,26 @@ export function computeRadarStats(rasters: {
  * - Nagły wzrost VH + niskie VV → zalanie (woda stojąca)
  * - Wysokie RVI (>0.4) → gęsta, zdrowa biomasa — potwierdza NDVI
  */
+/**
+ * Poprzedni odczyt do porównania — wystarczą średnie VV/VH, bo tylko ich
+ * delty decydują o diagnozie. Historia w bazie (RadarReading) trzyma właśnie
+ * średnie, więc nie zmuszamy wołającego do dorabiania min/max/stddev.
+ */
+export interface RadarMeans {
+  vv: number;
+  vh: number;
+}
+
 export function interpretRadar(
   current: RadarStats,
-  previous: RadarStats | null,
+  previous: RadarMeans | null,
 ): {
   diagnosis: string;
   severity: 'none' | 'low' | 'medium' | 'high';
   details: string;
 } {
-  const vvDelta = previous ? current.vv.mean - previous.vv.mean : 0;
-  const vhDelta = previous ? current.vh.mean - previous.vh.mean : 0;
+  const vvDelta = previous ? current.vv.mean - previous.vv : 0;
+  const vhDelta = previous ? current.vh.mean - previous.vh : 0;
 
   // Wyleganie — gwałtowny spadek VH (roślina leży → mniej odbicia)
   if (vhDelta < -3 && previous) {
