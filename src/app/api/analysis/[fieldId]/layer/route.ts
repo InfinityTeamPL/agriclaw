@@ -10,6 +10,19 @@ import { isCopernicusConfigured } from '@/lib/satellite/ndvi-mock';
 const VALID_LAYERS = ['ndvi', 'ndre', 'ndwi', 'savi', 'truecolor'] as const;
 type Layer = (typeof VALID_LAYERS)[number];
 
+// Bez cache każde wejście na mapę pola paliło świeży kafel 1024×1024 w CDSE
+// (≈4× droższy niż bazowy 512², a limit darmowy to 10 000 PU/mies.). Scena
+// Sentinel-2 zmienia się co ~5 dni, więc 6 h świeżości nie gubi nic istotnego,
+// a wycina powtarzane pobrania przy każdym powrocie na stronę pola.
+//
+// `private` — odpowiedź dotyczy jednego gospodarstwa, nigdy CDN-u.
+// `Vary: Cookie` — klucz cache uwzględnia sesję, więc na współdzielonej
+// przeglądarce inny użytkownik NIE dostanie warstwy z cudzego pola.
+const LAYER_CACHE_HEADERS = {
+  'Cache-Control': 'private, max-age=21600, stale-while-revalidate=86400',
+  Vary: 'Cookie',
+} as const;
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { fieldId: string } },
@@ -57,17 +70,20 @@ export async function GET(
 
     // Zwróć metadane bbox + base64 PNG, żeby klient mógł umieścić na mapie
     const base64 = Buffer.from(pngBuffer).toString('base64');
-    return NextResponse.json({
-      type,
-      bbox: {
-        minLon: field.bbox_minx,
-        minLat: field.bbox_miny,
-        maxLon: field.bbox_maxx,
-        maxLat: field.bbox_maxy,
+    return NextResponse.json(
+      {
+        type,
+        bbox: {
+          minLon: field.bbox_minx,
+          minLat: field.bbox_miny,
+          maxLon: field.bbox_maxx,
+          maxLat: field.bbox_maxy,
+        },
+        dataUrl: `data:image/png;base64,${base64}`,
+        observedAt: today,
       },
-      dataUrl: `data:image/png;base64,${base64}`,
-      observedAt: today,
-    });
+      { headers: LAYER_CACHE_HEADERS },
+    );
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 502 });
   }

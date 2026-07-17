@@ -106,6 +106,7 @@ model Field {
   farm             Farm                  @relation(fields: [farmId], references: [id], onDelete: Cascade)
   ndviReadings     NdviReading[]
   moistureReadings SoilMoistureReading[]
+  radarReadings    RadarReading[]
   recommendations  Recommendation[]
   treatments       Treatment[]
   scoutings        Scouting[]
@@ -142,6 +143,27 @@ model NdviReading {
 
   @@index([fieldId, observedAt])
   @@map("ndvi_readings")
+}
+
+// Historia backscatteru Sentinel-1 per pole. Bez niej nie da się policzyć
+// wilgotności gleby metodą detekcji zmian — referencje „sucho/mokro" to
+// percentyle z WŁASNEJ historii pola (patrz lib/satellite/soil-moisture-s1.ts).
+model RadarReading {
+  id         String   @id @default(uuid())
+  fieldId    String   @map("field_id")
+  observedAt DateTime @map("observed_at")
+  vvMean     Float    @map("vv_mean") // backscatter VV [dB] — nośnik sygnału wilgotności
+  vhMean     Float    @map("vh_mean") // [dB]
+  rviMean    Float    @map("rvi_mean") // Radar Vegetation Index 0..1
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  field Field @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  // Jedna obserwacja na pole na dzień — powtórne skany tego samego dnia
+  // nie mogą zaburzać percentyli referencyjnych.
+  @@unique([fieldId, observedAt])
+  @@index([fieldId, observedAt])
+  @@map("radar_readings")
 }
 
 model SoilMoistureReading {
