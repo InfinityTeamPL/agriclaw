@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { getCopernicusClient, extractMultiIndexValues } from '@/lib/satellite/copernicus';
@@ -184,6 +185,10 @@ export async function POST(
       title: recommendation.title,
       message: recommendation.message,
       action: recommendation.action,
+      ruleId: recommendation.ruleId,
+      // Prisma.Json nie przyjmuje typowanego interfejsu wprost — rzutujemy przy
+      // zapisie, a przy odczycie walidujemy kształt (page.tsx: Array.isArray).
+      why: recommendation.why as unknown as Prisma.InputJsonValue,
     },
   });
 

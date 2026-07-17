@@ -27,6 +27,7 @@ import { ndviColorHex } from '@/lib/design/ndvi-scale';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 import { ScanLine } from '@/components/brand/ScanLine';
 import { AdvisoryNotice } from '@/components/dashboard/AdvisoryNotice';
+import { WhyPanel, type EvidenceItem } from '@/components/dashboard/WhyPanel';
 import { isPlantProtectionText } from '@/lib/advisory';
 import {
   cropLabel,
@@ -95,6 +96,9 @@ interface Recommendation {
   message: string;
   action: string;
   createdAt: string;
+  // Warstwa „dlaczego" — null dla wpisów sprzed wdrożenia wyjaśnialności.
+  ruleId?: string | null;
+  why?: EvidenceItem[] | null;
 }
 
 interface Props {
@@ -503,6 +507,7 @@ function RecsTab({ recs }: { recs: Recommendation[] }) {
               </p>
             )}
             {isPlantProtectionText(r.action) && <AdvisoryNotice compact />}
+            {r.why && r.why.length > 0 && <WhyPanel why={r.why} ruleId={r.ruleId} />}
           </li>
         );
       })}
