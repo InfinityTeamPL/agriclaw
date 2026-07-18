@@ -65,27 +65,40 @@ export default async function AgentPage() {
   const errored = agent?.status === 'ERROR';
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 flex flex-col gap-4 h-full">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 font-display tracking-tight">
-          <Bot className="w-6 h-6 text-signal-healthy" />
-          Agent AgriClaw
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Zadaj pytanie o swoje pola. Agent ma dostęp do danych satelitarnych, pogody i rejestru ŚOR.
-        </p>
+    // Pełna wysokość i szerokość panelu — czat jest bohaterem strony, nie kartą
+    // pływającą w pustce. Nagłówek i statusy się nie rozciągają (shrink-0),
+    // resztę miejsca bierze czat (flex-1 min-h-0).
+    <div className="h-full flex flex-col p-4 sm:p-6 gap-3">
+      {/* Nagłówek: tytuł po lewej, selektor silnika po prawej (przy górnej krawędzi,
+          na wysokości profilu/dzwonka z topbara) — nie zabiera miejsca rozmowie. */}
+      <div className="flex items-start justify-between gap-3 flex-wrap shrink-0">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 font-display tracking-tight">
+            <Bot className="w-6 h-6 text-signal-healthy shrink-0" />
+            Agent AgriClaw
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Zadaj pytanie o swoje pola. Agent ma dostęp do danych satelitarnych, pogody i rejestru ŚOR.
+          </p>
+        </div>
+        <EngineSelector
+          farmId={farm.id}
+          current={(farm.chatEngine as ChatEnginePreference) ?? 'auto'}
+          hasReadyAgent={isReady}
+        />
       </div>
 
-      {/* Wybór silnika — zwinięty do jednej linijki, żeby nie zabierać miejsca czatowi */}
-      <EngineSelector
-        farmId={farm.id}
-        current={(farm.chatEngine as ChatEnginePreference) ?? 'auto'}
-        hasReadyAgent={isReady}
-      />
-
       {/* Status wdrożenia OpenClaw (jeśli w toku/błąd) — niezależnie od silnika */}
-      {provisioning && agent && <AgentProvisioningPanel agentId={agent.id} mock={mock} />}
-      {errored && agent && <AgentErrorPanel agentId={agent.id} />}
+      {provisioning && agent && (
+        <div className="shrink-0">
+          <AgentProvisioningPanel agentId={agent.id} mock={mock} />
+        </div>
+      )}
+      {errored && agent && (
+        <div className="shrink-0">
+          <AgentErrorPanel agentId={agent.id} />
+        </div>
+      )}
 
       {engine === 'openclaw_unavailable' ? (
         <AgentEmptyCTA openclawChosen />

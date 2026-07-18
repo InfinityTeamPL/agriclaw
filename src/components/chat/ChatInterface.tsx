@@ -298,28 +298,32 @@ export function ChatInterface({
         </div>
       </div>
 
-      {/* Messages — JEDYNE miejsce ze scrollem */}
+      {/* Messages — JEDYNE miejsce ze scrollem. Karta wypełnia panel, ale sama
+          rozmowa trzyma się czytelnej, wyśrodkowanej kolumny (jak w ChatGPT),
+          żeby na szerokim ekranie tekst nie rozlewał się na całą szerokość. */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-5 py-4 sm:py-5 space-y-3.5 sm:space-y-4"
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-5 py-4 sm:py-5"
       >
-        {messages.length === 0 ? (
-          <EmptyChatTip onPick={(q) => void sendMessage(q)} />
-        ) : (
-          <AnimatePresence initial={false}>
-            {messages.map((m) => (
-              <motion.div
-                key={m.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <MessageBubble message={m} />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        )}
+        <div className="max-w-3xl mx-auto space-y-3.5 sm:space-y-4">
+          {messages.length === 0 ? (
+            <EmptyChatTip onPick={(q) => void sendMessage(q)} />
+          ) : (
+            <AnimatePresence initial={false}>
+              {messages.map((m) => (
+                <motion.div
+                  key={m.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <MessageBubble message={m} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          )}
+        </div>
       </div>
 
       {/* „Do dołu" — gdy user czyta wyżej, a rozmowa idzie dalej */}
@@ -340,9 +344,9 @@ export function ChatInterface({
         )}
       </AnimatePresence>
 
-      {/* Composer — safe-area na telefonach z notchem */}
+      {/* Composer — safe-area na telefonach z notchem; wyrównany do kolumny rozmowy */}
       <div className="border-t border-border bg-secondary shrink-0 p-2.5 sm:p-4 pb-[max(0.625rem,env(safe-area-inset-bottom))] sm:pb-4">
-        <div className="flex items-end gap-2 rounded-md border border-input bg-card focus-within:ring-2 focus-within:ring-ring/40 focus-within:border-ring transition p-1.5 sm:p-2">
+        <div className="max-w-3xl mx-auto flex items-end gap-2 rounded-md border border-input bg-card focus-within:ring-2 focus-within:ring-ring/40 focus-within:border-ring transition p-1.5 sm:p-2">
           <textarea
             ref={textareaRef}
             rows={1}
