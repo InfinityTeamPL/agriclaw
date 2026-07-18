@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
+import { TopbarSlotProvider, TopbarSlotTarget } from '@/components/dashboard/TopbarSlot';
 
 interface DashboardShellProps {
   farm: { id: string; name: string; address: string };
@@ -106,6 +107,7 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
     // h-dvh (nie min-h-screen): main dostaje SKOŃCZONĄ wysokość — strony
     // scrollują wewnątrz main, a instrumenty pełnoekranowe (czat) używają
     // h-full/flex-1 bez rozpychania layoutu. dvh = poprawny viewport mobile.
+    <TopbarSlotProvider>
     <div className="h-dvh flex bg-background relative">
       {/* Desktop sidebar */}
       <aside
@@ -282,6 +284,9 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
 
           {/* Right cluster */}
           <div className="flex items-center gap-2">
+            {/* Slot na kontrolki strony (np. selektor silnika na /dashboard/agent) */}
+            <TopbarSlotTarget className="flex items-center" />
+
             <Link
               href="/dashboard"
               className="hidden sm:inline-flex relative items-center justify-center w-10 h-10 rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground transition"
@@ -348,5 +353,6 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
+    </TopbarSlotProvider>
   );
 }

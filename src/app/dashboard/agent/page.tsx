@@ -14,6 +14,7 @@ import { requireFarm } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { resolveChatEngine, type ChatEnginePreference } from '@/lib/agent/engine';
 import { ChatInterface, type ChatInitialMessage } from '@/components/chat/ChatInterface';
+import { TopbarPortal } from '@/components/dashboard/TopbarSlot';
 import { AgentProvisioningPanel } from './AgentProvisioningPanel';
 import { AgentErrorPanel } from './AgentErrorPanel';
 import { EngineSelector } from './EngineSelector';
@@ -65,30 +66,35 @@ export default async function AgentPage() {
   const errored = agent?.status === 'ERROR';
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 flex flex-col gap-4 h-full">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2 font-display tracking-tight">
-          <Bot className="w-6 h-6 text-signal-healthy" />
-          Agent AgriClaw
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Zadaj pytanie o swoje pola. Agent ma dostęp do danych satelitarnych, pogody i rejestru ŚOR.
-        </p>
-      </div>
-
-      {/* Wybór silnika — zwinięty do jednej linijki, żeby nie zabierać miejsca czatowi */}
-      <EngineSelector
-        farmId={farm.id}
-        current={(farm.chatEngine as ChatEnginePreference) ?? 'auto'}
-        hasReadyAgent={isReady}
-      />
+    // ChatGPT-owo: czat wypełnia cały panel, bez tytułu i podtytułu zjadających
+    // miejsce. Selektor silnika portalujemy do topbara (obok dzwonka). Tekst
+    // pomocniczy zszedł do placeholdera pola wpisywania (patrz ChatInterface).
+    <div className="h-full flex flex-col">
+      {/* Selektor silnika w pasku nawigacji — tylko na tej stronie */}
+      <TopbarPortal>
+        <EngineSelector
+          farmId={farm.id}
+          current={(farm.chatEngine as ChatEnginePreference) ?? 'auto'}
+          hasReadyAgent={isReady}
+        />
+      </TopbarPortal>
 
       {/* Status wdrożenia OpenClaw (jeśli w toku/błąd) — niezależnie od silnika */}
-      {provisioning && agent && <AgentProvisioningPanel agentId={agent.id} mock={mock} />}
-      {errored && agent && <AgentErrorPanel agentId={agent.id} />}
+      {provisioning && agent && (
+        <div className="shrink-0 p-4 sm:p-6 pb-0">
+          <AgentProvisioningPanel agentId={agent.id} mock={mock} />
+        </div>
+      )}
+      {errored && agent && (
+        <div className="shrink-0 p-4 sm:p-6 pb-0">
+          <AgentErrorPanel agentId={agent.id} />
+        </div>
+      )}
 
       {engine === 'openclaw_unavailable' ? (
-        <AgentEmptyCTA openclawChosen />
+        <div className="p-4 sm:p-6">
+          <AgentEmptyCTA openclawChosen />
+        </div>
       ) : (
         <ChatInterface
           farmId={farm.id}

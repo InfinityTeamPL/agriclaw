@@ -12,7 +12,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, ArrowDown, Check, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { NdviKeyline } from '@/components/brand/NdviKeyline';
 import { AgentAvatar } from '@/components/brand/AgentAvatar';
 import { SimpleMarkdown } from './SimpleMarkdown';
 
@@ -267,59 +266,36 @@ export function ChatInterface({
   const streaming = messages.some((m) => m.streaming);
 
   return (
-    // STAŁA wysokość od rodzica (flex-1) — karta NIE rośnie z treścią.
-    // min-h chroni czat na bardzo małych ekranach (wtedy scrolluje strona).
-    <div className="relative flex-1 min-h-[340px] rounded-lg bg-card border border-border shadow-card flex flex-col overflow-hidden">
-      <NdviKeyline height={3} rounded={false} />
-
-      {/* Header — kompaktowy na mobile */}
-      <div className="px-3 sm:px-5 py-2.5 sm:py-3.5 border-b border-border bg-secondary shrink-0">
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <AgentAvatar size={36} active={streaming} />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <div className="font-display font-semibold tracking-tight text-foreground text-sm sm:text-base">
-                AgroAgent
-              </div>
-              <span className="inline-flex items-center gap-1.5 border border-border bg-card px-1.5 py-0.5 rounded-md">
-                <span
-                  className={cn(
-                    'w-1.5 h-1.5 rounded-full',
-                    streaming ? 'bg-signal-heat animate-pulse' : 'bg-signal-healthy',
-                  )}
-                />
-                <span className="hud-label">{streaming ? 'Analizuje…' : 'Online'}</span>
-              </span>
-            </div>
-            <div className="text-[11px] sm:text-xs text-muted-foreground truncate">
-              Cyfrowy agronom · satelita · pogoda · rejestr ŚOR
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Messages — JEDYNE miejsce ze scrollem */}
+    // ChatGPT-owo: pełny panel bez chrome karty i bez nagłówka — czat to cała
+    // powierzchnia. Scroll wyłącznie w liście wiadomości; kompozytor przypięty
+    // na dole. Stan agenta („Analizuje…") przeniesiony do kompozytora.
+    <div className="relative flex-1 min-h-0 flex flex-col">
+      {/* Messages — JEDYNE miejsce ze scrollem. Rozmowa trzyma się czytelnej,
+          wyśrodkowanej kolumny (jak w ChatGPT), żeby na szerokim ekranie tekst
+          nie rozlewał się na całą szerokość. */}
       <div
         ref={scrollRef}
         onScroll={handleScroll}
-        className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-5 py-4 sm:py-5 space-y-3.5 sm:space-y-4"
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 sm:py-6"
       >
-        {messages.length === 0 ? (
-          <EmptyChatTip onPick={(q) => void sendMessage(q)} />
-        ) : (
-          <AnimatePresence initial={false}>
-            {messages.map((m) => (
-              <motion.div
-                key={m.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <MessageBubble message={m} />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        )}
+        <div className="max-w-3xl mx-auto space-y-4 sm:space-y-5">
+          {messages.length === 0 ? (
+            <EmptyChatTip onPick={(q) => void sendMessage(q)} />
+          ) : (
+            <AnimatePresence initial={false}>
+              {messages.map((m) => (
+                <motion.div
+                  key={m.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <MessageBubble message={m} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          )}
+        </div>
       </div>
 
       {/* „Do dołu" — gdy user czyta wyżej, a rozmowa idzie dalej */}
@@ -340,40 +316,45 @@ export function ChatInterface({
         )}
       </AnimatePresence>
 
-      {/* Composer — safe-area na telefonach z notchem */}
-      <div className="border-t border-border bg-secondary shrink-0 p-2.5 sm:p-4 pb-[max(0.625rem,env(safe-area-inset-bottom))] sm:pb-4">
-        <div className="flex items-end gap-2 rounded-md border border-input bg-card focus-within:ring-2 focus-within:ring-ring/40 focus-within:border-ring transition p-1.5 sm:p-2">
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={sending}
-            placeholder="Zapytaj o swoje pola…"
-            // text-base na mobile — poniżej 16px iOS zoomuje stronę przy focusie
-            className="flex-1 resize-none px-2 py-1.5 bg-transparent focus:outline-none text-base sm:text-sm placeholder:text-muted-foreground max-h-[140px]"
-            maxLength={4000}
-          />
-          <button
-            type="button"
-            onClick={send}
-            disabled={sending || !input.trim()}
-            aria-label="Wyślij wiadomość"
-            className={cn(
-              'inline-flex items-center justify-center gap-2 rounded-md h-10 w-10 sm:w-auto sm:px-3 text-sm font-medium transition shrink-0',
-              sending || !input.trim()
-                ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                : 'bg-primary text-primary-foreground hover:brightness-110',
-            )}
-          >
-            <Send className={cn('w-4 h-4', sending && 'animate-pulse')} />
-            <span className="hidden sm:inline">Wyślij</span>
-          </button>
+      {/* Composer — smukła „pigułka" jak w ChatGPT: pływa nad tłem panelu,
+          bez ciężkiego paska. Tekst pomocniczy zszedł do placeholdera.
+          safe-area na telefonach z notchem. */}
+      <div className="shrink-0 px-3 sm:px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-end gap-2 rounded-2xl border border-input bg-card shadow-card focus-within:ring-2 focus-within:ring-ring/40 focus-within:border-ring transition px-2 py-1.5">
+            <textarea
+              ref={textareaRef}
+              rows={1}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={sending}
+              placeholder="Zapytaj o swoje pola — dane satelitarne, pogoda, rejestr ŚOR…"
+              // text-base na mobile — poniżej 16px iOS zoomuje stronę przy focusie
+              className="flex-1 resize-none px-2 py-1.5 bg-transparent focus:outline-none text-base sm:text-sm placeholder:text-muted-foreground max-h-[160px]"
+              maxLength={4000}
+            />
+            <button
+              type="button"
+              onClick={send}
+              disabled={sending || !input.trim()}
+              aria-label="Wyślij wiadomość"
+              className={cn(
+                'inline-flex items-center justify-center rounded-xl h-9 w-9 shrink-0 transition',
+                sending || !input.trim()
+                  ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                  : 'bg-primary text-primary-foreground hover:brightness-110',
+              )}
+            >
+              <Send className={cn('w-4 h-4', sending && 'animate-pulse')} />
+            </button>
+          </div>
+          <p className="mt-1.5 text-center text-[11px] text-muted-foreground hidden sm:block">
+            {streaming
+              ? 'Agent analizuje…'
+              : 'Enter — wyślij · Shift+Enter — nowa linia · zalecenia wspierają decyzję, środki zweryfikuj z etykietą'}
+          </p>
         </div>
-        <p className="mt-1.5 hud-label px-1 hidden sm:block">
-          Enter — wyślij · Shift+Enter — nowa linia
-        </p>
       </div>
     </div>
   );
