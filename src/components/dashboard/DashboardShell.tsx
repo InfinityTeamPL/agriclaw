@@ -14,6 +14,7 @@ import {
   Bot,
   BookOpen,
   Camera,
+  Flower2,
   MapPin,
   Settings,
   Menu,
@@ -43,6 +44,7 @@ const navLinks = [
   { href: '/dashboard/journal', label: 'Księga polowa', icon: BookOpen },
   { href: '/dashboard/compliance', label: 'Zgodność ARiMR', icon: ShieldCheck },
   { href: '/dashboard/diagnose', label: 'Diagnoza z kamery', icon: Camera },
+  { href: '/dashboard/houseplants', label: 'Rośliny domowe', icon: Flower2 },
   { href: '/dashboard/agent', label: 'AgroAgent', icon: Bot },
   { href: '/dashboard/settings', label: 'Ustawienia', icon: Settings },
 ];
