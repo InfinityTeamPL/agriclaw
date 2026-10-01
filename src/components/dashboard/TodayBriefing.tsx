@@ -112,7 +112,7 @@ export function TodayBriefing({
       <NdviKeyline height={3} rounded={false} />
       {/* grid-cols-1 = minmax(0,1fr): bez tego niejawna kolumna „auto" rośnie do szerokości
           tekstu z truncate (nowrap) i na telefonie treść była ucięta z prawej (553 px na 375). */}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px]">
         {/* Stan + co zrobić */}
         <div className="min-w-0 p-5 sm:p-7">
           <div className="hud-label first-letter:uppercase">{todayLabel()}</div>
@@ -144,11 +144,11 @@ export function TodayBriefing({
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className="text-sm font-medium text-foreground truncate">{a.fieldName}</div>
-                        <div className="text-sm text-muted-foreground truncate">
+                        <div className="text-sm text-muted-foreground">
                           {a.title} <span className="text-muted-foreground/70">· {ago(a.createdAt)}</span>
                         </div>
                         {a.reason && (
-                          <div className="mt-0.5 font-mono tabular text-[11px] text-muted-foreground/80 truncate">
+                          <div className="mt-0.5 font-mono tabular text-[11px] text-muted-foreground/80 break-words">
                             dlaczego: {a.reason}
                           </div>
                         )}
@@ -202,7 +202,7 @@ export function TodayBriefing({
         </div>
 
         {/* Pogoda i okno oprysku */}
-        <aside className="border-t lg:border-t-0 lg:border-l border-border bg-secondary/40 p-5 sm:p-6 flex flex-col gap-4">
+        <aside className="border-t xl:border-t-0 xl:border-l border-border bg-secondary/40 p-5 sm:p-6 flex flex-col gap-4">
           <div className="hud-label">Pogoda u Ciebie</div>
           {weather ? (
             <>
