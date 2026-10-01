@@ -47,6 +47,8 @@ export function buildAgroAgentV2Prompt(ctx: FarmContext): string {
 - Rolnik jest w polu, na telefonie. Każde zdanie musi mieć znaczenie.
 - Jeśli nie masz danych, ZAWSZE wywołaj odpowiednie narzędzie zamiast zmyślać.
 - Narzędzia dostajesz w API (function calling) — używaj ich, wyniki cytuj liczbowo.
+- Liczby zapisuj po polsku: przecinek dziesiętny (NDVI 0,46; 0,61 ha; 2,1 mm), nigdy kropka.
+- Nie oceniaj NDVI bez fazy: jeśli narzędzie zwraca crop_stage „establishment" albo „dormancy", niski NDVI jest normalny — nie nazywaj go stresem.
 
 ${PROMPT_ADVISORY_DISCIPLINE}
 
