@@ -9,7 +9,7 @@
 
 import { prisma } from '../prisma';
 import { fetchWeatherForecast } from '../satellite/weather';
-import { classifyNdvi, describeNdvi } from '../satellite/ndvi';
+import { classifyNdvi, cropStage, describeNdvi } from '../satellite/ndvi';
 import { checkSorProduct } from '../sor-registry';
 import { PROMPT_ADVISORY_DISCIPLINE, withAdvisoryDisclaimer } from '../advisory';
 import {
@@ -135,7 +135,7 @@ const TOOL_DEFS: LlmToolDef[] = [
 async function assertFieldInFarm(farmId: string, fieldId: string) {
   const field = await prisma.field.findFirst({
     where: { id: fieldId, farmId, deletedAt: null },
-    select: { id: true, name: true, crop: true },
+    select: { id: true, name: true, crop: true, sowingDate: true },
   });
   if (!field) throw new Error(`Pole ${fieldId} nie należy do tego gospodarstwa (użyj field_id z listy pól).`);
   return field;
@@ -184,7 +184,9 @@ async function executeTool(
           max: latest.ndviMax,
           observed_at: latest.observedAt.toISOString(),
           classification: classifyNdvi(latest.ndviMean),
-          description: describeNdvi(latest.ndviMean, field.crop),
+          // Faza (wschody/zima) — inaczej agent radził mocznik na październikowe wschody.
+          crop_stage: cropStage(field.crop, { sowingDate: field.sowingDate, at: latest.observedAt }),
+          description: describeNdvi(latest.ndviMean, field.crop, { sowingDate: field.sowingDate, at: latest.observedAt }),
         },
         ndre_mean: latest.ndreMean,
         ndwi_mean: latest.ndwiMean,

@@ -258,6 +258,7 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
                 min={latest.min}
                 max={latest.max}
                 crop={field.crop}
+                sowingDate={field.sowingDate}
                 observedAt={latest.observedAt}
                 cloudCover={latest.cloudCover}
                 trend={trend}
@@ -421,11 +422,12 @@ function AnalysisTab({
           savi={idx.savi}
           crop={crop}
           isMock={latest.isMock}
+          stageCtx={{ sowingDate: field.sowingDate, at: new Date(latest.observedAt) }}
         />
       )}
 
       <div className="rounded-md bg-secondary border border-border p-3 text-sm text-foreground">
-        {describeNdvi(latest.mean, crop)}
+        {describeNdvi(latest.mean, crop, { sowingDate: field.sowingDate, at: new Date(latest.observedAt) })}
       </div>
       <a
         href="/dashboard/agent"
@@ -551,6 +553,7 @@ function CurrentNdvi({
   min,
   max,
   crop,
+  sowingDate,
   observedAt,
   cloudCover,
   trend,
@@ -559,6 +562,7 @@ function CurrentNdvi({
   min: number;
   max: number;
   crop: string;
+  sowingDate: string | null;
   observedAt: string;
   cloudCover: number;
   trend: number | null;
@@ -588,7 +592,7 @@ function CurrentNdvi({
           <TrendBadge delta={trend} />
         )}
       </div>
-      <p className="text-sm text-muted-foreground leading-relaxed">{describeNdvi(mean, crop)}</p>
+      <p className="text-sm text-muted-foreground leading-relaxed">{describeNdvi(mean, crop, { sowingDate, at: new Date(observedAt) })}</p>
       <div className="text-[11px] text-muted-foreground">
         Dane z <span className="font-mono tabular">{formatDateTimePL(observedAt)}</span> · zachmurzenie{' '}
         <span className="font-mono tabular">{Math.round(cloudCover * 100)}%</span>

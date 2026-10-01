@@ -3,6 +3,35 @@
 // - classifyNdvi: klasyfikacja zdrowotności uprawy w skali [0..1]
 // - ndviColorHex: kolor do wizualizacji heatmapy na mapie
 
+import { resolveSowingDate, type Crop } from '@/lib/bbch';
+
+/**
+ * Faza uprawy istotna dla INTERPRETACJI indeksów (nie pełne BBCH):
+ * - establishment — wschody/ukorzenianie: dużo widocznej gleby, NDVI 0,2–0,5 to norma,
+ * - dormancy — spoczynek zimowy ozimin (XII–II): niski NDVI jest normalny,
+ * - growth — reszta sezonu: progi klasyczne.
+ * Bez tego pszenica 2 tyg. po siewie (NDVI 0,46) dostawała „przeciętna kondycja —
+ * możliwa interwencja" i radę dolistnego azotu w październiku (10.2026).
+ */
+export type CropStage = 'establishment' | 'dormancy' | 'growth';
+
+export interface CropStageCtx {
+  sowingDate?: Date | string | null;
+  at?: Date;
+}
+
+export function cropStage(crop: string, ctx: CropStageCtx = {}): CropStage {
+  const at = ctx.at ?? new Date();
+  const { sowingDate } = resolveSowingDate(ctx.sowingDate, crop as Crop, at);
+  const days = (at.getTime() - sowingDate.getTime()) / 86_400_000;
+  const sownInAutumn = sowingDate.getUTCMonth() >= 7 && sowingDate.getUTCMonth() <= 10; // VIII–XI
+  const month = at.getUTCMonth(); // 0 = styczeń
+  if (sownInAutumn && (month === 11 || month <= 1) && days > 0) return 'dormancy';
+  // Ozimina rośnie jesienią wolno — faza wschodów trwa do zimy; jare ~5 tygodni.
+  if (days >= 0 && days < (sownInAutumn ? 75 : 35)) return 'establishment';
+  return 'growth';
+}
+
 export interface NdviStats {
   mean: number;
   min: number;
@@ -74,7 +103,7 @@ export function ndviColorHex(ndvi: number): string {
   return '#14532d'; // ciemnozielony — bardzo zdrowy
 }
 
-export function describeNdvi(ndviMean: number, crop: string): string {
+export function describeNdvi(ndviMean: number, crop: string, ctx?: CropStageCtx): string {
   const cls = classifyNdvi(ndviMean);
   const cropLabelMap: Record<string, string> = {
     wheat: 'pszenica',
@@ -85,6 +114,18 @@ export function describeNdvi(ndviMean: number, crop: string): string {
     other: 'uprawa',
   };
   const cropLabel = cropLabelMap[crop] ?? 'uprawa';
+
+  if (ctx) {
+    const stage = cropStage(crop, ctx);
+    if (stage === 'dormancy') {
+      return `${cropLabel} w spoczynku zimowym — niski NDVI zimą jest normalny; przezimowanie ocenimy po ruszeniu wegetacji`;
+    }
+    if (stage === 'establishment' && cls !== 'healthy' && cls !== 'very-healthy') {
+      return cls === 'bare'
+        ? `${cropLabel} dopiero wschodzi — w odczycie dominuje gleba; obsadę roślin sprawdź w polu ok. 3 tygodnie po siewie`
+        : `${cropLabel} we wschodach — NDVI typowy dla tej fazy (gleba jeszcze widoczna między rzędami)`;
+    }
+  }
 
   switch (cls) {
     case 'bare':
