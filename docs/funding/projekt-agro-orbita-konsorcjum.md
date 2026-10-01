@@ -1,7 +1,7 @@
 # AGRO-ORBITA — projekt i plan dla konsorcjum badawczo-wdrożeniowego
 
 **Program docelowy:** NCBR AGROSTRATEG, obszar **T3 „Rolnictwo cyfrowe"** (nabór do 28.08.2026; kolejne edycje coroczne)
-**Lider:** AgriClaw sp. z o.o. (przedsiębiorca; spółka w rejestracji)
+**Lider:** Infinity Tech Group sp. z o.o. (KRS 0001236454, Zamość) — operator produktu AgriClaw / agripol.xyz
 **Partnerzy (do domknięcia):** instytut badawczy · uczelnia (AI/NLP) · wojewódzki ODR
 **Skala:** ok. 9–10 mln zł / 36 miesięcy · TRL wejściowy 6 → wyjściowy 9
 **Charakter dokumentu:** koncepcja + plan do rozmów konsorcjalnych i jako szkielet wniosku LSI
@@ -95,7 +95,7 @@ WP6                          [==============]        komercjalizacja (24–36)
 
 | Podmiot | Rola w projekcie | Orientacyjny udział | Co wnosi | Co zyskuje |
 |---|---|---|---|---|
-| **AgriClaw sp. z o.o.** (lider, przedsiębiorca) | platforma, agent, integracja, XAI, komercjalizacja (WP1/4/6) | ~45% | działający produkt TRL6 na produkcji (agripol.xyz), zespół full-stack + EO, integracja rejestru ŚOR | usługa komercyjna, IP, przewaga rynkowa |
+| **Infinity Tech Group sp. z o.o.** (lider, przedsiębiorca; marka AgriClaw) | platforma, agent, integracja, XAI, komercjalizacja (WP1/4/6) | ~45% | działający produkt TRL6 na produkcji (agripol.xyz), zespół full-stack + EO, integracja rejestru ŚOR | usługa komercyjna, IP, przewaga rynkowa |
 | **Instytut badawczy** (agronomia) | modele chorób, kalibracja progów PL, dane suszowe (WP3) | ~28% | autorytet w monitoringu suszy/gleb/nawożenia, dane historyczne | publikacje, walidacja modeli, transfer do praktyki |
 | **Uczelnia** (AI/NLP) | agent PL, benchmark halucynacji, ewaluacja (WP2) | ~15% | kompetencje AI/ML + agro, warsztat ewaluacji | pierwszy benchmark agro-PL, publikacje JCR |
 | **Wojewódzki ODR** | rekrutacja gospodarstw, walidacja polowa, szkolenia (WP5) | ~12% | sieć zaufania, dostęp do rolników, trwałość rezultatu | narzędzie dla doradców, przeszkolona kadra |
@@ -154,13 +154,13 @@ Poziom dofinansowania (do potwierdzenia tabelą pomocy publicznej naboru): badan
 | Niska adopcja | ODR w konsorcjum + WhatsApp zamiast aplikacji + niski próg cenowy |
 | Zmiany API dostawców AI | abstrakcja multi-provider (dwa wymienne silniki agenta — już zrealizowane) |
 | Jakość walidacji modeli chorób | protokół z grupą kontrolną, walidacja retro (10 lat) + prospektywna (pilotaż) |
-| Zdolność finansowa lidera (spółka w rejestracji) | rejestracja spółki przed złożeniem; ścieżka równoległa CASSINI na rozwój produktu |
+| Zdolność finansowa lidera (młoda spółka) | spółka zarejestrowana (Infinity Tech Group sp. z o.o.); ścieżki równoległe na rozwój produktu (np. CASSINI po zdobyciu trakcji z Beta 100) |
 
 ---
 
 ## 11. Do domknięcia przed złożeniem
 
-- [ ] Rejestracja AgriClaw sp. z o.o. (KRS) — warunek zdolności wnioskodawcy
+- [x] Spółka-wnioskodawca zarejestrowana — Infinity Tech Group sp. z o.o. (KRS 0001236454, Zamość)
 - [ ] Listy intencyjne partnerów naukowych (instytut, uczelnia) + ODR
 - [ ] 20+ listów intencyjnych rolników (zbiera kampania Beta 100)
 - [ ] Agendy badawcze WP2/WP3 (2 str. każda — piszą partnerzy naukowi)
