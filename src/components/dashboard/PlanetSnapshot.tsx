@@ -18,6 +18,9 @@ interface PlanetResponse {
   observedAt: string;
   cloudCover: number;
   bbox: { minLon: number; minLat: number; maxLon: number; maxLat: number };
+  /** Granice pola — zaznaczamy je na podglądzie całej sceny. */
+  fieldBbox?: { minLon: number; minLat: number; maxLon: number; maxLat: number };
+  previewMetersPerPixel?: number;
   dataUrl: string;
   sizeBytes: number;
   alternativesCount: number;
@@ -64,7 +67,7 @@ export function PlanetSnapshot({ fieldId }: { fieldId: string }) {
         className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-md border border-border bg-card hover:border-foreground/30 hover:bg-secondary text-foreground transition text-sm font-medium"
       >
         <Satellite className="w-4 h-4 text-muted-foreground" />
-        Pokaż najnowszą scenę Planet (3m)
+        Podgląd dzisiejszej sceny Planet (czy nad polem były chmury)
       </button>
     );
   }
@@ -93,6 +96,18 @@ export function PlanetSnapshot({ fieldId }: { fieldId: string }) {
 
   // Stan 3: dane
   const cloudPct = (data!.cloudCover * 100).toFixed(0);
+  // Pole na podglądzie całej sceny (min. 8 px, żeby było widać kilkuhektarowe pole).
+  const fieldMarker = (() => {
+    const s = data!.bbox;
+    const f = data!.fieldBbox;
+    if (!f || s.maxLon <= s.minLon || s.maxLat <= s.minLat) return null;
+    const left = ((f.minLon - s.minLon) / (s.maxLon - s.minLon)) * 100;
+    const top = ((s.maxLat - f.maxLat) / (s.maxLat - s.minLat)) * 100;
+    const w = ((f.maxLon - f.minLon) / (s.maxLon - s.minLon)) * 100;
+    const h = ((f.maxLat - f.minLat) / (s.maxLat - s.minLat)) * 100;
+    if (left < 0 || top < 0 || left > 100 || top > 100) return null;
+    return { left: `${left}%`, top: `${top}%`, width: `max(8px, ${w}%)`, height: `max(8px, ${h}%)` };
+  })();
   const date = new Date(data!.observedAt);
 
   return (
@@ -109,7 +124,7 @@ export function PlanetSnapshot({ fieldId }: { fieldId: string }) {
                 Planet Labs PSScene
               </div>
               <div className="hud-label">
-                {data!.provider} · {data!.resolution} rozdzielczości
+                Podgląd całej sceny · {data!.resolution}
               </div>
             </div>
           </div>
@@ -132,13 +147,26 @@ export function PlanetSnapshot({ fieldId }: { fieldId: string }) {
         >
           <img
             src={data!.dataUrl}
-            alt="Planet PSScene thumbnail"
-            className="w-full h-auto max-h-[320px] object-cover group-hover:opacity-95 transition"
+            alt="Planet PSScene — podgląd całej sceny"
+            className="w-full h-auto group-hover:opacity-95 transition"
           />
+          {fieldMarker && (
+            <span
+              aria-label="Położenie pola (przybliżone)"
+              className="absolute rounded-sm ring-2 ring-signal-heat ring-offset-1 ring-offset-transparent"
+              style={fieldMarker}
+            />
+          )}
           <div className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-foreground/70 text-background text-[10px] font-mono">
             Kliknij, żeby powiększyć
           </div>
         </button>
+
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Planet fotografuje Polskę codziennie — podgląd pokazuje, czy dziś nad polem
+          {fieldMarker ? ' (pomarańczowa ramka)' : ''} były chmury. Analiza kondycji pola
+          korzysta z Sentinel-2 (10 m). Pełne 3 m z Planet wymaga planu płatnego.
+        </p>
 
         {/* Metadane */}
         <div className="grid grid-cols-2 gap-2 text-xs">
