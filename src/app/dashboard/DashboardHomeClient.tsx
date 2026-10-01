@@ -428,6 +428,7 @@ function FieldCard({ field }: { field: FieldItem }) {
         <div className="absolute inset-0 flex items-center justify-center">
           <FieldSatThumb
             fieldId={field.id}
+            version={field.ndviObservedAt}
             polygon={field.polygon}
             fallbackColor={ndviColor}
             className="w-36 h-24"
