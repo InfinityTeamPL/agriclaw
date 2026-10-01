@@ -20,7 +20,7 @@ import { cn } from '@/lib/utils';
 import { cropLabel, formatDatePL, formatHa, CROPS } from '@/lib/ui/format';
 import { classifyNdvi } from '@/lib/satellite/ndvi';
 import { ndviColorHex } from '@/lib/design/ndvi-scale';
-import { PolygonThumb } from '@/components/dashboard/PolygonThumb';
+import { FieldSatThumb } from '@/components/dashboard/FieldSatThumb';
 
 export interface FieldListItem {
   id: string;
@@ -200,10 +200,11 @@ export function FieldsList({ items }: { items: FieldListItem[] }) {
                 >
                   <div className="col-span-12 md:col-span-5 flex items-center gap-3 min-w-0">
                     <div className="w-12 h-10 rounded-md bg-secondary border border-border overflow-hidden flex items-center justify-center shrink-0">
-                      <PolygonThumb
+                      <FieldSatThumb
+                        fieldId={f.id}
                         polygon={f.polygon}
-                        color={f.ndviMean !== null ? ndviColorHex(f.ndviMean) : '#1c7a3c'}
-                        className="w-full h-full"
+                        fallbackColor={f.ndviMean !== null ? ndviColorHex(f.ndviMean) : '#1c7a3c'}
+                        className="w-full h-full p-0.5"
                       />
                     </div>
                     <div className="min-w-0">
@@ -253,9 +254,9 @@ function FieldGridCard({ field }: { field: FieldListItem }) {
       href={`/dashboard/fields/${field.id}`}
       className="group relative block rounded-lg bg-card border border-border overflow-hidden hover:-translate-y-1 hover:shadow-pop shadow-card transition-all duration-300"
     >
-      <div className="relative h-36 overflow-hidden bg-secondary">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <PolygonThumb polygon={field.polygon} color={ndviColor} className="w-40 h-28" />
+      <div className="relative h-36 overflow-hidden bg-secondary cadastral-grid">
+        <div className="absolute inset-0 flex items-center justify-center p-5">
+          <FieldSatThumb fieldId={field.id} polygon={field.polygon} fallbackColor={ndviColor} className="w-full h-full" />
         </div>
         {/* Top-left: crop */}
         <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-md bg-card border border-border text-foreground">

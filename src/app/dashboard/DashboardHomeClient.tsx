@@ -27,7 +27,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { CountUp } from '@/components/dashboard/CountUp';
 import { Sparkline } from '@/components/dashboard/Sparkline';
-import { PolygonThumb } from '@/components/dashboard/PolygonThumb';
+import { FieldSatThumb } from '@/components/dashboard/FieldSatThumb';
 // Lazy-load MapLibre (~250 kB gzip) — poza First Load JS panelu, ładowany dopiero
 // przy renderze mapy. Audyt: perf (maplibre statycznie w bundlu dashboardu).
 const FarmMiniMap = dynamic(
@@ -604,10 +604,11 @@ function FieldCard({ field }: { field: FieldItem }) {
         }}
       >
         <div className="absolute inset-0 flex items-center justify-center">
-          <PolygonThumb
+          <FieldSatThumb
+            fieldId={field.id}
             polygon={field.polygon}
-            color={ndviColor}
-            className="w-32 h-24 drop-shadow-sm"
+            fallbackColor={ndviColor}
+            className="w-36 h-24"
           />
         </div>
         {/* NDVI pill top-right */}
