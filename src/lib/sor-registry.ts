@@ -359,6 +359,58 @@ export interface SorCheckResult {
  * DOKŁADNE, potem zawierające (z preferencją prefiksu). Opcjonalne zawężenie
  * do uprawy (kod AgriClaw) — nieznany kod NIE udaje braku rejestracji.
  */
+// ── Weryfikacja substancji czynnych ────────────────────────────────────────────
+// Model wizyjny podaje kierunek jako SUBSTANCJĘ („mankozeb lub azoksystrobina").
+// Sprawdzanie samej nazwy handlowej nie wystarcza: 10.2026 diagnoza zaproponowała
+// mankozeb (wycofany w UE od 2021), a obok nazwy „Revus" świecił zielony znaczek
+// rejestru. Teraz każda substancja jest liczona w rejestrze: ile środków z nią
+// wolno DZIŚ stosować. Zero = czerwone ostrzeżenie.
+
+const SUBSTANCE_STOPWORDS = new Set(['lub', 'albo', 'oraz', 'np', 'inne', 'odpowiedniki', 'podobne']);
+
+/** Dzieli tekst modelu na pojedyncze nazwy substancji (bez dawek i nawiasów). */
+export function splitSubstances(text: string): string[] {
+  const cleaned = text
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\d+[.,]?\d*\s*(g|ml|%|l)\b\/?\w*/gi, ' ');
+  const parts = cleaned
+    .split(/,|\+|\/|;|\s(?:lub|albo|oraz|i)\s/i)
+    .map((p) => p.replace(/[^\p{L}\s-]/gu, ' ').replace(/\s+/g, ' ').trim().toLowerCase())
+    .filter((p) => p.length >= 4 && !SUBSTANCE_STOPWORDS.has(p));
+  return [...new Set(parts)].slice(0, 4);
+}
+
+export interface SubstanceCheck {
+  substance: string;
+  /** Liczba środków w rejestrze z tą substancją, których stosowanie jest dziś dozwolone. */
+  usableProducts: number;
+  /** Wszystkie środki z tą substancją (także wycofane) — 0 = nieznana nazwa. */
+  totalProducts: number;
+  // Wycofane substancje (np. mankozeb, chlorotalonil) w ogóle znikają z wykazu,
+  // więc „brak w rejestrze" i „same wycofane środki" to dla rolnika to samo:
+  // nie ma dziś dozwolonego środka z tą substancją.
+  status: 'dopuszczona' | 'brak_dopuszczonych';
+}
+
+export async function checkSubstances(text: string, today = new Date()): Promise<SubstanceCheck[]> {
+  const out: SubstanceCheck[] = [];
+  for (const substance of splitSubstances(text)) {
+    const products = await prisma.sorProduct.findMany({
+      where: { substances: { contains: substance, mode: 'insensitive' } },
+      select: { permitTo: true, saleTo: true, useTo: true },
+      take: 500,
+    });
+    const usable = products.filter((p) => computeStatus(p, today) !== 'wycofany').length;
+    out.push({
+      substance,
+      usableProducts: usable,
+      totalProducts: products.length,
+      status: usable > 0 ? 'dopuszczona' : 'brak_dopuszczonych',
+    });
+  }
+  return out;
+}
+
 // ── Samonaprawa rejestru ───────────────────────────────────────────────────────
 // Lekcja z 10.2026: cron dzienny na produkcji przestał się odpalać i rejestr
 // stał na wydaniu 26.06 przez 3 miesiące — po cichu. Aplikacja, której

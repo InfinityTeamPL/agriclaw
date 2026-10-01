@@ -7,6 +7,7 @@ import { ScanLine } from '@/components/brand/ScanLine';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 import { AdvisoryNotice } from '@/components/dashboard/AdvisoryNotice';
 import { downscaleImageFile } from '@/lib/ui/image';
+import { cropLabel } from '@/lib/ui/format';
 
 interface FieldOpt {
   id: string;
@@ -27,6 +28,8 @@ interface DiagnosisResult {
       substancja_czynna: string;
       przyklad_handlowy: string;
       dawka: string;
+      // Adnotacja serwera: każda substancja czynna policzona w rejestrze
+      substancjeRejestr?: Array<{ substance: string; usableProducts: number; status: 'dopuszczona' | 'brak_dopuszczonych' }>;
       // Adnotacja serwera: weryfikacja w oficjalnym rejestrze ŚOR MRiRW
       rejestr?: {
         status: 'aktualny' | 'wyprzedaz' | 'do_zuzycia' | 'wycofany' | 'nie_znaleziono' | 'rejestr_niedostepny';
@@ -116,7 +119,7 @@ export function DiagnoseClient({ fields }: Props) {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
       <div>
         <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground flex items-center gap-3">
           <Camera className="w-8 h-8 text-primary" />
@@ -127,7 +130,10 @@ export function DiagnoseClient({ fields }: Props) {
         </p>
       </div>
 
-      <div className="relative rounded-lg bg-card border border-border shadow-card p-5 space-y-4 overflow-hidden">
+      {/* Desktop: zdjęcie + formularz po lewej (przyklejone), wynik po prawej —
+          rolnik porównuje zdjęcie z opisem objawów bez przewijania. */}
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,420px)_1fr] items-start">
+      <div className="lg:sticky lg:top-4 relative rounded-lg bg-card border border-border shadow-card p-5 space-y-4 overflow-hidden">
         <NdviKeyline className="absolute inset-x-0 top-0" height={3} />
         {!imageData && (
           <div className="border border-dashed border-border rounded-md p-10 text-center">
@@ -184,7 +190,7 @@ export function DiagnoseClient({ fields }: Props) {
               <option value="">Nie wybieraj</option>
               {fields.map((f) => (
                 <option key={f.id} value={f.id}>
-                  {f.name} ({f.crop})
+                  {f.name} ({cropLabel(f.crop)})
                 </option>
               ))}
             </select>
@@ -223,6 +229,14 @@ export function DiagnoseClient({ fields }: Props) {
         </button>
       </div>
 
+      <div className="space-y-4 min-w-0">
+      {!result && !error && !loading && <PhotoTips />}
+      {loading && (
+        <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground flex items-center gap-3">
+          <ScanLine className="w-5 h-5" />
+          Analizuję zdjęcie i sprawdzam proponowane środki w rejestrze MRiRW…
+        </div>
+      )}
       {error && (
         <div className="rounded-lg bg-signal-drought/10 border border-signal-drought/30 p-5 flex gap-3">
           <AlertCircle className="w-5 h-5 text-signal-drought flex-shrink-0 mt-0.5" />
@@ -236,6 +250,36 @@ export function DiagnoseClient({ fields }: Props) {
       )}
 
       {result && <DiagnosisView result={result} />}
+      </div>
+      </div>
+    </div>
+  );
+}
+
+function PhotoTips() {
+  const tips = [
+    ['Zbliżenie 20–30 cm', 'jeden–dwa liście wypełniają kadr; ogólny widok łanu nie wystarczy'],
+    ['Obie strony liścia', 'naloty grzybni i szkodniki często są tylko od spodu'],
+    ['Światło dzienne, bez lampy', 'cień lub pochmurno — kolory plam są wtedy wiarygodne'],
+    ['Liść chory obok zdrowego', 'porównanie pomaga odróżnić chorobę od niedoboru'],
+  ];
+  return (
+    <div className="rounded-lg border border-border bg-card p-6">
+      <div className="hud-label mb-3">Jak zrobić zdjęcie, żeby diagnoza była trafna</div>
+      <ul className="space-y-3">
+        {tips.map(([t, d]) => (
+          <li key={t} className="flex gap-3">
+            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-signal-healthy shrink-0" />
+            <div>
+              <div className="text-sm font-medium text-foreground">{t}</div>
+              <div className="text-sm text-muted-foreground">{d}</div>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 text-xs text-muted-foreground">
+        Model wybrany benchmarkiem na zdjęciach chorób z opisem — każdy proponowany środek i substancję sprawdzamy w rejestrze MRiRW.
+      </p>
     </div>
   );
 }
@@ -323,6 +367,24 @@ function DiagnosisView({ result }: { result: DiagnosisResult }) {
                     <div className="text-xs text-muted-foreground">
                       {s.typ} · {s.przyklad_handlowy}
                     </div>
+                    {s.substancjeRejestr && s.substancjeRejestr.length > 0 && (
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {s.substancjeRejestr.map((sub) => (
+                          <span
+                            key={sub.substance}
+                            className={`inline-flex items-center text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border ${
+                              sub.status === 'dopuszczona'
+                                ? 'bg-signal-healthy/10 text-signal-healthy border-signal-healthy/30'
+                                : 'bg-signal-drought/10 text-signal-drought border-signal-drought/30'
+                            }`}
+                          >
+                            {sub.status === 'dopuszczona'
+                              ? `${sub.substance}: ${sub.usableProducts} dopuszczonych środków`
+                              : `${sub.substance}: BRAK dopuszczonych środków — nie stosuj`}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     {s.rejestr && <RejestrBadge rejestr={s.rejestr} />}
                   </div>
                   <div className="text-xs font-mono tabular font-semibold whitespace-nowrap text-foreground">
