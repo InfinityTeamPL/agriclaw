@@ -76,3 +76,32 @@ describe('generateRecommendation', () => {
     expect(rec.action.toLowerCase()).toContain('potwierdzeniu');
   });
 });
+
+describe('faza uprawy (regresja 10.2026)', () => {
+  const base = { crop: 'wheat', ndviMean: 0.42, daysWithoutRain: 4, avgEt0Next7: 1.2, monthOfYear: 10 };
+
+  it('wschody: brak „wymaga uwagi" i brak mocznika', () => {
+    const r = generateRecommendation({ ...base, stage: 'establishment' });
+    expect(r.severity).toBe('none');
+    expect(r.ruleId).toBe('establishment');
+    expect(r.action).not.toMatch(/mocznik/i);
+  });
+
+  it('wschody + 8 dni suszy → niska waga, nie „stres wodny"', () => {
+    const r = generateRecommendation({ ...base, daysWithoutRain: 8, stage: 'establishment' });
+    expect(r.ruleId).toBe('establishment-dry');
+    expect(r.severity).toBe('low');
+  });
+
+  it('spoczynek zimowy → bez zabiegów', () => {
+    expect(generateRecommendation({ ...base, stage: 'dormancy' }).ruleId).toBe('dormancy');
+  });
+
+  it('bez fazy — zachowanie historyczne', () => {
+    expect(generateRecommendation(base).ruleId).toBe('water-stress-moderate');
+  });
+
+  it('komunikaty z przecinkiem dziesiętnym', () => {
+    expect(generateRecommendation({ ...base, daysWithoutRain: 0 }).message).toMatch(/0,42/);
+  });
+});

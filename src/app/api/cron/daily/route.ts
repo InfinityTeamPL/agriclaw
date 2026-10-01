@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { getCopernicusClient } from '@/lib/satellite/copernicus';
 import { fetchLatestClearScene, TREND_WINDOW_DAYS } from '@/lib/satellite/scene';
+import { cropStage } from '@/lib/satellite/ndvi';
 import { isCopernicusConfigured } from '@/lib/satellite/ndvi-mock';
 import { fetchWeatherForecast } from '@/lib/satellite/weather';
 import { isPushConfigured, recommendationPush, sendPushToUser } from '@/lib/push';
@@ -91,12 +92,13 @@ export async function GET(req: NextRequest) {
       id: string;
       farm_id: string;
       crop: string;
+      sowing_date: Date | null;
       polygon: string;
       centroid_lat: number;
       centroid_lon: number;
     }>
   >`
-    SELECT f.id, f.farm_id, f.crop,
+    SELECT f.id, f.farm_id, f.crop, f.sowing_date,
            ST_AsGeoJSON(f.polygon)::text AS polygon,
            ST_Y(ST_Centroid(f.polygon)) AS centroid_lat,
            ST_X(ST_Centroid(f.polygon)) AS centroid_lon
@@ -195,6 +197,7 @@ export async function GET(req: NextRequest) {
         daysWithoutRain: weather.daysWithoutRain,
         avgEt0Next7: weather.avgEt0Next7,
         monthOfYear: month,
+        stage: cropStage(field.crop, { sowingDate: field.sowing_date, at: sceneAt }),
       });
 
       if (rec.severity !== 'none') {
