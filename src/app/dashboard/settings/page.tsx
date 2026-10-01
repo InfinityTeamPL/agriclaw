@@ -4,6 +4,7 @@
 import { requireAuth, getCurrentUser } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { SettingsForm } from './SettingsForm';
+import { PushToggle } from '@/components/dashboard/PushToggle';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,8 @@ export default async function SettingsPage() {
           Dane kontaktowe i profil rolnika.
         </p>
       </div>
+
+      <PushToggle />
 
       <SettingsForm
         defaultValues={{

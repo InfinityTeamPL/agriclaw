@@ -104,7 +104,7 @@ export function SettingsForm({ defaultValues }: Props) {
           className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
         />
         <p className="mt-1 text-xs text-muted-foreground">
-          Na ten numer wyślemy pilne alerty (przymrozek, okno oprysku), gdy uruchomimy powiadomienia SMS/WhatsApp. Do tego czasu rekomendacje są w panelu „Dziś”.
+          Numer zachowamy na potrzeby SMS/WhatsApp (w przygotowaniu). Pilne alerty już teraz dostaniesz powiadomieniem na telefon — włącz je powyżej.
         </p>
       </div>
 

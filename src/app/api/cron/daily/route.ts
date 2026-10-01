@@ -11,6 +11,11 @@ import { getCopernicusClient } from '@/lib/satellite/copernicus';
 import { fetchLatestClearScene, TREND_WINDOW_DAYS } from '@/lib/satellite/scene';
 import { isCopernicusConfigured } from '@/lib/satellite/ndvi-mock';
 import { fetchWeatherForecast } from '@/lib/satellite/weather';
+import { isPushConfigured, recommendationPush, sendPushToUser } from '@/lib/push';
+import { pluralPL } from '@/lib/ui/format';
+
+/** Ten sam sygnał (ruleId) na tym samym polu nie wraca pushem częściej niż co 3 dni. */
+const PUSH_REPEAT_AFTER_MS = 3 * 864e5;
 import { generateRecommendation } from '@/lib/recommendations';
 
 export const dynamic = 'force-dynamic';
@@ -77,6 +82,7 @@ export async function GET(req: NextRequest) {
     fields_skipped_no_imagery: 0,
     fields_deferred: 0,
     alerts_queued: 0,
+    push_sent: 0,
     started_at: new Date().toISOString(),
   };
 
@@ -110,6 +116,10 @@ export async function GET(req: NextRequest) {
   // przerywamy i raportujemy fields_deferred (dokończy kolejny cron). Audyt 2.9.
   const CONCURRENCY = 6;
   const deadline = Date.now() + 250_000;
+
+  // Alerty do wysłania push po przetworzeniu wszystkich pól — JEDNO powiadomienie
+  // na gospodarstwo (zbiorcze przy kilku polach), żeby nie zasypać telefonu.
+  const pushQueue = new Map<string, Array<{ fieldId: string; title: string; action: string }>>();
 
   async function processField(field: (typeof fields)[number]): Promise<void> {
     try {
@@ -188,6 +198,13 @@ export async function GET(req: NextRequest) {
       });
 
       if (rec.severity !== 'none') {
+        // Poprzednia rekomendacja pola — push tylko przy ZMIANIE sygnału, nie
+        // codziennie to samo (rolnik wyłączyłby powiadomienia po tygodniu).
+        const prevRec = await prisma.recommendation.findFirst({
+          where: { fieldId: field.id },
+          orderBy: { createdAt: 'desc' },
+          select: { ruleId: true, createdAt: true },
+        });
         await prisma.recommendation.create({
           data: {
             fieldId: field.id,
@@ -211,6 +228,14 @@ export async function GET(req: NextRequest) {
             },
           });
           results.alerts_queued++;
+
+          const repeated =
+            prevRec?.ruleId === rec.ruleId && Date.now() - prevRec.createdAt.getTime() < PUSH_REPEAT_AFTER_MS;
+          if (!repeated) {
+            const list = pushQueue.get(field.farm_id) ?? [];
+            list.push({ fieldId: field.id, title: rec.title, action: rec.action });
+            pushQueue.set(field.farm_id, list);
+          }
         }
       }
 
@@ -239,6 +264,28 @@ export async function GET(req: NextRequest) {
     launched += chunk.length;
   }
   results.fields_deferred = fields.length - launched;
+
+  if (isPushConfigured() && pushQueue.size > 0) {
+    const farms = await prisma.farm.findMany({
+      where: { id: { in: [...pushQueue.keys()] } },
+      select: { id: true, userId: true, fields: { select: { id: true, name: true } } },
+    });
+    for (const farm of farms) {
+      const alerts = pushQueue.get(farm.id) ?? [];
+      const names = new Map(farm.fields.map((f) => [f.id, f.name]));
+      const payload =
+        alerts.length === 1
+          ? recommendationPush({ ...alerts[0], fieldName: names.get(alerts[0].fieldId) ?? 'Pole' })
+          : {
+              title: `${alerts.length} ${pluralPL(alerts.length, 'pole wymaga', 'pola wymagają', 'pól wymaga')} uwagi`,
+              body: alerts.map((a) => `${names.get(a.fieldId) ?? 'Pole'}: ${a.title}`).join(' · ').slice(0, 160),
+              url: '/dashboard',
+              tag: 'daily-alerts',
+            };
+      const { sent } = await sendPushToUser(farm.userId, payload);
+      results.push_sent += sent;
+    }
+  }
 
   return NextResponse.json({
     ...results,
