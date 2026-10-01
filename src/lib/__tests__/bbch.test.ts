@@ -115,3 +115,47 @@ describe('defaultSowingDate', () => {
     expect(d.getUTCDate()).toBe(25);
   });
 });
+
+// Regresja 10.2026: w październiku aplikacja pokazywała pszenicę ozimą jako
+// „BBCH 89 — dojrzałość pełna" (siew z 2025, już zebrana) zamiast wschodów
+// z siewu 2026. Uprawy ozime liczą się od tegorocznego siewu, gdy termin minął.
+describe('defaultSowingDate — przełom sezonu upraw ozimych', () => {
+  const ymd = (d: Date) => d.toISOString().slice(0, 10);
+
+  it('pszenica ozima 1 października → siew z TEGO roku (nowy sezon)', () => {
+    expect(ymd(defaultSowingDate('wheat', new Date('2026-10-01T10:00:00Z')))).toBe('2026-09-15');
+  });
+
+  it('pszenica ozima w lutym → siew z poprzedniej jesieni', () => {
+    expect(ymd(defaultSowingDate('wheat', new Date('2026-02-10T10:00:00Z')))).toBe('2025-09-15');
+  });
+
+  it('pszenica ozima w lipcu (przed żniwami) → nadal sezon z poprzedniej jesieni', () => {
+    expect(ymd(defaultSowingDate('wheat', new Date('2026-07-20T10:00:00Z')))).toBe('2025-09-15');
+  });
+
+  it('rzepak ozimy 30 sierpnia → siew z 25 sierpnia tego roku', () => {
+    expect(ymd(defaultSowingDate('rapeseed', new Date('2026-08-30T10:00:00Z')))).toBe('2026-08-25');
+  });
+
+  it('uprawy jare zawsze z bieżącego roku', () => {
+    expect(ymd(defaultSowingDate('corn', new Date('2026-10-01T10:00:00Z')))).toBe('2026-04-25');
+  });
+
+  it('wywołanie z samym rokiem zachowuje dotychczasowe znaczenie (połowa sezonu)', () => {
+    expect(ymd(defaultSowingDate('wheat', 2026))).toBe('2025-09-15');
+  });
+
+  it('BBCH w październiku dla świeżego siewu to wczesne stadium, nie dojrzałość', () => {
+    const sow = defaultSowingDate('wheat', new Date('2026-10-01T10:00:00Z'));
+    // 16 dni od siewu, typowa jesień: ~14°C/6°C → ~10 GDD/dzień
+    const dailyTemps = Array.from({ length: 16 }, (_, i) => ({
+      date: new Date(sow.getTime() + i * 864e5).toISOString().slice(0, 10),
+      tMax: 14,
+      tMin: 6,
+    }));
+    const status = deriveBbchStatus({ crop: 'wheat', sowingDate: sow, dailyTemps });
+    expect(sow.getUTCFullYear()).toBe(2026);
+    expect(status!.currentBbch).toBeLessThan(30);
+  });
+});

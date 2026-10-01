@@ -35,7 +35,7 @@ export async function GET(
   const currentYear = new Date().getFullYear();
   const sowingDate = field.sowing_date
     ? new Date(field.sowing_date)
-    : defaultSowingDate(crop, currentYear);
+    : defaultSowingDate(crop, new Date());
 
   // Pobierz historyczne + prognozę (od siewu do dziś + 7 dni prognozy)
   const today = new Date().toISOString().slice(0, 10);
