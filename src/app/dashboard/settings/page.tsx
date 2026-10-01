@@ -25,7 +25,7 @@ export default async function SettingsPage() {
       <div>
         <h1 className="font-display text-2xl font-semibold tracking-tight text-foreground">Ustawienia</h1>
         <p className="text-sm text-muted-foreground">
-          Dane kontaktowe i profil rolnika. Numer telefonu jest używany do WhatsApp.
+          Dane kontaktowe i profil rolnika.
         </p>
       </div>
 
