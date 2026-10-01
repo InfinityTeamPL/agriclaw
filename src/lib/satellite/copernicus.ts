@@ -172,10 +172,53 @@ export class CopernicusClient {
     }
   }
 
+  private tokenInFlight: Promise<string> | null = null;
+
+  /** Unieważnia token (np. po 401) — następne getToken() pobierze świeży. */
+  invalidateToken(): void {
+    this.token = null;
+    this.tokenExpiresAt = 0;
+  }
+
+  /**
+   * Token współdzielony: równoległe wywołania (cron liczy pola partiami po 6) czekają
+   * na JEDNO żądanie do Keycloaka zamiast wysyłać 6 własnych. W produkcji (10.2026)
+   * cron padał na wszystkich polach z „AccessToken signature expired".
+   */
   async getToken(): Promise<string> {
     if (this.token && Date.now() < this.tokenExpiresAt) {
       return this.token;
     }
+    if (!this.tokenInFlight) {
+      this.tokenInFlight = this.fetchToken().finally(() => {
+        this.tokenInFlight = null;
+      });
+    }
+    return this.tokenInFlight;
+  }
+
+  /**
+   * fetch z tokenem CDSE; przy 401 (token odrzucony mimo że lokalnie „ważny" —
+   * ciepła instancja po zamrożeniu, rozjazd zegara, unieważnienie) pobiera świeży
+   * token i ponawia RAZ.
+   */
+  private async authedFetch(
+    url: string,
+    init: { method?: 'POST'; headers?: Record<string, string>; body: string; timeoutMs?: number; retries?: number },
+  ): Promise<Response> {
+    const call = async () =>
+      fetchWithTimeout(url, {
+        ...init,
+        method: 'POST',
+        headers: { ...init.headers, Authorization: `Bearer ${await this.getToken()}` },
+      });
+    const res = await call();
+    if (res.status !== 401) return res;
+    this.invalidateToken();
+    return call();
+  }
+
+  private async fetchToken(): Promise<string> {
     const body = new URLSearchParams({
       grant_type: 'client_credentials',
       client_id: this.clientId,
@@ -218,10 +261,9 @@ export class CopernicusClient {
     dateTo: string,
     maxCloudCoverage = 40,
   ): Promise<Array<{ datetime: string; cloudCover: number }>> {
-    const token = await this.getToken();
-    const res = await fetchWithTimeout(CATALOG_URL, {
+    const res = await this.authedFetch(CATALOG_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         collections: ['sentinel-2-l2a'],
         datetime: `${dateFrom}T00:00:00Z/${dateTo}T23:59:59Z`,
@@ -267,7 +309,6 @@ export class CopernicusClient {
     dateTo: string,
     opts: { width?: number; height?: number; maxCloudCoverage?: number } = {},
   ): Promise<ArrayBuffer> {
-    const token = await this.getToken();
     const payload = {
       input: {
         bounds: {
@@ -292,9 +333,9 @@ export class CopernicusClient {
       },
       evalscript: LANDSAT_THERMAL_EVALSCRIPT,
     };
-    const res = await fetchWithTimeout(PROCESS_URL, {
+    const res = await this.authedFetch(PROCESS_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
       timeoutMs: 30_000,
       retries: 2,
@@ -315,7 +356,6 @@ export class CopernicusClient {
     dateTo: string,
     opts: { width?: number; height?: number } = {},
   ): Promise<ArrayBuffer> {
-    const token = await this.getToken();
     const payload = {
       input: {
         bounds: {
@@ -348,11 +388,10 @@ export class CopernicusClient {
       },
       evalscript: RADAR_EVALSCRIPT,
     };
-    const res = await fetchWithTimeout(PROCESS_URL, {
+    const res = await this.authedFetch(PROCESS_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
       timeoutMs: 30_000,
@@ -371,7 +410,6 @@ export class CopernicusClient {
     evalscript: string,
     opts: { width?: number; height?: number; maxCloudCoverage?: number } = {},
   ): Promise<ArrayBuffer> {
-    const token = await this.getToken();
     const payload = {
       input: {
         bounds: {
@@ -403,11 +441,10 @@ export class CopernicusClient {
       evalscript,
     };
 
-    const res = await fetchWithTimeout(PROCESS_URL, {
+    const res = await this.authedFetch(PROCESS_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
       timeoutMs: 30_000,
@@ -437,7 +474,6 @@ export class CopernicusClient {
       savi: buildColorRampEvalscript('savi'),
       truecolor: TRUE_COLOR_EVALSCRIPT,
     };
-    const token = await this.getToken();
     const payload = {
       input: {
         bounds: {
@@ -462,9 +498,9 @@ export class CopernicusClient {
       },
       evalscript: rampScripts[layer],
     };
-    const res = await fetchWithTimeout(PROCESS_URL, {
+    const res = await this.authedFetch(PROCESS_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
       timeoutMs: 30_000,
       retries: 2,
@@ -482,7 +518,6 @@ export class CopernicusClient {
     dateTo: string,
     opts: { width?: number; height?: number; maxCloudCoverage?: number } = {},
   ): Promise<ArrayBuffer> {
-    const token = await this.getToken();
     const payload = {
       input: {
         bounds: {
@@ -511,11 +546,10 @@ export class CopernicusClient {
       evalscript: TRUE_COLOR_EVALSCRIPT,
     };
 
-    const res = await fetchWithTimeout(PROCESS_URL, {
+    const res = await this.authedFetch(PROCESS_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
       timeoutMs: 30_000,

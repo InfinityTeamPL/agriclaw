@@ -290,8 +290,12 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({
-    ...results,
-    finished_at: new Date().toISOString(),
-  });
+  // Wszystkie pola padły (np. odrzucony token CDSE) → 500, żeby workflow GitHub i monitoring
+  // zaświeciły się na czerwono. Wcześniej odpowiedź 200 + fields_failed:13 dawała zielony
+  // przebieg, a produkcja przez dobę nie dostawała nowych danych.
+  const allFailed = results.fields_processed === 0 && results.fields_failed > 0;
+  return NextResponse.json(
+    { ...results, finished_at: new Date().toISOString() },
+    { status: allFailed ? 500 : 200 },
+  );
 }

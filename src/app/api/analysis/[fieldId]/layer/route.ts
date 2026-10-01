@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma';
 import { getCopernicusClient } from '@/lib/satellite/copernicus';
 import { isCopernicusConfigured } from '@/lib/satellite/ndvi-mock';
 import { EO_LAYER_CACHE_HEADERS } from '@/lib/http/cache';
+import { looksEmptyPng } from '@/lib/satellite/png';
 
 const VALID_LAYERS = ['ndvi', 'ndre', 'ndwi', 'savi', 'truecolor'] as const;
 type Layer = (typeof VALID_LAYERS)[number];
@@ -55,7 +56,17 @@ export async function GET(
     orderBy: { observedAt: 'desc' },
     select: { observedAt: true },
   });
-  const sceneDay = latest?.observedAt.toISOString().slice(0, 10) ?? null;
+  let sceneDay = latest?.observedAt.toISOString().slice(0, 10) ?? null;
+  // Starsze odczyty mają datę ANALIZY (now()), nie przelotu satelity — dla takiego dnia CDSE
+  // nie ma sceny i zwraca pusty, przezroczysty PNG (miniatury znikały, zostawało jedno pole).
+  // Dzień bez sceny w katalogu → wracamy do mozaiki z 14 dni.
+  if (sceneDay) {
+    const day = sceneDay;
+    const scenes = await getCopernicusClient()
+      .searchS2Scenes(polygon, day, day, 100)
+      .catch(() => []);
+    if (scenes.length === 0) sceneDay = null;
+  }
 
   // ?size=N (miniatury) — mały kafel z PROPORCJAMI pola (koszt ~1/16 dużego).
   // Bez size: 1024×1024 dla nakładki mapy (MapLibre i tak rozciąga po bbox).
@@ -73,14 +84,23 @@ export async function GET(
   })();
 
   try {
-    const pngBuffer = await getCopernicusClient().fetchColorRampPng(
-      polygon,
-      type,
-      sceneDay ?? from,
-      sceneDay ?? today,
-      // Dzień sceny już wybrany (≥50% pola bez chmur) — nie odfiltrowuj go po zachmurzeniu kafla.
-      sceneDay ? { ...dims, maxCloudCoverage: 100 } : dims,
-    );
+    const client = getCopernicusClient();
+    let pngBuffer: ArrayBuffer | null = null;
+
+    if (sceneDay) {
+      // Dzień sceny już wybrany — nie odfiltrowuj go po zachmurzeniu kafla.
+      const png = await client.fetchColorRampPng(polygon, type, sceneDay, sceneDay, {
+        ...dims,
+        maxCloudCoverage: 100,
+      });
+      // Scena istnieje w katalogu, ale pole bywa pod chmurą / poza pasem przelotu →
+      // CDSE zwraca w pełni przezroczysty PNG (miniatura „znika"). Wtedy mozaika.
+      if (looksEmptyPng(png.byteLength, dims.width, dims.height)) sceneDay = null;
+      else pngBuffer = png;
+    }
+    if (!pngBuffer) {
+      pngBuffer = await client.fetchColorRampPng(polygon, type, from, today, dims);
+    }
 
     // Zwróć metadane bbox + base64 PNG, żeby klient mógł umieścić na mapie
     const base64 = Buffer.from(pngBuffer).toString('base64');
@@ -103,3 +123,4 @@ export async function GET(
     return NextResponse.json({ error: String(err) }, { status: 502 });
   }
 }
+
