@@ -5,6 +5,7 @@
 
 import { Sprout, Leaf, Droplets, MountainSnow, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatIndexPL } from '@/lib/ui/format';
 
 interface IndexValue {
   mean: number;
@@ -193,7 +194,7 @@ export function MultiIndexPanel({ ndvi, ndre, ndwi, savi, crop, isMock = false }
                     className="text-2xl font-bold font-mono tabular"
                     style={{ color }}
                   >
-                    {hasValue ? c.value!.mean.toFixed(2) : '–'}
+                    {hasValue ? formatIndexPL(c.value!.mean) : '–'}
                   </div>
                   {isMock && hasValue && (
                     <span
@@ -209,11 +210,11 @@ export function MultiIndexPanel({ ndvi, ndre, ndwi, savi, crop, isMock = false }
               {hasValue && (
                 <>
                   <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono tabular">
-                    min {c.value!.min.toFixed(2)} · max {c.value!.max.toFixed(2)}
+                    min {formatIndexPL(c.value!.min)} · max {formatIndexPL(c.value!.max)}
                   </div>
                   <div
                     className="h-1 rounded-full overflow-hidden bg-secondary"
-                    title={`Min ${c.value!.min.toFixed(2)} — Max ${c.value!.max.toFixed(2)}`}
+                    title={`Min ${formatIndexPL(c.value!.min)} — Max ${formatIndexPL(c.value!.max)}`}
                   >
                     <div
                       className="h-full"

@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
-import { getCopernicusClient, extractMultiIndexValues } from '@/lib/satellite/copernicus';
+import { getCopernicusClient } from '@/lib/satellite/copernicus';
+import { fetchLatestClearScene, TREND_WINDOW_DAYS } from '@/lib/satellite/scene';
 import { classifyNdvi, describeNdvi } from '@/lib/satellite/ndvi';
-import { computeAllIndices, interpretNdre, interpretNdwi, interpretSavi } from '@/lib/satellite/indices';
+import { interpretNdre, interpretNdwi, interpretSavi } from '@/lib/satellite/indices';
 import { fetchWeatherForecast, fetchSprayForecast } from '@/lib/satellite/weather';
 import { fetchSmapSoilMoisture } from '@/lib/satellite/smap';
 import { generateRecommendation } from '@/lib/recommendations';
@@ -53,19 +54,25 @@ export async function POST(
   // 4 indeksy Sentinel-2 (NDVI, NDRE, NDWI, SAVI) w jednym zapytaniu do CDSE.
   // Gdy brak credentials — deterministyczny mock tylko dla NDVI (reszta = 0 placeholder).
   type IdxStats = { mean: number; min: number; max: number; validCount: number; stddev: number };
-  let indices: { ndvi: IdxStats; ndre: IdxStats; ndwi: IdxStats; savi: IdxStats };
+  let indices!: { ndvi: IdxStats; ndre: IdxStats; ndwi: IdxStats; savi: IdxStats };
   let isMock = false;
+  let sceneAt: Date | null = null;
+  let sceneCloud = 0;
+  let noClearScene = false;
   let cdseError: string | undefined;
 
   if (isCopernicusConfigured()) {
     try {
-      const tiff = await getCopernicusClient().fetchMultiIndexGeotiff(
-        polygon,
-        fourteenDaysAgo,
-        today,
-      );
-      const rasters = await extractMultiIndexValues(tiff);
-      indices = computeAllIndices(rasters);
+      // Najnowsza scena z widocznym polem (katalog STAC) — znamy PRAWDZIWĄ datę
+      // przelotu i zachmurzenie pola, zamiast mozaiki z 14 dni i „now()".
+      const scene = await fetchLatestClearScene(getCopernicusClient(), polygon, fourteenDaysAgo, today);
+      if (scene) {
+        indices = scene.indices;
+        sceneAt = scene.sceneAt;
+        sceneCloud = scene.cloudCover;
+      } else {
+        noClearScene = true;
+      }
     } catch (err) {
       cdseError = String(err);
       const mock = generateMockNdvi({
@@ -105,7 +112,7 @@ export async function POST(
   // zapisujemy takiego "0" jako pomiaru (zatruwałby historię i wywołał fałszywy
   // alarm suszowy przy NDVI < 0.35). Dotyczy tylko realnych danych — mock zawsze
   // ma validCount > 0. Patrz audyt 1.2 / 2.8.
-  if (!isMock && indices.ndvi.validCount === 0) {
+  if (noClearScene || (!isMock && indices.ndvi.validCount === 0)) {
     return NextResponse.json(
       {
         fieldId: field.id,
@@ -118,17 +125,32 @@ export async function POST(
     );
   }
 
-  // Previous NDVI dla porównania (tylko realne pomiary — mock nie może zafałszować trendu)
+  // Previous NDVI dla porównania — tylko realne pomiary, STARSZE od bieżącej sceny
+  // (ponowna analiza tej samej sceny nie może porównywać jej z samą sobą) i z tego
+  // samego sezonu: lipcowa pszenica przed żniwami (0,90) vs październikowe wschody
+  // (0,46) to nie „spadek o 0,44", tylko nowa uprawa — fałszywy alarm.
+  const observedAt = sceneAt ?? new Date();
   const previousReading = await prisma.ndviReading.findFirst({
-    where: { fieldId: field.id, source: { not: 'mock' } },
+    where: {
+      fieldId: field.id,
+      source: { not: 'mock' },
+      observedAt: { lt: observedAt, gte: new Date(observedAt.getTime() - TREND_WINDOW_DAYS * 86_400_000) },
+    },
     orderBy: { observedAt: 'desc' },
   });
+
+  // Ta sama scena analizowana ponownie → zastępujemy odczyt, zamiast dublować
+  // punkt w historii (dubel spłaszczał trend i sparkline).
+  if (sceneAt) {
+    await prisma.ndviReading.deleteMany({ where: { fieldId: field.id, observedAt: sceneAt, source: 'sentinel-2' } });
+  }
 
   // Zapisz wszystkie 4 indeksy
   const reading = await prisma.ndviReading.create({
     data: {
       fieldId: field.id,
-      observedAt: new Date(),
+      // Mock nie ma sceny → czas analizy; realny pomiar → moment przelotu satelity.
+      observedAt,
       ndviMean: indices.ndvi.mean,
       ndviMin: indices.ndvi.min,
       ndviMax: indices.ndvi.max,
@@ -142,7 +164,7 @@ export async function POST(
       saviMin: indices.savi.min,
       saviMax: indices.savi.max,
       validCount: indices.ndvi.validCount,
-      cloudCover: 0,
+      cloudCover: sceneCloud,
       source: isMock ? 'mock' : 'sentinel-2',
     },
   });

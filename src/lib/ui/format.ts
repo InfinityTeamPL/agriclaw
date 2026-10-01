@@ -124,3 +124,8 @@ export function parsePlNumber(raw: string | number | null | undefined): number |
 export function formatNumberPL(n: number, maxFractionDigits = 3): string {
   return n.toLocaleString('pl-PL', { maximumFractionDigits: maxFractionDigits });
 }
+
+/** Indeks spektralny (NDVI, NDRE…) po polsku: 0,46 zamiast 0.46 — spójnie z „0,61 ha". */
+export function formatIndexPL(n: number): string {
+  return n.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
