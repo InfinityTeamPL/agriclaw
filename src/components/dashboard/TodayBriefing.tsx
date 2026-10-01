@@ -110,9 +110,11 @@ export function TodayBriefing({
   return (
     <section className="rounded-lg border border-border bg-card shadow-card overflow-hidden">
       <NdviKeyline height={3} rounded={false} />
-      <div className="grid lg:grid-cols-[1fr_320px]">
+      {/* grid-cols-1 = minmax(0,1fr): bez tego niejawna kolumna „auto" rośnie do szerokości
+          tekstu z truncate (nowrap) i na telefonie treść była ucięta z prawej (553 px na 375). */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px]">
         {/* Stan + co zrobić */}
-        <div className="p-5 sm:p-7">
+        <div className="min-w-0 p-5 sm:p-7">
           <div className="hud-label first-letter:uppercase">{todayLabel()}</div>
           <h1 className="mt-2 font-display text-2xl sm:text-[2rem] leading-tight font-semibold tracking-tight text-foreground">
             Dzień dobry. {headline}
