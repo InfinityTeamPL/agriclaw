@@ -8,19 +8,19 @@ const STEPS = [
     n: '01',
     icon: MapPin,
     title: 'Zaznacz pole',
-    body: 'Wpisujesz adres gospodarstwa, agent pokazuje Ci mapę z góry. Klikasz na swoje pole — granica sama się rysuje.',
+    body: 'Wklejasz numer działki z wniosku do ARiMR — granicę pobieramy 1:1 z ewidencji gruntów (GUGiK). Albo obrysowujesz pole palcem na mapie.',
   },
   {
     n: '02',
     icon: Satellite,
     title: 'Agent robi robotę',
-    body: 'Co 2-3 dni agent sprawdza Twoje pole z góry. Liczy zdrowie roślin, wilgotność gleby, prognozę.',
+    body: 'Przy każdym nowym przelocie satelity agent sprawdza pole: zdrowie roślin, wodę, fazę rozwoju, pogodę i ryzyko chorób.',
   },
   {
     n: '03',
     icon: MessageCircle,
     title: 'Dostajesz radę',
-    body: 'WhatsApp albo apka: „Pole 3 pryskaj jutro 5:30, okno się zamyka". Konkret, po polsku, bez tabel.',
+    body: 'Rano w aplikacji: „Pole 3 pryskaj jutro 5:30, okno się zamyka". Konkret, po polsku, z uzasadnieniem — bez tabel.',
   },
 ];
 

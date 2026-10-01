@@ -41,9 +41,9 @@ export function Hero() {
             </h1>
 
             <p className="mt-7 text-lg sm:text-xl text-muted-foreground max-w-xl leading-relaxed">
-              Obraz z góry + pogoda + historia Twojego pola →
-              <span className="text-foreground font-medium"> konkretna rada po polsku</span>.
-              WhatsApp: „pole 3 — dobre okno na oprysk jutro 5:30". Ty decydujesz.
+              Zdjęcia satelitarne Copernicus + pogoda + historia Twojego pola →
+              <span className="text-foreground font-medium"> konkretna rada po polsku</span>:
+              „Pole 3 — dobre okno na oprysk jutro 5:30, środek legalny". Ty decydujesz.
             </p>
 
             <p className="mt-4 text-base text-muted-foreground/80 max-w-xl">
@@ -79,7 +79,7 @@ export function Hero() {
             <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-3">
               <div className="flex items-center gap-2 hud-label">
                 <span className="w-1.5 h-1.5 rounded-full bg-signal-healthy" />
-                Gotowe w 60 s
+                Pierwsza analiza w ~90 s
               </div>
               <div className="flex items-center gap-2 hud-label">
                 <span className="w-1.5 h-1.5 rounded-full bg-signal-frost" />
@@ -87,7 +87,7 @@ export function Hero() {
               </div>
               <div className="flex items-center gap-2 hud-label">
                 <span className="w-1.5 h-1.5 rounded-full bg-signal-heat" />
-                Działa w telefonie
+                Działa w telefonie i na polu
               </div>
             </div>
           </div>

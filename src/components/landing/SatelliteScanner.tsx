@@ -166,7 +166,7 @@ export function SatelliteScanner() {
 
     {/* ────── Odczyty POD animacją — instrumenty stacji naziemnej ────── */}
     <div className="grid grid-cols-3 gap-2 sm:gap-3">
-      <StatCard label="Zdrowie pola" value="0.42" note="spadek" tone="drought" show={scanActive} delay={0.9} />
+      <StatCard label="Zdrowie pola" value="0,42" note="spadek" tone="drought" show={scanActive} delay={0.9} />
       <StatCard label="Wilgoć gleby" value="18%" note="niska" tone="heat" show={scanActive} delay={1.05} />
       <StatCard label="Okno oprysku" value="5:30" note="jutro" tone="healthy" show={scanActive} delay={1.2} />
     </div>

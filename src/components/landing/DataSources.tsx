@@ -3,43 +3,51 @@
 import {
   Satellite,
   Radar,
-  Droplets,
+  Thermometer,
   CloudSun,
-  Brain,
-  History,
+  FileCheck2,
+  Sprout,
 } from 'lucide-react';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 
+// Nazwane, sprawdzalne źródła — jury (CASSINI/Copernicus, AGROSTRATEG) pyta
+// „skąd te dane?". Każdy wpis ma realny odpowiednik w kodzie (lib/satellite, lib/sor-registry, lib/bbch).
 const ITEMS = [
   {
     icon: Satellite,
-    title: 'Obraz satelitarny 10 m',
-    desc: 'Widok pola z góry co kilka dni. Kolory pokazują gdzie plon rośnie, a gdzie coś go dusi.',
+    title: 'Sentinel-2 · 10 m',
+    source: 'Copernicus · ESA',
+    desc: 'Zdrowie roślin (NDVI), azot w liściach (NDRE), woda w roślinie (NDWI). Nowe zdjęcie co 2–5 dni.',
   },
   {
     icon: Radar,
-    title: 'Radar przez chmury',
-    desc: 'Kiedy niebo jest zasłonięte, przebijamy się inaczej. Nie musisz czekać na dobrą pogodę.',
+    title: 'Sentinel-1 · radar',
+    source: 'Copernicus · ESA',
+    desc: 'Radar widzi przez chmury. Gdy pada tydzień, i tak wiesz, co dzieje się na polu.',
   },
   {
-    icon: Droplets,
-    title: 'Wilgotność gleby',
-    desc: 'Osobna warstwa dla każdego pola. Wiesz gdzie jest sucho, zanim liście zaczną schnąć.',
+    icon: Thermometer,
+    title: 'Landsat · termika',
+    source: 'NASA / USGS',
+    desc: 'Temperatura powierzchni pola — przegrzanie i stres wodny widać, zanim liście zżółkną.',
   },
   {
     icon: CloudSun,
-    title: 'Prognoza + parowanie',
-    desc: 'Nie „jutro 22°C", tylko ile wody Twoje pole naprawdę straci — dziś, jutro, za tydzień.',
+    title: 'Pogoda godzinowa',
+    source: 'Open-Meteo · modele ECMWF/ICON',
+    desc: 'Opad, wiatr, przymrozek i parowanie (ET₀) na 7 dni — liczone dla współrzędnych Twojego pola.',
   },
   {
-    icon: Brain,
-    title: 'Twój AgroAgent',
-    desc: 'Model pracuje na Twoich danych i tylko na nich. Rada jest konkretna, nie podręcznikowa.',
+    icon: FileCheck2,
+    title: 'Rejestr ŚOR',
+    source: 'MRiRW · dane.gov.pl',
+    desc: 'Aktualna lista dopuszczonych środków i terminy wycofań. Odświeżana automatycznie co tydzień.',
   },
   {
-    icon: History,
-    title: 'Pełna historia pola',
-    desc: 'Każde zdjęcie, każda decyzja, każdy oprysk — zapamiętane. Na tym budujemy rekomendacje.',
+    icon: Sprout,
+    title: 'Fazy rozwojowe BBCH',
+    source: 'Model sum temperatur (GDD)',
+    desc: 'Z daty siewu i temperatur liczymy fazę rośliny — stąd wiemy, kiedy nawozić i kiedy grozi choroba.',
   },
 ];
 
@@ -54,10 +62,10 @@ export function DataSources() {
           {/* Eyebrow jako odczyt HUD — nie badge z pillem */}
           <div className="inline-flex items-center gap-2 mb-5">
             <span className="w-1.5 h-1.5 rounded-full bg-signal-healthy" />
-            <span className="hud-label">Co dostajesz pod maską</span>
+            <span className="hud-label">Skąd bierzemy dane</span>
           </div>
           <h2 className="font-display text-3xl sm:text-5xl font-semibold tracking-tight text-foreground">
-            Sześć warstw pracujących razem —
+            Otwarte dane, sprawdzalne źródła —
             <br className="hidden sm:block" />
             <span className="relative inline-block pb-3 text-foreground">
               Ty widzisz tylko gotową odpowiedź.
@@ -78,9 +86,10 @@ export function DataSources() {
                 <div className="inline-flex items-center justify-center w-11 h-11 rounded-md bg-secondary border border-border mb-4">
                   <Icon className="w-5 h-5 text-primary" />
                 </div>
-                <div className="font-display font-semibold text-lg tracking-tight text-foreground mb-2">
+                <div className="font-display font-semibold text-lg tracking-tight text-foreground">
                   {s.title}
                 </div>
+                <div className="hud-label mt-1 mb-2.5">{s.source}</div>
                 <div className="text-sm text-muted-foreground leading-relaxed">{s.desc}</div>
               </div>
             );
