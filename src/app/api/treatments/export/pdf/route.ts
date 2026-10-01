@@ -8,6 +8,7 @@ import path from 'node:path';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { PDFDocument, rgb, type PDFPage, type PDFFont } from 'pdf-lib';
+import { SOR_RECORDS_LEGAL_BASIS } from '@/lib/compliance';
 import fontkit from '@pdf-lib/fontkit';
 
 // Route czyta pliki czcionek z dysku (fs) — wymagany runtime Node.js.
@@ -126,7 +127,7 @@ export async function GET(req: NextRequest) {
       { x: margin, y: pageHeight - margin - 30, size: 9, font, color: rgb(0.4, 0.4, 0.4) },
     );
     p.drawText(
-      `Wygenerowano: ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · Podstawa prawna: Dz.U. 2022 poz. 2453`,
+      `Wygenerowano: ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · Podstawa prawna: ${SOR_RECORDS_LEGAL_BASIS}`,
       { x: margin, y: pageHeight - margin - 42, size: 8, font, color: rgb(0.5, 0.5, 0.5) },
     );
   };

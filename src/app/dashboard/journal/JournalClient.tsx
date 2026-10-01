@@ -116,8 +116,9 @@ export function JournalClient({ fields, treatments: initial }: Props) {
             Księga polowa
           </h1>
           <p className="text-muted-foreground mt-1 max-w-2xl">
-            Elektroniczny rejestr zabiegów agrotechnicznych — obowiązek dla gospodarstw
-            powyżej 10 ha (Dz.U. 2022 poz. 2453). Eksport CSV zgodny z wymogami kontroli.
+            Rejestr zabiegów w gospodarstwie. Ewidencja środków ochrony roślin to obowiązek
+            każdego rolnika (bez progu hektarów), a od 1 stycznia 2027 — w formie elektronicznej.
+            Eksport PDF do okazania podczas kontroli.
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
