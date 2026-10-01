@@ -47,7 +47,7 @@ export async function GET(
   // 1. Historia
   try {
     const histUrl = `${OPEN_METEO_HISTORY}?latitude=${field.lat}&longitude=${field.lon}&start_date=${start}&end_date=${end}&daily=precipitation_sum,et0_fao_evapotranspiration&timezone=auto`;
-    const res = await fetch(histUrl);
+    const res = await fetch(histUrl, { cache: "no-store" });
     if (res.ok) {
       const data = (await res.json()) as {
         daily?: { time: string[]; precipitation_sum: number[]; et0_fao_evapotranspiration: number[] };
@@ -68,7 +68,7 @@ export async function GET(
   // 2. Prognoza
   try {
     const forecastUrl = `${OPEN_METEO_FORECAST}?latitude=${field.lat}&longitude=${field.lon}&daily=precipitation_sum,et0_fao_evapotranspiration&timezone=auto&past_days=3&forecast_days=7`;
-    const res = await fetch(forecastUrl);
+    const res = await fetch(forecastUrl, { cache: "no-store" });
     if (res.ok) {
       const data = (await res.json()) as {
         daily?: { time: string[]; precipitation_sum: number[]; et0_fao_evapotranspiration: number[] };
@@ -94,7 +94,7 @@ export async function GET(
   const tempDays: Array<{ date: string; tMax: number; tMin: number }> = [];
   try {
     const histTempUrl = `${OPEN_METEO_HISTORY}?latitude=${field.lat}&longitude=${field.lon}&start_date=${sowingStr}&end_date=${today.toISOString().slice(0, 10)}&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
-    const res = await fetch(histTempUrl);
+    const res = await fetch(histTempUrl, { cache: "no-store" });
     if (res.ok) {
       const data = (await res.json()) as {
         daily?: { time: string[]; temperature_2m_max: number[]; temperature_2m_min: number[] };
