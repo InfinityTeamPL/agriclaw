@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { LogoMark } from '@/components/brand/LogoMark';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 
 export function Footer() {
@@ -11,9 +12,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-display font-semibold text-sm">Ag</span>
-              </div>
+              <LogoMark size={32} />
               <span className="font-display font-semibold text-foreground text-lg tracking-tight">AgriClaw</span>
             </div>
             <p className="text-sm max-w-md">

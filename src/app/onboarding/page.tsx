@@ -5,6 +5,7 @@
 import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
+import { LogoMark } from '@/components/brand/LogoMark';
 import { OnboardingForm } from './OnboardingForm';
 
 export const dynamic = 'force-dynamic';
@@ -32,9 +33,7 @@ export default async function OnboardingPage() {
       <div className="relative w-full max-w-xl space-y-6 bg-card rounded-lg border border-border p-6 sm:p-10 shadow-pop">
         <div className="space-y-3 text-center">
           <div className="inline-flex items-center gap-2">
-            <div className="w-10 h-10 rounded-md bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-display font-semibold text-sm">Ag</span>
-            </div>
+            <LogoMark size={40} />
             <div>
               <span className="font-display font-semibold text-lg text-foreground tracking-tight">AgriClaw</span>
               <div className="hud-label text-left">

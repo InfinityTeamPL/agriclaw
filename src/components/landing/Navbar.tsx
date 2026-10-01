@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { LogoMark } from '@/components/brand/LogoMark';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 
 export function Navbar() {
@@ -23,8 +24,8 @@ export function Navbar() {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="relative w-8 h-8 rounded-md bg-primary flex items-center justify-center shadow-card">
-            <span className="text-primary-foreground font-display font-semibold text-sm">Ag</span>
+          <div className="relative">
+            <LogoMark size={34} className="shadow-card" />
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-signal-healthy animate-pulse" />
           </div>
           {/* Hero jest JASNE — text-white był reliktem ciemnego wariantu i dawał
