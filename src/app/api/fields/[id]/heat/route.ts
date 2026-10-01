@@ -6,6 +6,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { deriveBbchStatus, resolveSowingDate, type Crop } from '@/lib/bbch';
+import { Prisma } from '@prisma/client';
+
+/** Liczba po polsku (przecinek) — komunikaty i przesłanki „dlaczego". */
+const plNum = (n: number, d = 1) => n.toLocaleString('pl-PL', { minimumFractionDigits: d, maximumFractionDigits: d });
 import { assessHeatStress } from '@/lib/heat-stress';
 
 const OPEN_METEO_HISTORY = 'https://archive-api.open-meteo.com/v1/archive';
@@ -124,8 +128,26 @@ export async function GET(
           fieldId: field.id,
           severity,
           title,
-          message: `${assessment.thresholds.sensitivityPhase}. Maksymalna temp ${assessment.maxTempC.toFixed(0)}°C. ${assessment.consecutiveStressDays >= 3 ? assessment.consecutiveStressDays + ' dni pod rząd. ' : ''}Próg stresu: ${assessment.thresholds.stressThreshold}°C.`,
+          message: `${assessment.thresholds.sensitivityPhase}. Maksymalna temp ${plNum(assessment.maxTempC, 0)}°C. ${assessment.consecutiveStressDays >= 3 ? assessment.consecutiveStressDays + ' dni pod rząd. ' : ''}Próg stresu: ${plNum(assessment.thresholds.stressThreshold, 0)}°C.`,
           action: assessment.recommendation,
+          ruleId: assessment.worstLevel === 'critical' ? 'heat-critical' : 'heat-warning',
+          why: [
+            {
+              label: 'Maksimum dzienne (prognoza)',
+              value: `${plNum(assessment.maxTempC, 0)}°C${firstDanger ? ` · ${new Date(firstDanger.date).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw', day: 'numeric', month: 'numeric' })}` : ''}`,
+              threshold: `stres od ${plNum(assessment.thresholds.stressThreshold, 0)}°C, straty plonu od ${plNum(assessment.thresholds.criticalThreshold, 0)}°C`,
+              source: 'Prognoza pogody (Open-Meteo)',
+            },
+            ...(assessment.consecutiveStressDays >= 2
+              ? [{ label: 'Dni stresu pod rząd', value: String(assessment.consecutiveStressDays), threshold: 'od 3 dni — kumulacja strat', source: 'Prognoza pogody (Open-Meteo)' }]
+              : []),
+            {
+              label: 'Faza wrażliwości',
+              value: `BBCH ${bbch} — ${assessment.thresholds.sensitivityPhase}`,
+              threshold: null,
+              source: sowingDateIsEstimate ? 'Model sum temperatur (data siewu szacowana)' : 'Model sum temperatur od daty siewu',
+            },
+          ] as unknown as Prisma.InputJsonValue,
         },
       });
     }

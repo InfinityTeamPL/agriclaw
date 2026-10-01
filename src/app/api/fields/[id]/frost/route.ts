@@ -6,6 +6,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { deriveBbchStatus, resolveSowingDate, type Crop } from '@/lib/bbch';
+import { Prisma } from '@prisma/client';
+
+/** Liczba po polsku (przecinek) — komunikaty i przesłanki „dlaczego". */
+const plNum = (n: number, d = 1) => n.toLocaleString('pl-PL', { minimumFractionDigits: d, maximumFractionDigits: d });
 import { assessFrostRisk } from '@/lib/frost';
 
 const OPEN_METEO_HISTORY = 'https://archive-api.open-meteo.com/v1/archive';
@@ -130,8 +134,24 @@ export async function GET(
           fieldId: field.id,
           severity,
           title,
-          message: `${assessment.thresholds.sensitivityPhase}. Minimum nocne ${assessment.minTempC.toFixed(1)}°C. Próg uszkodzeń: ${assessment.thresholds.damageThreshold}°C.`,
+          message: `${assessment.thresholds.sensitivityPhase}. Minimum nocne ${plNum(assessment.minTempC)}°C. Próg uszkodzeń: ${plNum(assessment.thresholds.damageThreshold)}°C.`,
           action: assessment.recommendation,
+          // Warstwa „dlaczego" — jak w rekomendacjach NDVI: prognoza vs próg fazy.
+          ruleId: assessment.worstLevel === 'critical' ? 'frost-critical' : 'frost-warning',
+          why: [
+            {
+              label: 'Minimum nocne (prognoza)',
+              value: `${plNum(assessment.minTempC)}°C${firstDanger ? ` · ${new Date(firstDanger.date).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw', day: 'numeric', month: 'numeric' })}` : ''}`,
+              threshold: `uszkodzenia od ${plNum(assessment.thresholds.damageThreshold)}°C, zamieranie od ${plNum(assessment.thresholds.lethalThreshold)}°C`,
+              source: 'Prognoza pogody (Open-Meteo), 10 dni',
+            },
+            {
+              label: 'Faza wrażliwości',
+              value: `BBCH ${bbch} — ${assessment.thresholds.sensitivityPhase}`,
+              threshold: null,
+              source: sowingDateIsEstimate ? 'Model sum temperatur (data siewu szacowana)' : 'Model sum temperatur od daty siewu',
+            },
+          ] as unknown as Prisma.InputJsonValue,
         },
       });
     }

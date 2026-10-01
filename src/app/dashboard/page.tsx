@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma';
 import { evaluateCompliance } from '@/lib/compliance';
 import { fetchWeatherForecast, fetchSprayForecast } from '@/lib/satellite/weather';
 import { DashboardHomeClient } from './DashboardHomeClient';
+import { topReason } from '@/lib/why';
 
 export const dynamic = 'force-dynamic';
 
@@ -206,6 +207,7 @@ export default async function DashboardHome() {
         title: r.title,
         createdAt: r.createdAt.toISOString(),
         ndviMean: ndviByField.get(r.fieldId)?.[0]?.mean ?? null,
+        reason: topReason(r.why),
       }))}
       weather={today}
       sprayWindow={sprayWindow}
@@ -219,3 +221,4 @@ export default async function DashboardHome() {
     />
   );
 }
+
