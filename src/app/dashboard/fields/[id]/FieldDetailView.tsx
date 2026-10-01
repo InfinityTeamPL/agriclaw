@@ -34,6 +34,7 @@ import {
   formatDatePL,
   formatDateTimePL,
   formatHa,
+  formatIndexPL,
   severityStyle,
 } from '@/lib/ui/format';
 // Lazy-load MapLibre (~250 kB gzip) — poza First Load JS, ładowany przy renderze mapy.
@@ -54,6 +55,8 @@ import { FrostAlert } from '@/components/dashboard/FrostAlert';
 import { HeatAlert } from '@/components/dashboard/HeatAlert';
 import { NitrogenCalculator } from '@/components/dashboard/NitrogenCalculator';
 import { WaterBalance } from '@/components/dashboard/WaterBalance';
+import { TREND_WINDOW_DAYS } from '@/lib/satellite/trend-window';
+
 import { DiseaseRiskPanel } from '@/components/dashboard/DiseaseRiskPanel';
 
 interface Field {
@@ -116,7 +119,15 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
 
   const latest = ndviHistory[0];
   const previous = ndviHistory[1];
-  const trend = latest && previous ? latest.mean - previous.mean : null;
+  // Trend tylko w obrębie sezonu: lipcowa pszenica przed żniwami vs październikowe
+  // wschody to nowa uprawa, nie „spadek o 0,44" (patrz lib/satellite/scene).
+  const trend =
+    latest &&
+    previous &&
+    new Date(latest.observedAt).getTime() - new Date(previous.observedAt).getTime() <=
+      TREND_WINDOW_DAYS * 86_400_000
+      ? latest.mean - previous.mean
+      : null;
 
   const seriesChronological = [...ndviHistory].reverse().map((r) => r.mean);
 
@@ -457,7 +468,7 @@ function HistoryTab({ history }: { history: NdviPoint[] }) {
                 NDVI <span className="font-mono tabular">{r.mean.toFixed(3)}</span>
               </div>
               <div className="text-xs text-muted-foreground">
-                zakres <span className="font-mono tabular">{r.min.toFixed(2)}–{r.max.toFixed(2)}</span> · zachmurzenie{' '}
+                zakres <span className="font-mono tabular">{formatIndexPL(r.min)}–{formatIndexPL(r.max)}</span> · zachmurzenie{' '}
                 <span className="font-mono tabular">{Math.round(r.cloudCover * 100)}%</span>
               </div>
             </div>
@@ -565,12 +576,12 @@ function CurrentNdvi({
     <div className="mt-3 space-y-3">
       <div className="flex items-baseline gap-3">
         <div className="font-mono text-5xl font-semibold tracking-tight tabular" style={{ color }}>
-          {mean.toFixed(2)}
+          {formatIndexPL(mean)}
         </div>
         <div className="flex-1">
           <div className="text-sm font-medium text-foreground">{classLabel[cls]}</div>
           <div className="text-xs text-muted-foreground">
-            zakres <span className="font-mono tabular">{min.toFixed(2)}–{max.toFixed(2)}</span>
+            zakres <span className="font-mono tabular">{formatIndexPL(min)}–{formatIndexPL(max)}</span>
           </div>
         </div>
         {trend !== null && (
@@ -600,14 +611,14 @@ function TrendBadge({ delta }: { delta: number }) {
     return (
       <div className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md bg-signal-healthy/12 text-signal-healthy">
         <ArrowUp className="w-3 h-3" />
-        <span className="font-mono tabular">+{delta.toFixed(2)}</span>
+        <span className="font-mono tabular">+{formatIndexPL(delta)}</span>
       </div>
     );
   }
   return (
     <div className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-md bg-signal-heat/12 text-signal-heat">
       <ArrowDown className="w-3 h-3" />
-      <span className="font-mono tabular">{delta.toFixed(2)}</span>
+      <span className="font-mono tabular">{formatIndexPL(delta)}</span>
     </div>
   );
 }

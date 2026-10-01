@@ -7,8 +7,8 @@ import { timingSafeEqual } from 'crypto';
 import { waitUntil } from '@vercel/functions';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
-import { getCopernicusClient, extractMultiIndexValues } from '@/lib/satellite/copernicus';
-import { computeAllIndices } from '@/lib/satellite/indices';
+import { getCopernicusClient } from '@/lib/satellite/copernicus';
+import { fetchLatestClearScene, TREND_WINDOW_DAYS } from '@/lib/satellite/scene';
 import { isCopernicusConfigured } from '@/lib/satellite/ndvi-mock';
 import { fetchWeatherForecast } from '@/lib/satellite/weather';
 import { generateRecommendation } from '@/lib/recommendations';
@@ -114,21 +114,18 @@ export async function GET(req: NextRequest) {
   async function processField(field: (typeof fields)[number]): Promise<void> {
     try {
       const polygon = JSON.parse(field.polygon) as GeoJSON.Polygon;
-      const [tiff, weather] = await Promise.all([
-        // 4 indeksy w JEDNYM zapytaniu (jak analiza ręczna). Wcześniej cron brał
-        // samo NDVI, a jego odczyt przykrywał pełne analizy — w UI NDRE/NDWI/SAVI
-        // pokazywały „—" (10.2026). Rolnik dostaje teraz codziennie NDRE pod azot.
-        cdse.fetchMultiIndexGeotiff(polygon, fortnightAgo, today),
+      const [scene, weather] = await Promise.all([
+        // Najnowsza scena z widocznym polem (4 indeksy w jednym zapytaniu) + jej
+        // PRAWDZIWA data przelotu. Wcześniej mozaika 14 dni z observedAt = now():
+        // codziennie „nowy" odczyt tej samej sceny, a w UI godzina crona zamiast
+        // daty zdjęcia (10.2026).
+        fetchLatestClearScene(cdse, polygon, fortnightAgo, today),
         fetchWeatherForecast(field.centroid_lat, field.centroid_lon, 7),
       ]);
 
-      const indices = computeAllIndices(await extractMultiIndexValues(tiff));
-      const stats = indices.ndvi;
-
-      // Brak bezchmurnych pikseli (po masce SCL raster to same NaN → validCount 0,
-      // mean 0). NIE zapisujemy "0" jako pomiaru — zatruwałby trend i wywołał
-      // fałszywy alarm suszowy (NDVI < 0.35). Log event i pomiń pole. Audyt 2.8.
-      if (stats.validCount === 0) {
+      // Same chmury nad polem — NIE zapisujemy "0" jako pomiaru (zatruwałby trend
+      // i wywołał fałszywy alarm suszowy). Log event i pomiń pole. Audyt 2.8.
+      if (!scene) {
         results.fields_skipped_no_imagery++;
         await prisma.event.create({
           data: {
@@ -141,15 +138,28 @@ export async function GET(req: NextRequest) {
         return;
       }
 
+      const { indices, sceneAt } = scene;
+      const stats = indices.ndvi;
+
+      // Trend tylko w obrębie sezonu i tylko wobec WCZEŚNIEJSZEJ sceny.
       const prev = await prisma.ndviReading.findFirst({
-        where: { fieldId: field.id, source: { not: 'mock' } },
+        where: {
+          fieldId: field.id,
+          source: { not: 'mock' },
+          observedAt: { lt: sceneAt, gte: new Date(sceneAt.getTime() - TREND_WINDOW_DAYS * 864e5) },
+        },
         orderBy: { observedAt: 'desc' },
       });
 
-      await prisma.ndviReading.create({
+      // Scena już zapisana (brak nowego przelotu od wczoraj) → bez dubla w historii.
+      const alreadyStored = await prisma.ndviReading.count({
+        where: { fieldId: field.id, observedAt: sceneAt, source: 'sentinel-2' },
+      });
+
+      if (!alreadyStored) await prisma.ndviReading.create({
         data: {
           fieldId: field.id,
-          observedAt: new Date(),
+          observedAt: sceneAt,
           ndviMean: stats.mean,
           ndviMin: stats.min,
           ndviMax: stats.max,
@@ -163,7 +173,7 @@ export async function GET(req: NextRequest) {
           saviMin: indices.savi.min,
           saviMax: indices.savi.max,
           validCount: stats.validCount,
-          cloudCover: 0,
+          cloudCover: scene.cloudCover,
           source: 'sentinel-2',
         },
       });

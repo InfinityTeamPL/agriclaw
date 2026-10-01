@@ -11,6 +11,7 @@ import { fetchWithTimeout } from './http';
 const TOKEN_URL =
   'https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token';
 const PROCESS_URL = 'https://sh.dataspace.copernicus.eu/api/v1/process';
+const CATALOG_URL = 'https://sh.dataspace.copernicus.eu/api/v1/catalog/1.0.0/search';
 
 // Per-pikselowa maska chmur z pasma Scene Classification (SCL) Sentinel-2 L2A.
 // Odrzucane klasy: 3 = cień chmury, 8 = chmura (średnie prawdopodobieństwo),
@@ -203,6 +204,43 @@ export class CopernicusClient {
     opts: { width?: number; height?: number; maxCloudCoverage?: number } = {},
   ): Promise<ArrayBuffer> {
     return this.processRequest(polygon, dateFrom, dateTo, NDVI_EVALSCRIPT, opts);
+  }
+
+  /**
+   * Catalog API (STAC): sceny S2 L2A nad poligonem, NAJNOWSZE pierwsze.
+   * Process API z `leastCC` skleja sceny i nie mówi, z którego dnia jest obraz —
+   * stąd w UI „dane z 20:47" (godzina analizy, nie przelotu). Wybierając scenę
+   * jawnie znamy prawdziwą datę i zachmurzenie kafla.
+   */
+  async searchS2Scenes(
+    polygon: GeoJSON.Polygon,
+    dateFrom: string,
+    dateTo: string,
+    maxCloudCoverage = 40,
+  ): Promise<Array<{ datetime: string; cloudCover: number }>> {
+    const token = await this.getToken();
+    const res = await fetchWithTimeout(CATALOG_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        collections: ['sentinel-2-l2a'],
+        datetime: `${dateFrom}T00:00:00Z/${dateTo}T23:59:59Z`,
+        intersects: polygon,
+        limit: 50,
+        filter: `eo:cloud_cover <= ${maxCloudCoverage}`,
+        'filter-lang': 'cql2-text',
+        fields: { include: ['properties.datetime', 'properties.eo:cloud_cover'], exclude: [] },
+      }),
+      timeoutMs: 15_000,
+      retries: 1,
+    });
+    if (!res.ok) throw new Error(`CDSE catalog failed: ${res.status} ${await res.text()}`);
+    const data = (await res.json()) as {
+      features: Array<{ properties: { datetime: string; 'eo:cloud_cover'?: number } }>;
+    };
+    return data.features
+      .map((f) => ({ datetime: f.properties.datetime, cloudCover: f.properties['eo:cloud_cover'] ?? 0 }))
+      .sort((a, b) => b.datetime.localeCompare(a.datetime));
   }
 
   /**
