@@ -180,3 +180,15 @@ export const hybridStyle: StyleSpecification = {
  * Fallback road map (jeśli satelita nie ładuje się np. przez proxy).
  */
 export const basicStyle = 'https://tiles.openfreemap.org/styles/liberty';
+
+// Mapy osadzone w przewijanej stronie NIE mogą przechwytywać kółka myszy —
+// inaczej użytkownik przewijający stronę „wpada" w mapę i ją przybliża.
+// Standard: Ctrl/⌘ + kółko przybliża, na telefonie mapę przesuwa się dwoma palcami.
+export const EMBEDDED_MAP_OPTIONS = {
+  cooperativeGestures: true,
+  locale: {
+    'CooperativeGesturesHandler.WindowsHelpText': 'Użyj Ctrl + kółka myszy, aby przybliżyć mapę',
+    'CooperativeGesturesHandler.MacHelpText': 'Użyj ⌘ + kółka myszy, aby przybliżyć mapę',
+    'CooperativeGesturesHandler.MobileHelpText': 'Użyj dwóch palców, aby przesunąć mapę',
+  },
+} as const;

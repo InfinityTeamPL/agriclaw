@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Loader2 } from 'lucide-react';
-import { hybridStyle } from '@/lib/map-style';
+import { hybridStyle, EMBEDDED_MAP_OPTIONS } from '@/lib/map-style';
 
 interface Props {
   polygon: GeoJSON.Polygon;
@@ -34,6 +34,7 @@ export function FieldPolygonMap({ polygon, centroid, ndviMean, className }: Prop
     if (!containerRef.current || mapRef.current) return;
 
     const map = new maplibregl.Map({
+      ...EMBEDDED_MAP_OPTIONS,
       container: containerRef.current,
       style: hybridStyle,
       center: [centroid.lon, centroid.lat],

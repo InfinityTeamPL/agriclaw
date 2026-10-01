@@ -50,11 +50,7 @@ export async function GET(
   }
 
   // 2. BBCH
-  const { sowingDate, isEstimate: sowingDateIsEstimate } = resolveSowingDate(
-    field.sowing_date,
-    crop,
-    new Date().getFullYear(),
-  );
+  const { sowingDate, isEstimate: sowingDateIsEstimate } = resolveSowingDate(field.sowing_date, crop, new Date());
   const tempDays: Array<{ date: string; tMax: number; tMin: number }> = [];
   try {
     const histUrl = `${OPEN_METEO_HISTORY}?latitude=${field.lat}&longitude=${field.lon}&start_date=${sowingDate.toISOString().slice(0, 10)}&end_date=${new Date().toISOString().slice(0, 10)}&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;

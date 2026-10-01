@@ -256,34 +256,56 @@ export function deriveBbchStatus(input: {
 export function resolveSowingDate(
   raw: Date | string | null | undefined,
   crop: Crop,
-  currentYear: number,
+  yearOrNow: number | Date = new Date(),
 ): { sowingDate: Date; isEstimate: boolean } {
   if (raw) {
     const d = raw instanceof Date ? raw : new Date(raw);
     if (!Number.isNaN(d.getTime())) return { sowingDate: d, isEstimate: false };
   }
-  return { sowingDate: defaultSowingDate(crop, currentYear), isEstimate: true };
+  return { sowingDate: defaultSowingDate(crop, yearOrNow), isEstimate: true };
 }
 
-export function defaultSowingDate(crop: Crop, currentYear: number): Date {
-  const spring = (year: number, month: number, day: number) =>
-    new Date(Date.UTC(year, month - 1, day));
+/**
+ * Punkt odniesienia sezonu. Liczba = rok (zachowanie historyczne: połowa
+ * sezonu, 1 lipca), Date = konkretny dzień — tak wołają trasy API.
+ */
+function seasonReference(yearOrNow: number | Date): Date {
+  return yearOrNow instanceof Date ? yearOrNow : new Date(Date.UTC(yearOrNow, 6, 1));
+}
+
+/**
+ * Szacowana data siewu, gdy rolnik jej nie podał.
+ *
+ * Uprawy ozime (pszenica, żyto, rzepak) wysiewa się jesienią — sezon trwa od
+ * siewu do żniw następnego roku. Wcześniej zawsze braliśmy siew z POPRZEDNIEGO
+ * roku, przez co w październiku 2026 aplikacja pokazywała „BBCH 89, dojrzałość
+ * pełna" (łan z siewu 2025, już zebrany), zamiast wschodów z siewu 2026.
+ * Teraz: jeśli tegoroczny termin siewu już minął — liczymy od niego.
+ */
+export function defaultSowingDate(crop: Crop, yearOrNow: number | Date = new Date()): Date {
+  const now = seasonReference(yearOrNow);
+  const y = now.getUTCFullYear();
+  const at = (year: number, month: number, day: number) => new Date(Date.UTC(year, month - 1, day));
+  const winter = (month: number, day: number) => {
+    const thisYear = at(y, month, day);
+    return now.getTime() >= thisYear.getTime() ? thisYear : at(y - 1, month, day);
+  };
   switch (crop) {
     case 'wheat':
     case 'rye':
-      return spring(currentYear - 1, 9, 15); // ozime
+      return winter(9, 15); // ozime
     case 'barley':
     case 'oats':
-      return spring(currentYear, 3, 25); // jare
+      return at(y, 3, 25); // jare
     case 'corn':
-      return spring(currentYear, 4, 25);
+      return at(y, 4, 25);
     case 'rapeseed':
-      return spring(currentYear - 1, 8, 25);
+      return winter(8, 25); // rzepak ozimy
     case 'potato':
-      return spring(currentYear, 4, 25);
+      return at(y, 4, 25);
     case 'sugarbeet':
-      return spring(currentYear, 4, 5);
+      return at(y, 4, 5);
     default:
-      return spring(currentYear, 4, 1);
+      return at(y, 4, 1);
   }
 }

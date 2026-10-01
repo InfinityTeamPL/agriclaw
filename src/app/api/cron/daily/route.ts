@@ -6,8 +6,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { timingSafeEqual } from 'crypto';
 import { waitUntil } from '@vercel/functions';
 import { prisma } from '@/lib/prisma';
-import { getCopernicusClient, extractNdviValues } from '@/lib/satellite/copernicus';
-import { computeNdviStats } from '@/lib/satellite/ndvi';
+import { Prisma } from '@prisma/client';
+import { getCopernicusClient, extractMultiIndexValues } from '@/lib/satellite/copernicus';
+import { computeAllIndices } from '@/lib/satellite/indices';
 import { isCopernicusConfigured } from '@/lib/satellite/ndvi-mock';
 import { fetchWeatherForecast } from '@/lib/satellite/weather';
 import { generateRecommendation } from '@/lib/recommendations';
@@ -114,12 +115,15 @@ export async function GET(req: NextRequest) {
     try {
       const polygon = JSON.parse(field.polygon) as GeoJSON.Polygon;
       const [tiff, weather] = await Promise.all([
-        cdse.fetchNdviGeotiff(polygon, fortnightAgo, today),
+        // 4 indeksy w JEDNYM zapytaniu (jak analiza ręczna). Wcześniej cron brał
+        // samo NDVI, a jego odczyt przykrywał pełne analizy — w UI NDRE/NDWI/SAVI
+        // pokazywały „—" (10.2026). Rolnik dostaje teraz codziennie NDRE pod azot.
+        cdse.fetchMultiIndexGeotiff(polygon, fortnightAgo, today),
         fetchWeatherForecast(field.centroid_lat, field.centroid_lon, 7),
       ]);
 
-      const values = await extractNdviValues(tiff);
-      const stats = computeNdviStats(values);
+      const indices = computeAllIndices(await extractMultiIndexValues(tiff));
+      const stats = indices.ndvi;
 
       // Brak bezchmurnych pikseli (po masce SCL raster to same NaN → validCount 0,
       // mean 0). NIE zapisujemy "0" jako pomiaru — zatruwałby trend i wywołał
@@ -149,6 +153,15 @@ export async function GET(req: NextRequest) {
           ndviMean: stats.mean,
           ndviMin: stats.min,
           ndviMax: stats.max,
+          ndreMean: indices.ndre.mean,
+          ndreMin: indices.ndre.min,
+          ndreMax: indices.ndre.max,
+          ndwiMean: indices.ndwi.mean,
+          ndwiMin: indices.ndwi.min,
+          ndwiMax: indices.ndwi.max,
+          saviMean: indices.savi.mean,
+          saviMin: indices.savi.min,
+          saviMax: indices.savi.max,
           validCount: stats.validCount,
           cloudCover: 0,
           source: 'sentinel-2',
@@ -172,6 +185,9 @@ export async function GET(req: NextRequest) {
             title: rec.title,
             message: rec.message,
             action: rec.action,
+            // Warstwa „dlaczego" — także dla sygnałów z porannego skanu.
+            ruleId: rec.ruleId,
+            why: rec.why as unknown as Prisma.InputJsonValue,
           },
         });
 

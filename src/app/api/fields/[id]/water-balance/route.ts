@@ -89,7 +89,7 @@ export async function GET(
   }
 
   // 3. BBCH
-  const { sowingDate } = resolveSowingDate(field.sowing_date, crop, today.getFullYear());
+  const { sowingDate } = resolveSowingDate(field.sowing_date, crop, today);
   const sowingStr = sowingDate.toISOString().slice(0, 10);
   const tempDays: Array<{ date: string; tMax: number; tMin: number }> = [];
   try {

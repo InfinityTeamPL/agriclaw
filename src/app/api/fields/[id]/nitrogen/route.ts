@@ -46,11 +46,7 @@ export async function GET(
   const ndre = latestReading?.ndreMean ?? null;
 
   // 3. Oblicz BBCH
-  const { sowingDate, isEstimate: sowingDateIsEstimate } = resolveSowingDate(
-    field.sowing_date,
-    crop,
-    new Date().getFullYear(),
-  );
+  const { sowingDate, isEstimate: sowingDateIsEstimate } = resolveSowingDate(field.sowing_date, crop, new Date());
   const today = new Date().toISOString().slice(0, 10);
   const sowingStr = sowingDate.toISOString().slice(0, 10);
   const dailyTemps: Array<{ date: string; tMax: number; tMin: number }> = [];
