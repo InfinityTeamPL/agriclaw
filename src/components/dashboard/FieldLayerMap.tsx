@@ -18,7 +18,7 @@ interface LayerResponse {
   type: LayerType;
   bbox: { minLon: number; minLat: number; maxLon: number; maxLat: number };
   dataUrl: string;
-  observedAt: string;
+  observedAt: string | null; // null = mozaika 14 dni (brak zapisanego odczytu)
 }
 
 interface Props {
@@ -347,7 +347,7 @@ export function FieldLayerMap({ fieldId, polygon, centroid, className }: Props) 
               ))}
             </div>
             <div className="text-[9px] text-muted-foreground pt-1 border-t border-border">
-              Sentinel-2 · 10 m/piksel · {new Date(current.observedAt).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw' })}
+              Sentinel-2 · 10 m/piksel · {current.observedAt ? `scena ${new Date(current.observedAt).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw' })}` : 'mozaika z 14 dni'}
             </div>
           </div>
         </div>
