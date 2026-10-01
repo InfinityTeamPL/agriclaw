@@ -47,6 +47,16 @@ export async function GET(
   const today = new Date().toISOString().slice(0, 10);
   const from = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10);
 
+  // Obraz z TEJ SAMEJ sceny co liczby obok (ostatni odczyt Sentinel-2, lib/satellite/scene).
+  // Wcześniej mozaika 14 dni + observedAt = dziś: mapa i NDVI mogły być z różnych dni,
+  // a podpis pod mapą kłamał datą.
+  const latest = await prisma.ndviReading.findFirst({
+    where: { fieldId: params.fieldId, source: 'sentinel-2', observedAt: { gte: new Date(from) } },
+    orderBy: { observedAt: 'desc' },
+    select: { observedAt: true },
+  });
+  const sceneDay = latest?.observedAt.toISOString().slice(0, 10) ?? null;
+
   // ?size=N (miniatury) — mały kafel z PROPORCJAMI pola (koszt ~1/16 dużego).
   // Bez size: 1024×1024 dla nakładki mapy (MapLibre i tak rozciąga po bbox).
   const sizeParam = Number(req.nextUrl.searchParams.get('size'));
@@ -66,9 +76,10 @@ export async function GET(
     const pngBuffer = await getCopernicusClient().fetchColorRampPng(
       polygon,
       type,
-      from,
-      today,
-      dims,
+      sceneDay ?? from,
+      sceneDay ?? today,
+      // Dzień sceny już wybrany (≥50% pola bez chmur) — nie odfiltrowuj go po zachmurzeniu kafla.
+      sceneDay ? { ...dims, maxCloudCoverage: 100 } : dims,
     );
 
     // Zwróć metadane bbox + base64 PNG, żeby klient mógł umieścić na mapie
@@ -83,7 +94,8 @@ export async function GET(
           maxLat: field.bbox_maxy,
         },
         dataUrl: `data:image/png;base64,${base64}`,
-        observedAt: today,
+        // Data przelotu sceny; null = mozaika z 14 dni (brak zapisanego odczytu).
+        observedAt: sceneDay,
       },
       { headers: EO_LAYER_CACHE_HEADERS },
     );
