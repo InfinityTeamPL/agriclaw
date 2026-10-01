@@ -92,7 +92,7 @@ export function SettingsForm({ defaultValues }: Props) {
 
       <div>
         <label htmlFor="settings-phone" className="block text-sm font-medium mb-1 text-foreground">
-          Telefon (WhatsApp)
+          Telefon
         </label>
         <input
           id="settings-phone"
@@ -104,7 +104,7 @@ export function SettingsForm({ defaultValues }: Props) {
           className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
         />
         <p className="mt-1 text-xs text-muted-foreground">
-          Użyjemy tego numeru do wysyłania rekomendacji na WhatsApp.
+          Na ten numer wyślemy pilne alerty (przymrozek, okno oprysku), gdy uruchomimy powiadomienia SMS/WhatsApp. Do tego czasu rekomendacje są w panelu „Dziś”.
         </p>
       </div>
 
