@@ -11,6 +11,12 @@ export interface RecommendationInput {
   avgEt0Next7: number;
   soilMoisturePct?: number; // 0-100
   monthOfYear?: number; // 1-12
+  /**
+   * Faza uprawy (lib/satellite/ndvi → cropStage). Na wschodach i zimą niski NDVI to
+   * gleba/spoczynek, nie stres — bez tego ozimina 2 tyg. po siewie trafiała do
+   * „wymaga uwagi" z radą mocznika. Brak = zachowanie historyczne.
+   */
+  stage?: 'establishment' | 'dormancy' | 'growth';
 }
 
 /**
@@ -87,6 +93,43 @@ export function generateRecommendation(
     cerealLike &&
     (input.monthOfYear === 7 || input.monthOfYear === 8);
 
+  // Wschody / spoczynek zimowy: progi NDVI dla łanu nie mają sensu (w kadrze gleba
+  // albo roślina w spoczynku). Mówimy, co rolnik może realnie sprawdzić.
+  if (input.stage === 'dormancy') {
+    return {
+      severity: 'none',
+      title: 'Spoczynek zimowy',
+      message: `NDVI ${pl(ndviMean)} — niski odczyt zimą jest normalny dla ${cropLabel}.`,
+      action:
+        'Bez zabiegów. Po ruszeniu wegetacji wiosną ocenimy przezimowanie i zaplanujemy pierwszą dawkę azotu (program azotanowy zabrania nawożenia zimą).',
+      ruleId: 'dormancy',
+      why: [
+        { label: 'NDVI', value: pl(ndviMean), threshold: null, source: SRC_S2 },
+        { label: 'Faza', value: 'spoczynek zimowy', threshold: 'progi NDVI łanu nie obowiązują', source: 'Data siewu + kalendarz' },
+      ],
+    };
+  }
+  if (input.stage === 'establishment') {
+    const dry = daysWithoutRain >= 7;
+    return {
+      severity: dry ? 'low' : 'none',
+      title: dry ? 'Sucho w czasie wschodów' : 'Wschody — ukorzenianie',
+      message: dry
+        ? `${daysWithoutRain} dni bez deszczu w czasie wschodów — wschody ${cropLabel} mogą być nierówne. NDVI ${pl(ndviMean)} jest typowy dla tej fazy.`
+        : `NDVI ${pl(ndviMean)} — typowy dla wschodów ${cropLabel}; gleba jest jeszcze widoczna między rzędami.`,
+      action:
+        'Ok. 3 tygodnie po siewie policz rośliny na 1 m² w 3–4 miejscach pola. Nie decyduj o azocie ani fungicydzie na podstawie NDVI w tej fazie.',
+      ruleId: dry ? 'establishment-dry' : 'establishment',
+      why: [
+        { label: 'NDVI', value: pl(ndviMean), threshold: null, source: SRC_S2 },
+        { label: 'Faza', value: 'wschody', threshold: 'progi NDVI łanu nie obowiązują', source: 'Data siewu + kalendarz' },
+        ...(dry
+          ? [{ label: 'Dni bez deszczu', value: String(daysWithoutRain), threshold: 'co najmniej 7', source: SRC_FORECAST }]
+          : []),
+      ],
+    };
+  }
+
   // HIGH: silny stres suszowy + zła prognoza
   if (
     ndviMean < 0.35 &&
@@ -97,7 +140,7 @@ export function generateRecommendation(
     return {
       severity: 'high',
       title: 'Pilny stres suszowy',
-      message: `Stan ${cropLabel} pogarsza się. NDVI ${ndviMean.toFixed(2)}, ${daysWithoutRain} dni bez deszczu, parowanie ${avgEt0Next7.toFixed(1)} mm/dzień.`,
+      message: `Stan ${cropLabel} pogarsza się. NDVI ${pl(ndviMean)}, ${daysWithoutRain} dni bez deszczu, parowanie ${pl(avgEt0Next7, 1)} mm/dzień.`,
       action:
         'Jeśli masz nawadnianie — dobre okno dziś 18:00-22:00 albo jutro 5:30-9:00. Bez nawadniania rozważ oprysk spowalniający parowanie (antytranspirant) — dobór, dawkę i warunki potwierdź z etykietą (rejestr MRiRW), fazą uprawy i przepisami. Decyzję o zabiegu podejmujesz sam.',
       ruleId: 'drought-severe',
@@ -134,7 +177,7 @@ export function generateRecommendation(
     return {
       severity: 'low',
       title: 'Naturalne dojrzewanie łanu',
-      message: `NDVI spadł o ${ndviDrop.toFixed(2)}, ale to okres dojrzewania ${cropLabel} (lipiec-sierpień). Spadek to najprawdopodobniej naturalne żółknięcie łanu, nie choroba.`,
+      message: `NDVI spadł o ${pl(ndviDrop)}, ale to okres dojrzewania ${cropLabel} (lipiec-sierpień). Spadek to najprawdopodobniej naturalne żółknięcie łanu, nie choroba.`,
       action:
         'Nie ma potrzeby oprysku tylko z powodu spadku NDVI. Jeśli widzisz nietypowe plamy/przebarwienia — zrób zdjęcie (diagnoza z kamery). Planuj termin zbioru.',
       ruleId: 'senescence',
@@ -161,7 +204,7 @@ export function generateRecommendation(
     return {
       severity: 'medium',
       title: 'Możliwa choroba grzybowa',
-      message: `NDVI spadł o ${ndviDrop.toFixed(2)} w ostatnim okresie przy normalnej wilgotności. Może wskazywać na infekcję ${cropLabel === 'pszenicy' ? '(rdza, mączniak, septorioza)' : '(plamistość liści, fuzarioza)'} — ale najpierw potwierdź.`,
+      message: `NDVI spadł o ${pl(ndviDrop)} w ostatnim okresie przy normalnej wilgotności. Może wskazywać na infekcję ${cropLabel === 'pszenicy' ? '(rdza, mączniak, septorioza)' : '(plamistość liści, fuzarioza)'} — ale najpierw potwierdź.`,
       action:
         'Sprawdź pole wizualnie w 2-3 miejscach lub zrób zdjęcie do diagnozy z kamery. Fungicyd rozważ TYLKO po potwierdzeniu choroby — dobór substancji i dawkę potwierdź z aktualną etykietą (rejestr MRiRW), fazą uprawy i przepisami (nie stosuj „w ciemno"). Unikaj oprysku przy wietrze >15 km/h. Decyzję o zabiegu podejmujesz sam.',
       ruleId: 'disease-suspected',
@@ -188,7 +231,7 @@ export function generateRecommendation(
     return {
       severity: 'medium',
       title: 'Umiarkowany stres wodny',
-      message: `${daysWithoutRain} dni bez deszczu, NDVI ${ndviMean.toFixed(2)}. Stan jeszcze nie krytyczny, ale warto działać wyprzedzająco.`,
+      message: `${daysWithoutRain} dni bez deszczu, NDVI ${pl(ndviMean)}. Stan jeszcze nie krytyczny, ale warto działać wyprzedzająco.`,
       action:
         'Sprawdź wilgotność gleby łopatą (30 cm głębokości). Jeśli sucha: planuj nawadnianie w ciągu 48h albo rozważ oprysk antytranspirantem — dobór i dawkę potwierdź z etykietą (rejestr MRiRW); decyzję podejmujesz sam.',
       ruleId: 'water-stress-moderate',
@@ -209,7 +252,7 @@ export function generateRecommendation(
     return {
       severity: 'low',
       title: 'Średnia kondycja pola',
-      message: `NDVI ${ndviMean.toFixed(2)}. ${cropLabel.charAt(0).toUpperCase() + cropLabel.slice(1)} w przeciętnej formie.`,
+      message: `NDVI ${pl(ndviMean)}. ${cropLabel.charAt(0).toUpperCase() + cropLabel.slice(1)} w przeciętnej formie.`,
       action:
         'Monitoruj przez 3-5 dni. Rozważ dokarmianie dolistne azotem (mocznik 5%) jeśli faza rozwoju na to pozwala.',
       ruleId: 'condition-average',
@@ -229,7 +272,7 @@ export function generateRecommendation(
   return {
     severity: 'none',
     title: 'Pole w dobrej kondycji',
-    message: `NDVI ${ndviMean.toFixed(2)}. ${cropLabel.charAt(0).toUpperCase() + cropLabel.slice(1)} zdrowa, brak konieczności interwencji.`,
+    message: `NDVI ${pl(ndviMean)}. ${cropLabel.charAt(0).toUpperCase() + cropLabel.slice(1)} zdrowa, brak konieczności interwencji.`,
     action: 'Kontynuuj standardowy plan. Kolejna analiza za 3-5 dni.',
     ruleId: 'healthy',
     why: [
