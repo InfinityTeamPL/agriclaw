@@ -47,13 +47,28 @@ export async function GET(
   const today = new Date().toISOString().slice(0, 10);
   const from = new Date(Date.now() - 14 * 864e5).toISOString().slice(0, 10);
 
+  // ?size=N (miniatury) — mały kafel z PROPORCJAMI pola (koszt ~1/16 dużego).
+  // Bez size: 1024×1024 dla nakładki mapy (MapLibre i tak rozciąga po bbox).
+  const sizeParam = Number(req.nextUrl.searchParams.get('size'));
+  const dims = (() => {
+    if (!Number.isFinite(sizeParam) || sizeParam <= 0) return { width: 1024, height: 1024 };
+    const side = Math.min(512, Math.max(64, Math.round(sizeParam)));
+    const midLat = ((field.bbox_miny + field.bbox_maxy) / 2) * (Math.PI / 180);
+    const wM = (field.bbox_maxx - field.bbox_minx) * 111320 * Math.cos(midLat);
+    const hM = (field.bbox_maxy - field.bbox_miny) * 110574;
+    if (wM <= 0 || hM <= 0) return { width: side, height: side };
+    return wM >= hM
+      ? { width: side, height: Math.max(16, Math.round((side * hM) / wM)) }
+      : { width: Math.max(16, Math.round((side * wM) / hM)), height: side };
+  })();
+
   try {
     const pngBuffer = await getCopernicusClient().fetchColorRampPng(
       polygon,
       type,
       from,
       today,
-      { width: 1024, height: 1024 },
+      dims,
     );
 
     // Zwróć metadane bbox + base64 PNG, żeby klient mógł umieścić na mapie
