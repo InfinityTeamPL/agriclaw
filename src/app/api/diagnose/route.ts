@@ -8,7 +8,7 @@ import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { getOpenRouterClient } from '@/lib/ai/openrouter';
 import { PROMPT_ADVISORY_DISCIPLINE, ADVISORY_SHORT } from '@/lib/advisory';
-import { checkSorProduct } from '@/lib/sor-registry';
+import { checkSorProduct, checkSubstances } from '@/lib/sor-registry';
 
 const bodySchema = z.object({
   imageBase64: z.string().startsWith('data:image/'),
@@ -180,6 +180,11 @@ ${PROMPT_ADVISORY_DISCIPLINE}`;
     } else {
       await Promise.all(
         srodki.slice(0, 4).map(async (s) => {
+          // Substancje czynne — model podaje je jako „kierunek"; wycofana substancja
+          // (np. mankozeb) nie może przejść z zielonym znaczkiem obok nazwy handlowej.
+          if (typeof s.substancja_czynna === 'string' && s.substancja_czynna.trim()) {
+            s.substancjeRejestr = await checkSubstances(s.substancja_czynna);
+          }
           // Weryfikujemy TYLKO nazwy handlowe — substancja czynna nie występuje
           // w nazwach produktów (dałaby zawsze fałszywe "brak w rejestrze").
           const raw = typeof s.przyklad_handlowy === 'string' ? s.przyklad_handlowy.trim() : '';
