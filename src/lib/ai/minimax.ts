@@ -151,6 +151,11 @@ export async function minimaxChatStream(opts: ChatStreamOptions): Promise<ChatRe
       max_tokens: opts.maxTokens ?? 4000,
       temperature: opts.temperature ?? 0.3,
       messages: opts.messages,
+      // Myślenie w osobnym polu (reasoning_details), a nie jako <think> w content.
+      // Bez tego M3 sporadycznie gubił PIERWSZY znak odpowiedzi na granicy
+      // </think> (10.2026: „yniki z rejestru…" zamiast „Wyniki…", zapisane tak
+      // w bazie). ThinkFilter zostaje jako siatka bezpieczeństwa.
+      reasoning_split: true,
       ...(opts.tools && opts.tools.length > 0 ? { tools: opts.tools } : {}),
     }),
     signal: AbortSignal.timeout(opts.timeoutMs ?? 120_000),
