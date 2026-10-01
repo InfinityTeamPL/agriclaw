@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { GoogleButton } from '@/components/auth/GoogleButton';
+import { LogoMark } from '@/components/brand/LogoMark';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 
 export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
@@ -65,9 +66,7 @@ export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
           <div className="space-y-1 text-center">
             <Link href="/" className="inline-block">
               <div className="inline-flex items-center gap-2">
-                <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-                  <span className="text-primary-foreground font-display font-bold text-sm">Ag</span>
-                </div>
+                <LogoMark size={32} />
                 <span className="font-display font-semibold text-lg tracking-tight text-foreground">
                   AgriClaw
                 </span>
