@@ -9,6 +9,14 @@
 //     w PL odroczone nowelizacją z 2.12.2025); do 2030 wpis do 31 I roku następnego
 // Weryfikacja źródeł: 10.2026 (topagrar.pl, agroprofil.pl, farmer.pl, gov.pl).
 
+
+/**
+ * Podstawa prawna ewidencji zabiegów ŚOR. Obowiązek dotyczy KAŻDEGO profesjonalnego
+ * użytkownika (bez progu hektarów) — wcześniej w UI i PDF dla inspektora widniało
+ * „gospodarstwa >10 ha, Dz.U. 2022 poz. 2453", co było nieprawdą (10.2026).
+ */
+export const SOR_RECORDS_LEGAL_BASIS =
+  'art. 67 rozp. (WE) 1107/2009; rozp. wyk. (UE) 2023/564; ustawa o środkach ochrony roślin';
 import { pluralPL, cropLabel } from '@/lib/ui/format';
 
 export type ComplianceStatus = 'pass' | 'warn' | 'fail' | 'info';
@@ -156,7 +164,7 @@ export function evaluateCompliance(input: ComplianceInput): ComplianceReport {
       title: 'Rejestracja zabiegów — kompletna',
       status: 'pass',
       detail: 'Wszystkie pola z obszarem ≥1 ha mają zarejestrowane zabiegi.',
-      legalBasis: 'Dz.U. 2022 poz. 2453',
+      legalBasis: SOR_RECORDS_LEGAL_BASIS,
     });
   } else {
     rules.push({
@@ -166,7 +174,7 @@ export function evaluateCompliance(input: ComplianceInput): ComplianceReport {
       status: 'info',
       detail: `${fieldsWithoutTreatments.length} ${pluralPL(fieldsWithoutTreatments.length, 'pole', 'pola', 'pól')} bez ani jednego zabiegu w sezonie: ${fieldsWithoutTreatments.map((f) => f.name).join(', ').slice(0, 200)}${fieldsWithoutTreatments.length > 5 ? '…' : ''}.`,
       action: 'Jeśli stosowałeś na nich środki ochrony roślin — dopisz zabiegi. Od 1 stycznia 2027 ewidencja ŚOR musi być elektroniczna (do 2030: wpis najpóźniej do 31 stycznia roku następnego).',
-      legalBasis: 'Rozp. wyk. (UE) 2023/564; ustawa o środkach ochrony roślin (nowelizacja z 2.12.2025)',
+      legalBasis: SOR_RECORDS_LEGAL_BASIS,
     });
   }
 
@@ -177,7 +185,7 @@ export function evaluateCompliance(input: ComplianceInput): ComplianceReport {
       title: 'Ostatni wpis >30 dni temu',
       status: 'info',
       detail: `${fieldsWithStaleRegistration.length} ${pluralPL(fieldsWithStaleRegistration.length, 'pole', 'pola', 'pól')} z ostatnim zabiegiem sprzed ponad miesiąca. Jeśli wykonywałeś prace — dopisz je.`,
-      legalBasis: 'Dz.U. 2022 poz. 2453',
+      legalBasis: SOR_RECORDS_LEGAL_BASIS,
     });
   }
 
