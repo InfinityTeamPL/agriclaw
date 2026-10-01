@@ -4,7 +4,7 @@ import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { getCopernicusClient } from '@/lib/satellite/copernicus';
 import { fetchLatestClearScene, TREND_WINDOW_DAYS } from '@/lib/satellite/scene';
-import { classifyNdvi, describeNdvi } from '@/lib/satellite/ndvi';
+import { classifyNdvi, cropStage, describeNdvi } from '@/lib/satellite/ndvi';
 import { interpretNdre, interpretNdwi, interpretSavi } from '@/lib/satellite/indices';
 import { fetchWeatherForecast, fetchSprayForecast } from '@/lib/satellite/weather';
 import { fetchSmapSoilMoisture } from '@/lib/satellite/smap';
@@ -199,6 +199,7 @@ export async function POST(
     avgEt0Next7: weatherSummary.avgEt0Next7,
     soilMoisturePct,
     monthOfYear: new Date().getMonth() + 1,
+    stage: cropStage(field.crop, { sowingDate: field.sowing_date, at: observedAt }),
   });
 
   const savedRec = await prisma.recommendation.create({

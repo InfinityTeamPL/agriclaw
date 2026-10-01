@@ -10,6 +10,7 @@
 import { prisma } from '../prisma';
 import { fetchWeatherForecast } from '../satellite/weather';
 import { classifyNdvi, cropStage, describeNdvi } from '../satellite/ndvi';
+import { TREND_WINDOW_DAYS } from '../satellite/trend-window';
 import { checkSorProduct } from '../sor-registry';
 import { PROMPT_ADVISORY_DISCIPLINE, withAdvisoryDisclaimer } from '../advisory';
 import {
@@ -46,6 +47,8 @@ export function buildAgroAgentV2Prompt(ctx: FarmContext): string {
 - Rolnik jest w polu, na telefonie. Każde zdanie musi mieć znaczenie.
 - Jeśli nie masz danych, ZAWSZE wywołaj odpowiednie narzędzie zamiast zmyślać.
 - Narzędzia dostajesz w API (function calling) — używaj ich, wyniki cytuj liczbowo.
+- Liczby zapisuj po polsku: przecinek dziesiętny (NDVI 0,46; 0,61 ha; 2,1 mm), nigdy kropka.
+- Nie oceniaj NDVI bez fazy: jeśli narzędzie zwraca crop_stage „establishment" albo „dormancy", niski NDVI jest normalny — nie nazywaj go stresem.
 
 ${PROMPT_ADVISORY_DISCIPLINE}
 
@@ -190,13 +193,19 @@ async function executeTool(
         },
         ndre_mean: latest.ndreMean,
         ndwi_mean: latest.ndwiMean,
-        trend: prev
-          ? {
-              previous_mean: prev.ndviMean,
-              previous_observed_at: prev.observedAt.toISOString(),
-              delta: latest.ndviMean - prev.ndviMean,
-            }
-          : null,
+        // Trend tylko w obrębie sezonu — inaczej model cytował „spadek −0,44"
+        // między lipcową pszenicą przed żniwami a październikowymi wschodami.
+        trend:
+          prev && latest.observedAt.getTime() - prev.observedAt.getTime() <= TREND_WINDOW_DAYS * 86_400_000
+            ? {
+                previous_mean: prev.ndviMean,
+                previous_observed_at: prev.observedAt.toISOString(),
+                delta: latest.ndviMean - prev.ndviMean,
+              }
+            : null,
+        ...(prev && !(latest.observedAt.getTime() - prev.observedAt.getTime() <= TREND_WINDOW_DAYS * 86_400_000)
+          ? { trend_note: `Poprzedni odczyt sprzed ponad ${TREND_WINDOW_DAYS} dni (inny etap sezonu lub poprzednia uprawa) — nie porównuj.` }
+          : {}),
       };
     }
 
