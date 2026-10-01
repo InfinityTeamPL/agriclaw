@@ -1,0 +1,577 @@
+[
+ {
+  "model": "google/gemini-3.5-flash-lite",
+  "id": "rdza_brunatna",
+  "ok": true,
+  "ms": 1900,
+  "cost": 0.0004529,
+  "txt": "```json {\"uprawa\":\"pszenica\",\"diagnoza\":\"rdza brunatna (Puccinia triticina)\",\"pewnosc\":\"wysoka\"} ```"
+ },
+ {
+  "model": "anthropic/claude-sonnet-5.5",
+  "id": "rdza_brunatna",
+  "ok": true,
+  "ms": 2949,
+  "cost": 0.001882,
+  "txt": "{\"uprawa\":\"Pszenica (zboża – prawdopodobnie pszenica zwyczajna)\",\"diagnoza\":\"Rdza brunatna pszenicy (Puccinia triticina)\",\"pewnosc\":\"średnia"
+ },
+ {
+  "model": "google/gemini-3.5-flash-lite",
+  "id": "rdza_brunatna_2",
+  "ok": false,
+  "ms": 1776,
+  "cost": 0.000445,
+  "txt": "```json {\"uprawa\":\"jęczmień\",\"diagnoza\":\"rdza jęczmienia (Puccinia hordei)\",\"pewnosc\":\"wysoka\"} ```"
+ },
+ {
+  "model": "google/gemini-3.5-flash-lite",
+  "id": "rdza_zolta",
+  "ok": true,
+  "ms": 1375,
+  "cost": 0.0004675,
+  "txt": "```json { \"uprawa\": \"pszenica\", \"diagnoza\": \"rdza żółta (Puccinia striiformis)\", \"pewnosc\": \"wysoka\" } ```"
+ },
+ {
+  "model": "anthropic/claude-sonnet-5.5",
+  "id": "rdza_brunatna_2",
+  "ok": true,
+  "ms": 2249,
+  "cost": 0.001946,
+  "txt": "{\"uprawa\":\"Pszenica (zboża – liść pszenicy)\",\"diagnoza\":\"Rdza brunatna pszenicy (Puccinia triticina)\",\"pewnosc\":\"średnia\"}"
+ },
+ {
+  "model": "qwen/qwen3.8-flash",
+  "id": "rdza_brunatna",
+  "ok": false,
+  "ms": 5710,
+  "cost": null,
+  "txt": "Provider returned error"
+ },
+ {
+  "model": "google/gemini-3.8-flash",
+  "id": "rdza_brunatna",
+  "ok": true,
+  "ms": 6105,
+  "cost": 0.0022335,
+  "txt": "{\"uprawa\":\"pszenica\",\"diagnoza\":\"rdza brunatna pszenicy (Puccinia triticina)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "google/gemini-3.5-flash-lite",
+  "id": "maczniak",
+  "ok": false,
+  "ms": 1195,
+  "cost": 0.0004523,
+  "txt": "```json {\"uprawa\":\"pomidor\",\"diagnoza\":\"przędziorek chmielowiec (Tetranychus urticae)\",\"pewnosc\":\"średnia\"} ```"
+ },
+ {
+  "model": "anthropic/claude-sonnet-5.5",
+  "id": "rdza_zolta",
+  "ok": true,
+  "ms": 1825,
+  "cost": 0.001744,
+  "txt": "{\"uprawa\":\"Pszenica (zboża)\",\"diagnoza\":\"Rdza żółta (Puccinia striiformis)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "google/gemini-3.5-flash-lite",
+  "id": "zaraza_ziemniaka",
+  "ok": true,
+  "ms": 1218,
+  "cost": 0.0004504,
+  "txt": "```json {\"uprawa\":\"ziemniak\",\"diagnoza\":\"zaraza ziemniaka (Phytophthora infestans)\",\"pewnosc\":\"wysoka\"} ```"
+ },
+ {
+  "model": "openai/gpt-5.6-terra",
+  "id": "rdza_brunatna",
+  "ok": true,
+  "ms": 7620,
+  "cost": 0.002452,
+  "txt": "{\"uprawa\":\"pszenica\",\"diagnoza\":\"rdza brunatna pszenicy (Puccinia triticina)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "openai/gpt-5.6-terra",
+  "id": "rdza_brunatna_2",
+  "ok": false,
+  "ms": 31,
+  "txt": "EXC TypeError: fetch failed"
+ },
+ {
+  "model": "openai/gpt-5.6-luna",
+  "id": "rdza_brunatna",
+  "ok": false,
+  "ms": 7696,
+  "cost": 0.0002956,
+  "txt": "{\"uprawa\":\"por\",\"diagnoza\":\"rdza pora (Puccinia allii)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "google/gemini-3.5-flash-lite",
+  "id": "zaraza_ziemniaka_2",
+  "ok": true,
+  "ms": 1775,
+  "cost": 0.0004459,
+  "txt": "```json {\"uprawa\":\"ziemniak\",\"diagnoza\":\"zaraza ziemniaka (Phytophthora infestans)\",\"pewnosc\":\"wysoka\"} ```"
+ },
+ {
+  "model": "qwen/qwen3.8-flash",
+  "id": "rdza_brunatna_2",
+  "ok": false,
+  "ms": 3990,
+  "cost": null,
+  "txt": "Provider returned error"
+ },
+ {
+  "model": "google/gemini-3.8-flash",
+  "id": "rdza_brunatna_2",
+  "ok": true,
+  "ms": 3769,
+  "cost": 0.00198,
+  "txt": "{\"uprawa\":\"pszenica\",\"diagnoza\":\"rdza brunatna pszenicy (Puccinia triticina)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "google/gemini-3.5-flash-lite",
+  "id": "fuzarioza",
+  "ok": true,
+  "ms": 1085,
+  "cost": 0.000452,
+  "txt": "```json {\"uprawa\":\"jęczmień\",\"diagnoza\":\"fuzarioza kłosów (Fusarium spp.)\",\"pewnosc\":\"średnia\"} ```"
+ },
+ {
+  "model": "google/gemma-4-31b-it",
+  "id": "rdza_brunatna",
+  "ok": false,
+  "ms": 11990,
+  "cost": 0.00004888,
+  "txt": "```json {\"uprawa\":\"pszenica\",\"diagnoza\":\"rdza żółta (Puccinia striiformis)\",\"pewnosc\":\"wysoka\"} ```"
+ },
+ {
+  "model": "anthropic/claude-sonnet-5.5",
+  "id": "maczniak",
+  "ok": false,
+  "ms": 5166,
+  "cost": 0.005066,
+  "txt": "Zdjęcie jest wykonane pod mikroskopem: widać fragment liścia z licznymi włoskami (owłosiona blaszka) i czerwonobrunatne, zbite skupiska. Wyg"
+ },
+ {
+  "model": "google/gemini-3.5-flash-lite",
+  "id": "stonka",
+  "ok": true,
+  "ms": 2231,
+  "cost": 0.0004629,
+  "txt": "```json {\"uprawa\":\"ziemniak\",\"diagnoza\":\"larwa stonki ziemniaczanej (Leptinotarsa decemlineata)\",\"pewnosc\":\"wysoka\"} ```"
+ },
+ {
+  "model": "qwen/qwen3.8-27b",
+  "id": "rdza_brunatna",
+  "ok": true,
+  "ms": 13443,
+  "cost": 0.00296652,
+  "txt": " {\"uprawa\":\"pszenica\",\"diagnoza\":\"rdza biała (Puccinia recondita)\",\"pewnosc\":\"średnia\"}"
+ },
+ {
+  "model": "anthropic/claude-sonnet-5.5",
+  "id": "zaraza_ziemniaka",
+  "ok": true,
+  "ms": 2352,
+  "cost": 0.002516,
+  "txt": "{\"uprawa\":\"Ziemniak\",\"diagnoza\":\"Zaraza ziemniaka (Phytophthora infestans)\",\"pewnosc\":\"średnia\"}"
+ },
+ {
+  "model": "openai/gpt-5.6-terra",
+  "id": "rdza_zolta",
+  "ok": true,
+  "ms": 7049,
+  "cost": 0.002464,
+  "txt": "{\"uprawa\":\"pszenica\",\"diagnoza\":\"rdza żółta pszenicy (Puccinia striiformis f. sp. tritici)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "x-ai/grok-4.7",
+  "id": "rdza_brunatna",
+  "ok": true,
+  "ms": 14773,
+  "cost": 0.005704,
+  "txt": "{\"uprawa\":\"pszenica\",\"diagnoza\":\"rdza brunatna pszenicy (Puccinia triticina)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "qwen/qwen3.8-flash",
+  "id": "rdza_zolta",
+  "ok": false,
+  "ms": 5617,
+  "cost": null,
+  "txt": "Provider returned error"
+ },
+ {
+  "model": "openai/gpt-5.6-luna",
+  "id": "rdza_brunatna_2",
+  "ok": false,
+  "ms": 8101,
+  "cost": 0.0004204,
+  "txt": "{\"uprawa\":\"por\",\"diagnoza\":\"rdza pora (Puccinia allii)\",\"pewnosc\":\"średnia\"}"
+ },
+ {
+  "model": "anthropic/claude-sonnet-5.5",
+  "id": "zaraza_ziemniaka_2",
+  "ok": true,
+  "ms": 2067,
+  "cost": 0.002456,
+  "txt": "{\"uprawa\":\"Ziemniak\",\"diagnoza\":\"Zaraza ziemniaka (Phytophthora infestans)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "qwen/qwen3.8-flash",
+  "id": "maczniak",
+  "ok": false,
+  "ms": 4783,
+  "cost": null,
+  "txt": "Provider returned error"
+ },
+ {
+  "model": "openai/gpt-5.6-luna",
+  "id": "rdza_zolta",
+  "ok": true,
+  "ms": 8022,
+  "cost": 0.0002728,
+  "txt": "{\"uprawa\":\"pszenica\",\"diagnoza\":\"rdza żółta (Puccinia striiformis)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "google/gemini-3.8-flash",
+  "id": "rdza_zolta",
+  "ok": true,
+  "ms": 14009,
+  "cost": 0.00258075,
+  "txt": "{\"uprawa\":\"pszenica\",\"diagnoza\":\"rdza żółta zbóż i traw (Puccinia striiformis)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "anthropic/claude-sonnet-5.5",
+  "id": "fuzarioza",
+  "ok": false,
+  "ms": 7768,
+  "cost": 0.007646,
+  "txt": "{\"uprawa\":\"Pszenica (Triticum aestivum)\",\"diagnoza\":\"Brak wyraźnych objawów choroby – brązowe kłosy wyglądają na naturalne zabarwienie odmia"
+ },
+ {
+  "model": "qwen/qwen3.8-27b",
+  "id": "rdza_brunatna_2",
+  "ok": true,
+  "ms": 11455,
+  "cost": 0.00154488,
+  "txt": "{\"uprawa\":\"pszenica\",\"diagnoza\":\"rdza brunatna (Puccinia triticina)\",\"pewnosc\":\"średnia\"}"
+ },
+ {
+  "model": "qwen/qwen3.8-flash",
+  "id": "zaraza_ziemniaka",
+  "ok": true,
+  "ms": 6428,
+  "cost": 0.00028454,
+  "txt": "{\"uprawa\":\"ziemniak\",\"diagnoza\":\"zaraza ziemniaka (Phytophthora infestans)\",\"pewnosc\":\"średnia\"}"
+ },
+ {
+  "model": "x-ai/grok-4.7",
+  "id": "rdza_brunatna_2",
+  "ok": true,
+  "ms": 12885,
+  "cost": 0.005336,
+  "txt": "{\"uprawa\":\"pszenica\",\"diagnoza\":\"rdza brunatna pszenicy (Puccinia triticina)\",\"pewnosc\":\"średnia\"}"
+ },
+ {
+  "model": "google/gemma-4-31b-it",
+  "id": "rdza_brunatna_2",
+  "ok": true,
+  "ms": 17670,
+  "cost": 0.00004503,
+  "txt": "```json {\"uprawa\":\"pszenica\",\"diagnoza\":\"rdza brązowa (Puccinia triticina)\",\"pewnosc\":\"wysoka\"} ```"
+ },
+ {
+  "model": "anthropic/claude-sonnet-5.5",
+  "id": "stonka",
+  "ok": true,
+  "ms": 5451,
+  "cost": 0.005876,
+  "txt": "Zdjęcie przedstawia larwę o czerwono-czarnym ubarwieniu, z czarną głową i czarnymi odnóżami, siedzącą na pędzie. Wygląda to na larwę stonki,"
+ },
+ {
+  "model": "qwen/qwen3.8-27b",
+  "id": "rdza_zolta",
+  "ok": true,
+  "ms": 5575,
+  "cost": 0.001083075,
+  "txt": " {\"uprawa\":\"pszenica\",\"diagnoza\":\"rdza żółta / rdza pasowa (Puccinia striiformis f. sp. tritici)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "openai/gpt-5.6-terra",
+  "id": "maczniak",
+  "ok": false,
+  "ms": 18991,
+  "cost": 0.010156,
+  "txt": "{\"uprawa\":\"ogórek\",\"diagnoza\":\"przędziorek chmielowiec (Tetranychus urticae)\",\"pewnosc\":\"niska\"}"
+ },
+ {
+  "model": "google/gemini-3.8-flash",
+  "id": "maczniak",
+  "ok": true,
+  "ms": 11332,
+  "cost": 0.00554325,
+  "txt": "```json {\"uprawa\":\"winorośl\",\"diagnoza\":\"mączniak prawdziwy winorośli (Erysiphe necator)\",\"pewnosc\":\"średnia\"} ```"
+ },
+ {
+  "model": "openai/gpt-5.6-luna",
+  "id": "maczniak",
+  "ok": false,
+  "ms": 12194,
+  "cost": 0.0008368,
+  "txt": "{\"uprawa\":\"pomidor\",\"diagnoza\":\"przędziorek chmielowiec (Tetranychus urticae)\",\"pewnosc\":\"średnia\"}"
+ },
+ {
+  "model": "qwen/qwen3.8-flash",
+  "id": "zaraza_ziemniaka_2",
+  "ok": true,
+  "ms": 9799,
+  "cost": 0.00023633,
+  "txt": "{\"uprawa\":\"ziemniak\",\"diagnoza\":\"zaraza ziemniaka (Phytophthora infestans)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "qwen/qwen3.8-27b",
+  "id": "maczniak",
+  "ok": false,
+  "ms": 6699,
+  "cost": 0.0012162,
+  "txt": " {\"uprawa\":\"jabłoń\",\"diagnoza\":\"zgnilizna twarda (Monilia fructigena)\",\"pewnosc\":\"średnia\"}"
+ },
+ {
+  "model": "google/gemini-3.8-flash",
+  "id": "zaraza_ziemniaka",
+  "ok": true,
+  "ms": 3093,
+  "cost": 0.00170475,
+  "txt": "{\"uprawa\":\"ziemniak\",\"diagnoza\":\"zaraza ziemniaka (Phytophthora infestans)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "x-ai/grok-4.7",
+  "id": "rdza_zolta",
+  "ok": true,
+  "ms": 11383,
+  "cost": 0.003974,
+  "txt": "{\"uprawa\":\"pszenica\",\"diagnoza\":\"rdza żółta (Puccinia striiformis)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "openai/gpt-5.6-terra",
+  "id": "zaraza_ziemniaka",
+  "ok": true,
+  "ms": 7396,
+  "cost": 0.002848,
+  "txt": "{\"uprawa\":\"ziemniak\",\"diagnoza\":\"zaraza ziemniaka (Phytophthora infestans)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "google/gemini-3.8-flash",
+  "id": "zaraza_ziemniaka_2",
+  "ok": true,
+  "ms": 3770,
+  "cost": 0.001821,
+  "txt": "{\"uprawa\":\"ziemniak\",\"diagnoza\":\"zaraza ziemniaka (Phytophthora infestans)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "qwen/qwen3.8-flash",
+  "id": "fuzarioza",
+  "ok": false,
+  "ms": 6351,
+  "cost": null,
+  "txt": "Provider returned error"
+ },
+ {
+  "model": "qwen/qwen3.8-27b",
+  "id": "zaraza_ziemniaka",
+  "ok": true,
+  "ms": 5632,
+  "cost": 0.001060575,
+  "txt": " {\"uprawa\":\"ziemniak\",\"diagnoza\":\"zaraza ziemniaka (Phytophthora infestans)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "openai/gpt-5.6-luna",
+  "id": "zaraza_ziemniaka",
+  "ok": false,
+  "ms": 7301,
+  "cost": 0.0004264,
+  "txt": "{\"uprawa\":\"ziemniak\",\"diagnoza\":\"alternarioza ziemniaka (Alternaria solani)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "google/gemini-3.8-flash",
+  "id": "fuzarioza",
+  "ok": true,
+  "ms": 4142,
+  "cost": 0.00182625,
+  "txt": "{\"uprawa\":\"pszenica\",\"diagnoza\":\"fuzarioza kłosów (Fusarium spp.)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "openai/gpt-5.6-terra",
+  "id": "zaraza_ziemniaka_2",
+  "ok": true,
+  "ms": 6386,
+  "cost": 0.002584,
+  "txt": "{\"uprawa\":\"ziemniak\",\"diagnoza\":\"zaraza ziemniaka (Phytophthora infestans)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "qwen/qwen3.8-27b",
+  "id": "zaraza_ziemniaka_2",
+  "ok": true,
+  "ms": 6219,
+  "cost": 0.0012273,
+  "txt": " {\"uprawa\":\"ziemniak\",\"diagnoza\":\"zaraza ziemniaka (Phytophthora infestans)\",\"pewnosc\":\"średnia\"}"
+ },
+ {
+  "model": "google/gemini-3.8-flash",
+  "id": "stonka",
+  "ok": true,
+  "ms": 2914,
+  "cost": 0.0016035,
+  "txt": "{\"uprawa\":\"ziemniak\",\"diagnoza\":\"stonka ziemniaczana (Leptinotarsa decemlineata)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "google/gemma-4-31b-it",
+  "id": "rdza_zolta",
+  "ok": false,
+  "ms": 19923,
+  "cost": 0.00004629,
+  "txt": "```json {\"uprawa\":\"pszenica\",\"diagnoza\":\"rdza brunatna (Puccinia triticina)\",\"pewnosc\":\"wysoka\"} ```"
+ },
+ {
+  "model": "openai/gpt-5.6-luna",
+  "id": "zaraza_ziemniaka_2",
+  "ok": true,
+  "ms": 6758,
+  "cost": 0.0002896,
+  "txt": "{\"uprawa\":\"ziemniak\",\"diagnoza\":\"zaraza ziemniaka (Phytophthora infestans)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "openai/gpt-5.6-terra",
+  "id": "fuzarioza",
+  "ok": true,
+  "ms": 9245,
+  "cost": 0.00352,
+  "txt": "{\"uprawa\":\"jęczmień\",\"diagnoza\":\"fuzarioza kłosów (Fusarium graminearum)\",\"pewnosc\":\"średnia\"}"
+ },
+ {
+  "model": "qwen/qwen3.8-flash",
+  "id": "stonka",
+  "ok": true,
+  "ms": 15535,
+  "cost": 0.00040956,
+  "txt": "{\"uprawa\":\"ziemniak\",\"diagnoza\":\"stonka ziemniaczana (Leptinotarsa decemlineata)\",\"pewnosc\":\"średnia\"}"
+ },
+ {
+  "model": "openai/gpt-5.6-terra",
+  "id": "stonka",
+  "ok": true,
+  "ms": 6802,
+  "cost": 0.003112,
+  "txt": "{\"uprawa\":\"ziemniak\",\"diagnoza\":\"stonka ziemniaczana (Leptinotarsa decemlineata)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "google/gemma-4-31b-it",
+  "id": "maczniak",
+  "ok": false,
+  "ms": 14695,
+  "cost": 0.00004473,
+  "txt": "```json {\"uprawa\":\"nieokreślona\",\"diagnoza\":\"rdza (Puccinia spp.)\",\"pewnosc\":\"średnia\"} ```"
+ },
+ {
+  "model": "openai/gpt-5.6-luna",
+  "id": "fuzarioza",
+  "ok": false,
+  "ms": 15014,
+  "cost": 0.000802,
+  "txt": "{\"uprawa\":\"jęczmień\",\"diagnoza\":\"głownia pyląca jęczmienia (Ustilago nuda)\",\"pewnosc\":\"średnia\"}"
+ },
+ {
+  "model": "openai/gpt-5.6-luna",
+  "id": "stonka",
+  "ok": true,
+  "ms": 12289,
+  "cost": 0.0008368,
+  "txt": "{\"uprawa\":\"ziemniak\",\"diagnoza\":\"stonka ziemniaczana (Leptinotarsa decemlineata)\",\"pewnosc\":\"niska\"}"
+ },
+ {
+  "model": "qwen/qwen3.8-27b",
+  "id": "fuzarioza",
+  "ok": false,
+  "ms": 37647,
+  "cost": 0.001360575,
+  "txt": " {\"uprawa\":\"żyto\",\"diagnoza\":\"głownia kłosa (Claviceps purpurea)\",\"pewnosc\":\"średnia\"}"
+ },
+ {
+  "model": "google/gemma-4-31b-it",
+  "id": "zaraza_ziemniaka",
+  "ok": false,
+  "ms": 28836,
+  "cost": 0.000055838,
+  "txt": "```json {\"uprawa\":\"ziemniak\", \"diagnoza\":\"alternarioza (Alternaria solani)\", \"pewnosc\":\"wysoka\"} ```"
+ },
+ {
+  "model": "x-ai/grok-4.7",
+  "id": "maczniak",
+  "ok": false,
+  "ms": 59287,
+  "cost": 0.02348,
+  "txt": "{\"uprawa\":\"ogórek\",\"diagnoza\":\"przędziorek chmielowiec (Tetranychus urticae)\",\"pewnosc\":\"niska\"}"
+ },
+ {
+  "model": "qwen/qwen3.8-27b",
+  "id": "stonka",
+  "ok": false,
+  "ms": 13375,
+  "cost": 0.002523075,
+  "txt": " {\"uprawa\":\"kukurydza\",\"diagnoza\":\"pchełka kukurydziana (Diabrotica virgifera)\",\"pewnosc\":\"średnia\"}"
+ },
+ {
+  "model": "google/gemma-4-31b-it",
+  "id": "zaraza_ziemniaka_2",
+  "ok": false,
+  "ms": 8188,
+  "cost": 0.000049112,
+  "txt": "```json {\"uprawa\":\"ziemniak\", \"diagnoza\":\"Alternarioza ziemniaka (Alternaria solani)\", \"pewnosc\":\"wysoka\"} ```"
+ },
+ {
+  "model": "google/gemma-4-31b-it",
+  "id": "fuzarioza",
+  "ok": true,
+  "ms": 9393,
+  "cost": 0.000057798,
+  "txt": "```json {\"uprawa\":\"jęczmień\",\"diagnoza\":\"fuzarioza kłosów (Fusarium spp.)\",\"pewnosc\":\"średnia\"} ```"
+ },
+ {
+  "model": "x-ai/grok-4.7",
+  "id": "zaraza_ziemniaka",
+  "ok": true,
+  "ms": 17148,
+  "cost": 0.005096,
+  "txt": "{\"uprawa\":\"ziemniak\",\"diagnoza\":\"zaraza ziemniaka (Phytophthora infestans)\",\"pewnosc\":\"średnia\"}"
+ },
+ {
+  "model": "x-ai/grok-4.7",
+  "id": "zaraza_ziemniaka_2",
+  "ok": true,
+  "ms": 9348,
+  "cost": 0.004046,
+  "txt": "{\"uprawa\":\"ziemniak\",\"diagnoza\":\"zaraza ziemniaka (Phytophthora infestans)\",\"pewnosc\":\"wysoka\"}"
+ },
+ {
+  "model": "google/gemma-4-31b-it",
+  "id": "stonka",
+  "ok": true,
+  "ms": 19323,
+  "cost": 0.00004677,
+  "txt": "```json {\"uprawa\":\"ziemniak\", \"diagnoza\":\"stonka ziemniaczana (Leptinotarsa decemlineata)\", \"pewnosc\":\"wysoka\"} ```"
+ },
+ {
+  "model": "x-ai/grok-4.7",
+  "id": "fuzarioza",
+  "ok": false,
+  "ms": 24481,
+  "cost": 0.009926,
+  "txt": "{\"uprawa\":\"jęczmień\",\"diagnoza\":\"brak jednoznacznych objawów choroby lub szkodnika (null)\",\"pewnosc\":\"niska\"}"
+ },
+ {
+  "model": "x-ai/grok-4.7",
+  "id": "stonka",
+  "ok": true,
+  "ms": 13319,
+  "cost": 0.005888,
+  "txt": "{\"uprawa\":\"ziemniak\",\"diagnoza\":\"stonka ziemniaczana (Leptinotarsa decemlineata)\",\"pewnosc\":\"średnia\"}"
+ }
+]
