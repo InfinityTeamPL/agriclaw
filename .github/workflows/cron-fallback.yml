@@ -1,0 +1,45 @@
+# Zapasowy harmonogram dla cronów produkcji.
+#
+# 10.2026: crony Vercela (vercel.ts) przestały się odpalać — zero wywołań
+# /api/cron/* w logach produkcji, rejestr ŚOR stał 3 miesiące, poranny skan
+# pól nie działał. Ten workflow woła te same endpointy z GitHub Actions.
+# Endpointy są idempotentne, więc podwójne wywołanie (Vercel + GH) jest
+# bezpieczne.
+#
+# Wymaga sekretu repozytorium CRON_SECRET (ta sama wartość co w Vercel env).
+name: cron-fallback
+
+on:
+  schedule:
+    - cron: '20 4 * * *' # codziennie ~6:20 czasu PL (po cronie Vercela o 4:00 UTC)
+  workflow_dispatch: {}
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Wywołaj /api/cron/daily
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::Brak sekretu CRON_SECRET w ustawieniach repozytorium"
+            exit 1
+          fi
+          code=$(curl -sS -o body.txt -w '%{http_code}' --max-time 300 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            https://agripol.xyz/api/cron/daily)
+          echo "HTTP $code"; head -c 1500 body.txt; echo
+          # 503 = brak CDSE (kontrolowany raport) — nie traktujemy jako awarii.
+          if [ "$code" != "200" ] && [ "$code" != "503" ]; then exit 1; fi
+
+      - name: Wywołaj /api/cron/sor-sync (rejestr ŚOR, idempotentnie)
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          code=$(curl -sS -o body.txt -w '%{http_code}' --max-time 300 -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            https://agripol.xyz/api/cron/sor-sync)
+          echo "HTTP $code"; cat body.txt; echo
+          if [ "$code" != "200" ]; then exit 1; fi
