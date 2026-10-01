@@ -54,7 +54,7 @@ export async function GET(
   const tempDays: Array<{ date: string; tMax: number; tMin: number }> = [];
   try {
     const histUrl = `${OPEN_METEO_HISTORY}?latitude=${field.lat}&longitude=${field.lon}&start_date=${sowingDate.toISOString().slice(0, 10)}&end_date=${new Date().toISOString().slice(0, 10)}&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
-    const res = await fetch(histUrl);
+    const res = await fetch(histUrl, { cache: "no-store" });
     if (res.ok) {
       const data = (await res.json()) as {
         daily?: { time: string[]; temperature_2m_max: number[]; temperature_2m_min: number[] };

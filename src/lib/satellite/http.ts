@@ -26,6 +26,11 @@ export async function fetchWithTimeout(
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const res = await fetch(url, {
+        // Next.js trzyma odpowiedzi fetch w Data Cache (też między wdrożeniami) — dla
+        // POST w handlerze GET (cron) token CDSE z pierwszego przebiegu był serwowany
+        // godzinami po wygaśnięciu: 401 "AccessToken signature expired" na każdym polu
+        // (10.2026). Zewnętrzne API (tokeny, pogoda, satelity) NIGDY z cache Next.
+        cache: "no-store",
         ...init,
         signal: AbortSignal.timeout(timeoutMs),
       });

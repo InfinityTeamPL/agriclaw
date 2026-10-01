@@ -48,7 +48,7 @@ export async function GET(
   const dailyTemps: Array<{ date: string; tMax: number; tMin: number }> = [];
   try {
     const histUrl = `${OPEN_METEO_HISTORY}?latitude=${field.lat}&longitude=${field.lon}&start_date=${sowingStr}&end_date=${today}&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
-    const res = await fetch(histUrl);
+    const res = await fetch(histUrl, { cache: "no-store" });
     if (res.ok) {
       const data = (await res.json()) as {
         daily?: { time: string[]; temperature_2m_max: number[]; temperature_2m_min: number[] };
@@ -71,7 +71,7 @@ export async function GET(
   const forecastNights: Array<{ date: string; tMin: number }> = [];
   try {
     const forecastUrl = `${OPEN_METEO_FORECAST}?latitude=${field.lat}&longitude=${field.lon}&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=10&past_days=3`;
-    const res = await fetch(forecastUrl);
+    const res = await fetch(forecastUrl, { cache: "no-store" });
     if (res.ok) {
       const data = (await res.json()) as {
         daily?: { time: string[]; temperature_2m_max: number[]; temperature_2m_min: number[] };
