@@ -2,14 +2,14 @@
 // Analizuje strukturę gospodarstwa i historię zabiegów, zwraca raport zgodności.
 //
 // Reguły WPR 2023-2027 (UE) + normy GAEC (Good Agricultural and Environmental Condition):
-//   - GAEC 7: dywersyfikacja upraw
-//   - GAEC 8: minimum 4% EFA (Elementy Proekologiczne) na gruntach ornych
-//   - Rotacja upraw od 2025: ta sama uprawa max 3 sezony na działce
-//   - Obowiązek rejestracji zabiegów środkami ochrony roślin (Dz.U. 2022 poz. 2453)
-//     - w ciągu 14 dni od zabiegu
-//     - przechowywanie 3 lata
+//   - GAEC 7: dywersyfikacja upraw (>30 ha GO: ≥3 uprawy, największa ≤75%, dwie ≤95%)
+//   - GAEC 8: od 2024 BEZ obowiązku 4% ugoru (uproszczenie WPR) — zostaje ochrona
+//     elementów krajobrazu; ugorowanie to dobrowolny ekoschemat
+//   - Ewidencja zabiegów ŚOR: elektroniczna od 1.01.2027 (rozp. wyk. UE 2023/564,
+//     w PL odroczone nowelizacją z 2.12.2025); do 2030 wpis do 31 I roku następnego
+// Weryfikacja źródeł: 10.2026 (topagrar.pl, agroprofil.pl, farmer.pl, gov.pl).
 
-import { pluralPL } from '@/lib/ui/format';
+import { pluralPL, cropLabel } from '@/lib/ui/format';
 
 export type ComplianceStatus = 'pass' | 'warn' | 'fail' | 'info';
 
@@ -64,7 +64,9 @@ export function evaluateCompliance(input: ComplianceInput): ComplianceReport {
 
   // ── 1. Dywersyfikacja upraw (GAEC 7 / WPR 2023-2027) ──
   // Gospodarstwa 10-30 ha: min 2 uprawy, żadna >75%
-  // Gospodarstwa >30 ha: min 3 uprawy, 2 największe ≤95% łącznie, każda min 5%
+  // Gospodarstwa >30 ha: min 3 uprawy, największa ≤75%, 2 największe ≤95% łącznie.
+  // (Wcześniej brakowało reguły 75%, a był zmyślony próg „każda ≥5%" — demo
+  // z pszenicą 76% dostawało „OK", choć narusza normę.)
   if (input.totalHectares >= 10 && input.totalHectares <= 30) {
     const largestPct = sortedCrops[0] ? (sortedCrops[0][1] / input.totalHectares) * 100 : 0;
     const ok = distinctCrops >= 2 && largestPct <= 75;
@@ -73,7 +75,7 @@ export function evaluateCompliance(input: ComplianceInput): ComplianceReport {
       category: 'diversification',
       title: 'Dywersyfikacja upraw (10-30 ha)',
       status: ok ? 'pass' : 'fail',
-      detail: `${distinctCrops} upraw na ${input.totalHectares.toFixed(1)} ha. Największa: ${sortedCrops[0]?.[0] ?? '—'} = ${largestPct.toFixed(0)}%. Wymagane: ≥2 uprawy, żadna >75%.`,
+      detail: `${distinctCrops} ${pluralPL(distinctCrops, 'uprawa', 'uprawy', 'upraw')} na ${input.totalHectares.toLocaleString('pl-PL', { maximumFractionDigits: 1 })} ha. Największa: ${sortedCrops[0] ? cropLabel(sortedCrops[0][0]).toLowerCase() : '—'} = ${largestPct.toFixed(0)}%. Wymagane: ≥2 uprawy, żadna >75%.`,
       action: ok
         ? undefined
         : distinctCrops < 2
@@ -84,19 +86,21 @@ export function evaluateCompliance(input: ComplianceInput): ComplianceReport {
   } else if (input.totalHectares > 30) {
     const top2Pct =
       sortedCrops.slice(0, 2).reduce((s, [, area]) => s + area, 0) / input.totalHectares * 100;
-    const smallestPct = sortedCrops.length >= 3
-      ? (sortedCrops[2][1] / input.totalHectares) * 100
-      : 0;
-    const ok = distinctCrops >= 3 && top2Pct <= 95 && smallestPct >= 5;
+    const largestPct = sortedCrops[0] ? (sortedCrops[0][1] / input.totalHectares) * 100 : 0;
+    const ok = distinctCrops >= 3 && largestPct <= 75 && top2Pct <= 95;
     rules.push({
       id: 'diversification-large',
       category: 'diversification',
       title: 'Dywersyfikacja upraw (>30 ha)',
       status: ok ? 'pass' : 'fail',
-      detail: `${distinctCrops} upraw. Dwie największe: ${top2Pct.toFixed(0)}%. Trzecia: ${smallestPct.toFixed(0)}%. Wymagane: ≥3 uprawy, 2 największe ≤95%, każda ≥5%.`,
+      detail: `${distinctCrops} ${pluralPL(distinctCrops, 'uprawa', 'uprawy', 'upraw')}. Największa: ${sortedCrops[0] ? cropLabel(sortedCrops[0][0]).toLowerCase() : '—'} = ${largestPct.toFixed(0)}%, dwie największe: ${top2Pct.toFixed(0)}%. Wymagane: ≥3 uprawy, największa ≤75%, dwie największe ≤95%.`,
       action: ok
         ? undefined
-        : 'Rozważ dodatkową uprawę (strączkowe + zbóż + rzepak to typowy safe mix).',
+        : distinctCrops < 3
+          ? 'Potrzebna co najmniej trzecia uprawa (np. strączkowe lub rzepak).'
+          : largestPct > 75
+            ? `Główna uprawa zajmuje ${largestPct.toFixed(0)}% — przesuń co najmniej ${(Math.ceil(((largestPct - 75) / 100) * input.totalHectares * 10) / 10).toLocaleString('pl-PL')} ha na inną uprawę albo spełnij normę przez zmianowanie.`
+            : 'Dwie największe uprawy przekraczają 95% — zwiększ udział trzeciej.',
       legalBasis: 'WPR 2023-2027, GAEC 7',
     });
   }
@@ -133,6 +137,9 @@ export function evaluateCompliance(input: ComplianceInput): ComplianceReport {
 
   // ── 3. Rejestracja zabiegów (obowiązek prawny) ──
   const now = Date.now();
+  // Ewidencja dotyczy zabiegów ŚOR — pole bez wpisów może po prostu nie być
+  // opryskiwane. Dlatego brak wpisów to INFORMACJA, nie ostrzeżenie (wcześniej
+  // fałszywie obniżało wynik zgodności).
   const fieldsWithoutTreatments = input.fields.filter(
     (f) => (f.treatmentsCountThisSeason ?? 0) === 0 && f.areaHectares >= 1,
   );
@@ -155,11 +162,11 @@ export function evaluateCompliance(input: ComplianceInput): ComplianceReport {
     rules.push({
       id: 'registration-missing',
       category: 'registration',
-      title: 'Rejestracja zabiegów — braki',
-      status: 'warn',
+      title: 'Pola bez wpisów w księdze',
+      status: 'info',
       detail: `${fieldsWithoutTreatments.length} ${pluralPL(fieldsWithoutTreatments.length, 'pole', 'pola', 'pól')} bez ani jednego zabiegu w sezonie: ${fieldsWithoutTreatments.map((f) => f.name).join(', ').slice(0, 200)}${fieldsWithoutTreatments.length > 5 ? '…' : ''}.`,
-      action: 'Dopisz zabiegi wstecz w Księdze Polowej (IJHARS toleruje do 14 dni ale nie więcej).',
-      legalBasis: 'Dz.U. 2022 poz. 2453 art. 25',
+      action: 'Jeśli stosowałeś na nich środki ochrony roślin — dopisz zabiegi. Od 1 stycznia 2027 ewidencja ŚOR musi być elektroniczna (do 2030: wpis najpóźniej do 31 stycznia roku następnego).',
+      legalBasis: 'Rozp. wyk. (UE) 2023/564; ustawa o środkach ochrony roślin (nowelizacja z 2.12.2025)',
     });
   }
 
@@ -191,11 +198,11 @@ export function evaluateCompliance(input: ComplianceInput): ComplianceReport {
   rules.push({
     id: 'gaec-8-info',
     category: 'efa',
-    title: 'GAEC 8: minimum 4% EFA',
+    title: 'GAEC 8: elementy krajobrazu (bez obowiązku 4% ugoru)',
     status: 'info',
-    detail: 'Gospodarstwa >10 ha muszą mieć ≥4% powierzchni gruntów ornych jako Elementy Proekologiczne (ugór, międzyplon, strączkowe, drzewa, miedze).',
-    action: 'Zadeklaruj EFA w eWniosek Plus podczas wniosku obszarowego (do 15 maja).',
-    legalBasis: 'GAEC 8 (WPR 2023-2027)',
+    detail: 'Od 2024 nie ma obowiązku przeznaczania 4% gruntów ornych na obszary nieprodukcyjne. Obowiązuje utrzymanie elementów krajobrazu (zadrzewienia, miedze, oczka wodne) i zakaz ich przycinania w okresie lęgowym ptaków.',
+    action: 'Ugorowanie lub pasy kwietne możesz zgłosić dobrowolnie w ekoschemacie (dodatkowa płatność) we wniosku obszarowym.',
+    legalBasis: 'GAEC 8 po uproszczeniu WPR (rozp. UE 2024/1468)',
   });
 
   const fails = rules.filter((r) => r.status === 'fail').length;

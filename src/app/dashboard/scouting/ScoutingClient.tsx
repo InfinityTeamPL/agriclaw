@@ -148,8 +148,8 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       <MapPin className="w-12 h-12 text-muted-foreground/40 mx-auto mb-4" />
       <h3 className="font-display font-semibold tracking-tight text-foreground mb-1">Brak obserwacji</h3>
       <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
-        Zrób zdjęcie liścia / chwastu / pinezkuj szkodę. AgroAgent zobaczy i dołączy do
-        rekomendacji.
+        Zrób zdjęcie liścia lub chwastu albo oznacz na mapie miejsce szkody. AgroAgent uwzględni to w
+        rekomendacjach.
       </p>
       <button
         onClick={onAdd}

@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma';
 import { evaluateCompliance } from '@/lib/compliance';
 import { AlertTriangle, AlertCircle, Info, CheckCircle2, Sprout, Layers } from 'lucide-react';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
+const haPL = (n: number) => n.toLocaleString('pl-PL', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 export const dynamic = 'force-dynamic';
 
@@ -165,7 +166,7 @@ export default async function CompliancePage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <StatCard icon={<Sprout className="w-4 h-4 text-primary" />} label="Pola" value={String(report.fieldsCount)} />
-            <StatCard icon={<Layers className="w-4 h-4 text-primary" />} label="Łączna powierzchnia" value={`${totalHectares.toFixed(1)} ha`} />
+            <StatCard icon={<Layers className="w-4 h-4 text-primary" />} label="Łączna powierzchnia" value={`${haPL(totalHectares)} ha`} />
           </div>
         </div>
       </div>
@@ -182,7 +183,7 @@ export default async function CompliancePage() {
             {cropDist.map((c) => (
               <div
                 key={c.crop}
-                title={`${cropLabels[c.crop] ?? c.crop} · ${c.ha.toFixed(1)} ha · ${c.pct.toFixed(0)}%`}
+                title={`${cropLabels[c.crop] ?? c.crop} · ${haPL(c.ha)} ha · ${c.pct.toFixed(0)}%`}
                 className="flex items-center justify-center text-[10px] text-white font-mono tabular font-semibold"
                 style={{
                   width: `${c.pct}%`,
@@ -199,7 +200,7 @@ export default async function CompliancePage() {
                 <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: cropColors[c.crop] ?? '#6b7280' }} />
                 <span className="font-medium text-foreground">{cropLabels[c.crop] ?? c.crop}</span>
                 <span className="text-muted-foreground font-mono tabular">
-                  {c.ha.toFixed(1)} ha · {c.pct.toFixed(0)}%
+                  {haPL(c.ha)} ha · {c.pct.toFixed(0)}%
                 </span>
               </div>
             ))}
