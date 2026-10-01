@@ -1,7 +1,7 @@
 {
   "name": "AgriClaw — AI agronom",
   "short_name": "AgriClaw",
-  "description": "Twój AI agronom. Satelitarny skan pola + konkretna rada przez WhatsApp.",
+  "description": "Twój cyfrowy agronom. Satelita Copernicus nad polem, legalne środki ochrony, księga polowa gotowa na kontrolę.",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",

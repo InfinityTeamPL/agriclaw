@@ -22,7 +22,7 @@ import { NdviKeyline } from '@/components/brand/NdviKeyline';
 export const metadata: Metadata = {
   title: 'Beta 100 — darmowy pilotaż AgriClaw dla 100 gospodarstw',
   description:
-    'Dołącz do pierwszych 100 gospodarstw testujących cyfrowego agronoma: satelitarny monitoring pól, rada po polsku na WhatsApp i e-księga zabiegów. Za darmo do końca 2026.',
+    'Dołącz do pierwszych 100 gospodarstw testujących cyfrowego agronoma: satelitarny monitoring pól, rada po polsku w aplikacji i e-księga zabiegów. Za darmo do końca 2026.',
 };
 
 const GIVES = [
@@ -34,7 +34,7 @@ const GIVES = [
   {
     icon: MessageSquare,
     title: 'Agent AI po polsku',
-    desc: 'Pytasz jak sąsiada-agronoma — na WhatsApp albo w aplikacji. Odpowiedź wspiera Twoją decyzję, nie zastępuje jej.',
+    desc: 'Pytasz jak sąsiada-agronoma — w aplikacji, z telefonu, w polu. Odpowiedź wspiera Twoją decyzję, nie zastępuje jej.',
   },
   {
     icon: Camera,

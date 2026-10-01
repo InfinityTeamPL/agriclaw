@@ -30,7 +30,7 @@ const mono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: 'AgriClaw — cyfrowy agronom dla rolnika',
   description:
-    'Twój cyfrowy agronom. Skan pola z góry + konkretna rada przez WhatsApp. Po polsku, w telefonie, bez instalacji.',
+    'Twój cyfrowy agronom: satelita Copernicus nad polem, diagnoza ze zdjęcia, tylko legalne środki ochrony i księga polowa gotowa na e-ewidencję 2027. Po polsku, w telefonie, bez instalacji.',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
