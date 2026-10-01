@@ -359,7 +359,69 @@ export interface SorCheckResult {
  * DOKŁADNE, potem zawierające (z preferencją prefiksu). Opcjonalne zawężenie
  * do uprawy (kod AgriClaw) — nieznany kod NIE udaje braku rejestracji.
  */
+// ── Samonaprawa rejestru ───────────────────────────────────────────────────────
+// Lekcja z 10.2026: cron dzienny na produkcji przestał się odpalać i rejestr
+// stał na wydaniu 26.06 przez 3 miesiące — po cichu. Aplikacja, której
+// wyróżnikiem jest „zawsze aktualny rejestr MRiRW", nie może zależeć od jednego
+// crona. Dlatego każde użycie rejestru sprawdza wiek importu i — gdy jest
+// stary — w tle (bez blokowania odpowiedzi) odpala idempotentną synchronizację.
+
+const STALE_AFTER_MS = 7 * 864e5; // MRiRW publikuje ~co miesiąc; tydzień to bezpieczny margines
+const RETRY_AFTER_MS = 6 * 3600e3; // gdy upstream nie ma nic nowego — nie odpytuj częściej niż co 6 h
+let lastRefreshAttemptAt = 0;
+let refreshInFlight: Promise<unknown> | null = null;
+
+export interface RefreshDeps {
+  now: number;
+  getLastImportAt: () => Promise<Date | null>;
+  sync: () => Promise<SorSyncResult>;
+  /** Utrzymuje funkcję serverless przy życiu do końca pracy w tle. */
+  schedule: (p: Promise<unknown>) => void;
+}
+
+/** Stan dla testów — reset throttlingu między przypadkami. */
+export function __resetRefreshStateForTests() {
+  lastRefreshAttemptAt = 0;
+  refreshInFlight = null;
+}
+
+export async function refreshIfStale(
+  deps: Partial<RefreshDeps> = {},
+): Promise<'fresh' | 'skipped' | 'triggered'> {
+  const now = deps.now ?? Date.now();
+  if (refreshInFlight || now - lastRefreshAttemptAt < RETRY_AFTER_MS) return 'skipped';
+
+  const getLast =
+    deps.getLastImportAt ??
+    (async () =>
+      (await prisma.sorImport.findFirst({ orderBy: { importedAt: 'desc' }, select: { importedAt: true } }))
+        ?.importedAt ?? null);
+  const last = await getLast();
+  if (last && now - last.getTime() < STALE_AFTER_MS) return 'fresh';
+
+  lastRefreshAttemptAt = now;
+  const sync = deps.sync ?? (() => syncSorRegistry());
+  refreshInFlight = sync()
+    .then((r) => console.log('sor-registry: samonaprawa →', r.status, r.releaseLabel ?? ''))
+    .catch((err) => console.error('sor-registry: samonaprawa nieudana:', err))
+    .finally(() => {
+      refreshInFlight = null;
+    });
+  const schedule =
+    deps.schedule ??
+    ((p: Promise<unknown>) => {
+      // Import dynamiczny — moduł bywa używany poza runtime Vercela (testy, skrypty).
+      import('@vercel/functions')
+        .then((m) => m.waitUntil(p))
+        .catch(() => void p);
+    });
+  schedule(refreshInFlight);
+  return 'triggered';
+}
+
 export async function checkSorProduct(query: string, cropCode?: string): Promise<SorCheckResult> {
+  // Nie blokuje odpowiedzi — najwyżej następne pytanie zobaczy świeższe wydanie.
+  void refreshIfStale().catch(() => {});
   const lastImport = await prisma.sorImport.findFirst({ orderBy: { importedAt: 'desc' } });
   const releaseLabel = lastImport?.releaseLabel ?? null;
   const q = query.trim();

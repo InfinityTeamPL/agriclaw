@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { Thermometer, Loader2, AlertTriangle, Snowflake, Flame, Info } from 'lucide-react';
+import { formatDatePL } from '@/lib/ui/format';
 
 interface ThermalResponse {
   thermal: { meanC: number; minC: number; maxC: number; spread: number; validCount: number };
@@ -126,8 +127,13 @@ export function ThermalBadge({ fieldId }: { fieldId: string }) {
       </div>
       <p className="text-sm leading-relaxed">{interpretation.diagnosis}</p>
       <div className="rounded-md bg-card/70 p-2.5 text-xs leading-relaxed">
-        <span className="font-semibold">Działanie: </span>
+        <span className="font-semibold">Do rozważenia: </span>
         {interpretation.action}
+      </div>
+      {/* Data przelotu jest kluczowa: przy chmurach scena może mieć kilka tygodni. */}
+      <div className="text-[10px] font-mono tabular opacity-70">
+        Przelot {formatDatePL(data!.observedAt)} · {thermal.validCount} pikseli 30 m
+        {data!.source ? ` · ${data!.source.split(' (')[0]}` : ''}
       </div>
       <button
         onClick={() => {
