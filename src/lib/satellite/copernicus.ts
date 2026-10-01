@@ -215,7 +215,15 @@ export class CopernicusClient {
     const res = await call();
     if (res.status !== 401) return res;
     this.invalidateToken();
-    return call();
+    const retry = await call();
+    if (retry.status === 401) {
+      // Diagnostyka: świeży token też odrzucony → pokaż zegary (iat/exp tokenu vs ten proces vs serwer CDSE).
+      console.error(
+        "[cdse] 401 po ponowieniu ze świeżym tokenem",
+        JSON.stringify({ url, token: describeJwt(this.token), nowSec: Math.floor(Date.now() / 1000), serverDate: retry.headers?.get?.("date") ?? null }),
+      );
+    }
+    return retry;
   }
 
   private async fetchToken(): Promise<string> {
@@ -634,4 +642,16 @@ export function getCopernicusClient(): CopernicusClient {
     cachedClientKey = key;
   }
   return cachedClient;
+}
+
+/** Tylko czasy z JWT (iat/exp/nbf) — do diagnostyki 401; bez podpisu i bez danych użytkownika. */
+function describeJwt(token: string | null): Record<string, number> | string | null {
+  if (!token) return null;
+  try {
+    const [, payload] = token.split(".");
+    const j = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as { iat?: number; exp?: number; nbf?: number };
+    return { iat: j.iat ?? 0, exp: j.exp ?? 0, ttl: (j.exp ?? 0) - (j.iat ?? 0) };
+  } catch {
+    return "nieczytelny";
+  }
 }
