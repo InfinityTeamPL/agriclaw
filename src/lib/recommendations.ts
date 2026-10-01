@@ -57,6 +57,9 @@ function pl(n: number, digits = 2): string {
   });
 }
 
+/** Dni bez deszczu, od których sucho na wschodach staje się sygnałem „do uwagi". */
+export const ESTABLISHMENT_DRY_DAYS = 14;
+
 const SRC_S2 = 'Sentinel-2 (ostatnie 14 dni)';
 const SRC_FORECAST = 'Prognoza pogody (Open-Meteo)';
 
@@ -105,12 +108,14 @@ export function generateRecommendation(
       ruleId: 'dormancy',
       why: [
         { label: 'NDVI', value: pl(ndviMean), threshold: null, source: SRC_S2 },
-        { label: 'Faza', value: 'spoczynek zimowy', threshold: 'progi NDVI łanu nie obowiązują', source: 'Data siewu + kalendarz' },
+        { label: 'Faza', value: 'spoczynek zimowy (progi NDVI łanu nie obowiązują)', threshold: null, source: 'Data siewu + kalendarz' },
       ],
     };
   }
   if (input.stage === 'establishment') {
-    const dry = daysWithoutRain >= 7;
+    // Jesienią tydzień bez deszczu nie szkodzi wschodom; nierówne wschody to ryzyko
+    // dopiero przy ~2 tyg. suszy. Przy 7 dniach demo miało 7 pól „do uwagi" — szum.
+    const dry = daysWithoutRain >= ESTABLISHMENT_DRY_DAYS;
     return {
       severity: dry ? 'low' : 'none',
       title: dry ? 'Sucho w czasie wschodów' : 'Wschody — ukorzenianie',
@@ -120,12 +125,13 @@ export function generateRecommendation(
       action:
         'Ok. 3 tygodnie po siewie policz rośliny na 1 m² w 3–4 miejscach pola. Nie decyduj o azocie ani fungicydzie na podstawie NDVI w tej fazie.',
       ruleId: dry ? 'establishment-dry' : 'establishment',
+      // Przesłanka rozstrzygająca (z progiem) pierwsza — lista „Dziś" pokazuje właśnie ją.
       why: [
-        { label: 'NDVI', value: pl(ndviMean), threshold: null, source: SRC_S2 },
-        { label: 'Faza', value: 'wschody', threshold: 'progi NDVI łanu nie obowiązują', source: 'Data siewu + kalendarz' },
         ...(dry
-          ? [{ label: 'Dni bez deszczu', value: String(daysWithoutRain), threshold: 'co najmniej 7', source: SRC_FORECAST }]
+          ? [{ label: 'Dni bez deszczu', value: String(daysWithoutRain), threshold: `co najmniej ${ESTABLISHMENT_DRY_DAYS}`, source: SRC_FORECAST }]
           : []),
+        { label: 'Faza', value: 'wschody (progi NDVI łanu nie obowiązują)', threshold: null, source: 'Data siewu + kalendarz' },
+        { label: 'NDVI', value: pl(ndviMean), threshold: null, source: SRC_S2 },
       ],
     };
   }

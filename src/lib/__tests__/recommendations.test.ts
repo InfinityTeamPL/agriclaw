@@ -87,10 +87,15 @@ describe('faza uprawy (regresja 10.2026)', () => {
     expect(r.action).not.toMatch(/mocznik/i);
   });
 
-  it('wschody + 8 dni suszy → niska waga, nie „stres wodny"', () => {
-    const r = generateRecommendation({ ...base, daysWithoutRain: 8, stage: 'establishment' });
+  it('wschody + 14 dni suszy → niska waga, nie „stres wodny"; przesłanka z progiem pierwsza', () => {
+    const r = generateRecommendation({ ...base, daysWithoutRain: 14, stage: 'establishment' });
     expect(r.ruleId).toBe('establishment-dry');
     expect(r.severity).toBe('low');
+    expect(r.why[0].label).toBe('Dni bez deszczu');
+  });
+
+  it('wschody + tydzień bez deszczu → nie „do uwagi" (jesienią to norma)', () => {
+    expect(generateRecommendation({ ...base, daysWithoutRain: 7, stage: 'establishment' }).severity).toBe('none');
   });
 
   it('spoczynek zimowy → bez zabiegów', () => {
