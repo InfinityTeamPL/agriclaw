@@ -76,3 +76,37 @@ describe('generateRecommendation', () => {
     expect(rec.action.toLowerCase()).toContain('potwierdzeniu');
   });
 });
+
+describe('faza uprawy (regresja 10.2026)', () => {
+  const base = { crop: 'wheat', ndviMean: 0.42, daysWithoutRain: 4, avgEt0Next7: 1.2, monthOfYear: 10 };
+
+  it('wschody: brak „wymaga uwagi" i brak mocznika', () => {
+    const r = generateRecommendation({ ...base, stage: 'establishment' });
+    expect(r.severity).toBe('none');
+    expect(r.ruleId).toBe('establishment');
+    expect(r.action).not.toMatch(/mocznik/i);
+  });
+
+  it('wschody + 14 dni suszy → niska waga, nie „stres wodny"; przesłanka z progiem pierwsza', () => {
+    const r = generateRecommendation({ ...base, daysWithoutRain: 14, stage: 'establishment' });
+    expect(r.ruleId).toBe('establishment-dry');
+    expect(r.severity).toBe('low');
+    expect(r.why[0].label).toBe('Dni bez deszczu');
+  });
+
+  it('wschody + tydzień bez deszczu → nie „do uwagi" (jesienią to norma)', () => {
+    expect(generateRecommendation({ ...base, daysWithoutRain: 7, stage: 'establishment' }).severity).toBe('none');
+  });
+
+  it('spoczynek zimowy → bez zabiegów', () => {
+    expect(generateRecommendation({ ...base, stage: 'dormancy' }).ruleId).toBe('dormancy');
+  });
+
+  it('bez fazy — zachowanie historyczne', () => {
+    expect(generateRecommendation(base).ruleId).toBe('water-stress-moderate');
+  });
+
+  it('komunikaty z przecinkiem dziesiętnym', () => {
+    expect(generateRecommendation({ ...base, daysWithoutRain: 0 }).message).toMatch(/0,42/);
+  });
+});

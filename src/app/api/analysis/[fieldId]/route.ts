@@ -4,7 +4,7 @@ import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { getCopernicusClient } from '@/lib/satellite/copernicus';
 import { fetchLatestClearScene, TREND_WINDOW_DAYS } from '@/lib/satellite/scene';
-import { classifyNdvi, describeNdvi } from '@/lib/satellite/ndvi';
+import { classifyNdvi, cropStage, describeNdvi } from '@/lib/satellite/ndvi';
 import { interpretNdre, interpretNdwi, interpretSavi } from '@/lib/satellite/indices';
 import { fetchWeatherForecast, fetchSprayForecast } from '@/lib/satellite/weather';
 import { fetchSmapSoilMoisture } from '@/lib/satellite/smap';
@@ -23,12 +23,13 @@ export async function POST(
       id: string;
       farm_id: string;
       crop: string;
+      sowing_date: Date | null;
       polygon: string;
       centroid_lat: number;
       centroid_lon: number;
     }>
   >`
-    SELECT f.id, f.farm_id, f.crop,
+    SELECT f.id, f.farm_id, f.crop, f.sowing_date,
            ST_AsGeoJSON(f.polygon)::text AS polygon,
            ST_Y(ST_Centroid(f.polygon)) AS centroid_lat,
            ST_X(ST_Centroid(f.polygon)) AS centroid_lon
@@ -198,6 +199,7 @@ export async function POST(
     avgEt0Next7: weatherSummary.avgEt0Next7,
     soilMoisturePct,
     monthOfYear: new Date().getMonth() + 1,
+    stage: cropStage(field.crop, { sowingDate: field.sowing_date, at: observedAt }),
   });
 
   const savedRec = await prisma.recommendation.create({
@@ -249,7 +251,7 @@ export async function POST(
       validCount: indices.ndvi.validCount,
       stddev: indices.ndvi.stddev,
       classification: classifyNdvi(indices.ndvi.mean),
-      description: describeNdvi(indices.ndvi.mean, field.crop),
+      description: describeNdvi(indices.ndvi.mean, field.crop, { sowingDate: field.sowing_date, at: observedAt }),
       source: isMock ? 'mock' : 'sentinel-2',
       mock: isMock,
       cdse_error: cdseError,
@@ -265,7 +267,7 @@ export async function POST(
       mean: indices.ndre.mean,
       min: indices.ndre.min,
       max: indices.ndre.max,
-      interpretation: interpretNdre(indices.ndre.mean, field.crop),
+      interpretation: interpretNdre(indices.ndre.mean, field.crop, { sowingDate: field.sowing_date, at: observedAt }),
       // W trybie mock NDRE/NDWI/SAVI to liniowe estymaty z mocka NDVI, nie pomiar.
       // Propagujemy istniejącą flagę isMock (bez zmiany wzorów) — patrz P0-trust.
       mock: isMock,

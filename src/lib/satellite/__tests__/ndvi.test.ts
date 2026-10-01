@@ -4,7 +4,9 @@ import {
   classifyNdvi,
   ndviColorHex,
   describeNdvi,
+  cropStage,
 } from '../ndvi';
+import { interpretNdre } from '../indices';
 
 describe('computeNdviStats', () => {
   it('oblicza średnią, min, max pomijając NaN', () => {
@@ -64,5 +66,41 @@ describe('describeNdvi', () => {
 
   it('opisuje stres dla niskiego NDVI', () => {
     expect(describeNdvi(0.2, 'corn')).toMatch(/stres/i);
+  });
+});
+
+describe('interpretacja zależna od fazy (regresja 10.2026)', () => {
+  const at = new Date('2026-10-01T12:00:00Z');
+
+  it('pszenica 2 tyg. po siewie, NDVI 0,46 → „we wschodach", nie „możliwa interwencja"', () => {
+    const d = describeNdvi(0.46, 'wheat', { sowingDate: '2026-09-15', at });
+    expect(d).toMatch(/wschodach/);
+    expect(d).not.toMatch(/interwencja/);
+  });
+
+  it('bez kontekstu — zachowanie historyczne', () => {
+    expect(describeNdvi(0.46, 'wheat')).toMatch(/przeciętnej kondycji/);
+  });
+
+  it('NDRE jesienią po siewie nie podpowiada mocznika', () => {
+    const t = interpretNdre(0.25, 'wheat', { sowingDate: '2026-09-15', at });
+    expect(t).not.toMatch(/mocznik/i);
+  });
+
+  it('styczeń, ozimina → spoczynek zimowy, bez azotu', () => {
+    const jan = new Date('2027-01-15T12:00:00Z');
+    expect(cropStage('wheat', { sowingDate: '2026-09-15', at: jan })).toBe('dormancy');
+    expect(interpretNdre(0.15, 'wheat', { sowingDate: '2026-09-15', at: jan })).toMatch(/Spoczynek/);
+  });
+
+  it('maj, pszenica ozima → growth (klasyczne progi wracają)', () => {
+    const may = new Date('2027-05-10T12:00:00Z');
+    expect(cropStage('wheat', { sowingDate: '2026-09-15', at: may })).toBe('growth');
+    expect(interpretNdre(0.25, 'wheat', { sowingDate: '2026-09-15', at: may })).toMatch(/mocznik/);
+  });
+
+  it('kukurydza 3 tyg. po siewie → establishment; 2 mies. → growth', () => {
+    expect(cropStage('corn', { sowingDate: '2026-04-25', at: new Date('2026-05-15T12:00:00Z') })).toBe('establishment');
+    expect(cropStage('corn', { sowingDate: '2026-04-25', at: new Date('2026-06-25T12:00:00Z') })).toBe('growth');
   });
 });

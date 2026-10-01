@@ -6,6 +6,8 @@
 import { Sprout, Leaf, Droplets, MountainSnow, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatIndexPL } from '@/lib/ui/format';
+import { cropStage, type CropStageCtx } from '@/lib/satellite/ndvi';
+import { interpretNdre } from '@/lib/satellite/indices';
 
 interface IndexValue {
   mean: number;
@@ -22,6 +24,8 @@ interface Props {
   // true = brak realnych danych CDSE. NDVI to mock, a NDRE/NDWI/SAVI liniowe
   // estymaty z niego — oznaczamy uczciwie, żeby nie udawać pomiaru satelitarnego.
   isMock?: boolean;
+  /** Data siewu + dzień odczytu → interpretacja zależna od fazy (wschody, zima). */
+  stageCtx?: CropStageCtx;
 }
 
 interface CardData {
@@ -106,7 +110,16 @@ function colorForValue(key: CardData['key'], v: number): string {
   return '#14532d';
 }
 
-export function MultiIndexPanel({ ndvi, ndre, ndwi, savi, crop, isMock = false }: Props) {
+export function MultiIndexPanel({ ndvi, ndre, ndwi, savi, crop, isMock = false, stageCtx }: Props) {
+  // Na wschodach i zimą klasyczne progi kłamią (gleba w kadrze, spoczynek) — patrz lib/satellite/ndvi.
+  const stage = stageCtx ? cropStage(crop, stageCtx) : 'growth';
+  const ndviText = (v: number) =>
+    stage === 'dormancy' && v < 0.55
+      ? 'Spoczynek zimowy — niski NDVI jest normalny'
+      : stage === 'establishment' && v < 0.55
+        ? 'Typowe dla wschodów — gleba jeszcze widoczna'
+        : ndviInterp(v);
+  const ndreText = (v: number) => (stage === 'growth' ? ndreInterp(v, crop) : interpretNdre(v, crop, stageCtx));
   const cards: CardData[] = [
     {
       key: 'ndvi',
@@ -117,7 +130,7 @@ export function MultiIndexPanel({ ndvi, ndre, ndwi, savi, crop, isMock = false }
       bg: 'bg-signal-healthy/10',
       ring: 'ring-signal-healthy/30',
       value: ndvi,
-      interpretation: ndviInterp(ndvi.mean),
+      interpretation: ndviText(ndvi.mean),
     },
     {
       key: 'ndre',
@@ -128,7 +141,7 @@ export function MultiIndexPanel({ ndvi, ndre, ndwi, savi, crop, isMock = false }
       bg: 'bg-signal-heat/10',
       ring: 'ring-signal-heat/30',
       value: ndre,
-      interpretation: ndre ? ndreInterp(ndre.mean, crop) : '',
+      interpretation: ndre ? ndreText(ndre.mean) : '',
     },
     {
       key: 'ndwi',

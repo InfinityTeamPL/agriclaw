@@ -1,6 +1,7 @@
 // Klasyfikacje + opisy dla wszystkich indeksów wegetacyjnych Sentinel-2.
 // Używane w UI i agent prompts.
 
+import { cropStage, type CropStageCtx } from './ndvi';
 import { computeNdviStats, type NdviStats } from './ndvi';
 
 export type IndexKey = 'ndvi' | 'ndre' | 'ndwi' | 'savi';
@@ -89,7 +90,16 @@ export function computeAllIndices(rasters: {
  * Dla NDRE — interpretacja stanu azotowego.
  * Progi kalibrowane empirycznie dla pszenicy w fazie kłoszenia.
  */
-export function interpretNdre(ndreMean: number, crop: string): string {
+export function interpretNdre(ndreMean: number, crop: string, ctx?: CropStageCtx): string {
+  if (ctx) {
+    const stage = cropStage(crop, ctx);
+    if (stage === 'dormancy') {
+      return 'Spoczynek zimowy — azot pogłówny dopiero po ruszeniu wegetacji wiosną (program azotanowy zabrania nawożenia zimą)';
+    }
+    if (stage === 'establishment') {
+      return 'Wschody — przy małej biomasie NDRE jest mało miarodajny; nie decyduj o azocie na tej podstawie';
+    }
+  }
   const isCereal = ['wheat', 'barley', 'rye', 'oats'].includes(crop);
   if (ndreMean < 0.2) {
     return isCereal
