@@ -1,6 +1,10 @@
 // GET /api/analysis/[fieldId]/planet — najnowsze zdjęcie Planet PSScene (3m) dla pola.
 // Zwraca thumbnail jako dataURL + bbox geometrii sceny dla image overlay na mapie.
 // Thumbnail jest DARMOWY — nie zużywa kredytów Planet.
+//
+// UWAGA: thumbnail to CAŁA scena (~25×40 km) w 512 px, czyli ~50–80 m/piksel — NIE 3 m.
+// Pełne 3 m wymaga licencji Tiles/Orders (obecny klucz: tiles → 401 „No Permission", 10.2026).
+// Dlatego zwracamy prawdziwą rozdzielczość podglądu + bbox pola do zaznaczenia go na obrazie.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/session';
@@ -8,6 +12,9 @@ import { prisma } from '@/lib/prisma';
 import { searchPlanetItems, fetchPlanetThumbnail, polygonBbox, isPlanetConfigured } from '@/lib/satellite/planet';
 
 export const maxDuration = 60;
+
+/** Szerokość thumbnaila (lib/satellite/planet → ?width=512). */
+const THUMB_WIDTH_PX = 512;
 
 export async function GET(
   _req: NextRequest,
@@ -59,11 +66,18 @@ export async function GET(
     const latest = items[0];
     const { dataUrl, bytes } = await fetchPlanetThumbnail(process.env.PLANET_API_KEY!, latest);
     const bbox = polygonBbox(latest.geometry);
+    const fieldBbox = polygonBbox(polygon);
+    const midLat = (((bbox.minLat + bbox.maxLat) / 2) * Math.PI) / 180;
+    const sceneWidthM = (bbox.maxLon - bbox.minLon) * 111_320 * Math.cos(midLat);
+    const previewMetersPerPixel = Math.round(sceneWidthM / THUMB_WIDTH_PX);
 
     return NextResponse.json({
       type: 'planet',
       provider: 'Planet Labs PSScene',
-      resolution: '3m',
+      resolution: `~${previewMetersPerPixel} m/piksel`,
+      sensorResolution: '3 m',
+      previewMetersPerPixel,
+      fieldBbox,
       itemId: latest.id,
       observedAt: latest.acquired,
       cloudCover: latest.cloudCover,

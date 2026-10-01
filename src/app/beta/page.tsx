@@ -29,7 +29,7 @@ const GIVES = [
   {
     icon: Satellite,
     title: 'Pełny monitoring satelitarny',
-    desc: 'NDVI/NDRE co 2-3 dni (Sentinel-2 z maską chmur), radar Sentinel-1 gdy chmury, zdjęcia Planet 3 m.',
+    desc: 'NDVI/NDRE co 2-3 dni (Sentinel-2 z maską chmur), radar Sentinel-1 gdy chmury, codzienny podgląd scen Planet.',
   },
   {
     icon: MessageSquare,
