@@ -140,3 +140,35 @@ describe('severityStyle — pigułki na tokenach sygnałów, nie surowych kolora
     }
   });
 });
+
+describe('parsePlNumber — dawka wpisana po polsku nie może zniknąć', () => {
+  it('przecinek dziesiętny (najczęstszy w PL)', async () => {
+    const { parsePlNumber } = await import('../ui/format');
+    expect(parsePlNumber('2,5')).toBe(2.5);
+    expect(parsePlNumber('0,075')).toBe(0.075);
+  });
+  it('kropka i spacje tysięcy', async () => {
+    const { parsePlNumber } = await import('../ui/format');
+    expect(parsePlNumber('2.5')).toBe(2.5);
+    expect(parsePlNumber(' 1 250,5 ')).toBe(1250.5);
+  });
+  it('puste i śmieci → null, nigdy NaN', async () => {
+    const { parsePlNumber } = await import('../ui/format');
+    for (const v of ['', '   ', 'abc', '1,2,3', '2,5 l']) expect(parsePlNumber(v)).toBeNull();
+    expect(parsePlNumber(null)).toBeNull();
+    expect(parsePlNumber(Number.NaN)).toBeNull();
+  });
+  it('liczba przechodzi bez zmian', async () => {
+    const { parsePlNumber } = await import('../ui/format');
+    expect(parsePlNumber(3)).toBe(3);
+  });
+});
+
+describe('formatNumberPL', () => {
+  it('bez zbędnych zer, z przecinkiem', async () => {
+    const { formatNumberPL } = await import('../ui/format');
+    expect(formatNumberPL(2.5)).toBe('2,5');
+    expect(formatNumberPL(3)).toBe('3');
+    expect(formatNumberPL(0.075)).toBe('0,075');
+  });
+});
