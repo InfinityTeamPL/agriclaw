@@ -10,6 +10,7 @@
 import { prisma } from '../prisma';
 import { fetchWeatherForecast } from '../satellite/weather';
 import { classifyNdvi, cropStage, describeNdvi } from '../satellite/ndvi';
+import { TREND_WINDOW_DAYS } from '../satellite/trend-window';
 import { checkSorProduct } from '../sor-registry';
 import { PROMPT_ADVISORY_DISCIPLINE, withAdvisoryDisclaimer } from '../advisory';
 import {
@@ -190,13 +191,19 @@ async function executeTool(
         },
         ndre_mean: latest.ndreMean,
         ndwi_mean: latest.ndwiMean,
-        trend: prev
-          ? {
-              previous_mean: prev.ndviMean,
-              previous_observed_at: prev.observedAt.toISOString(),
-              delta: latest.ndviMean - prev.ndviMean,
-            }
-          : null,
+        // Trend tylko w obrębie sezonu — inaczej model cytował „spadek −0,44"
+        // między lipcową pszenicą przed żniwami a październikowymi wschodami.
+        trend:
+          prev && latest.observedAt.getTime() - prev.observedAt.getTime() <= TREND_WINDOW_DAYS * 86_400_000
+            ? {
+                previous_mean: prev.ndviMean,
+                previous_observed_at: prev.observedAt.toISOString(),
+                delta: latest.ndviMean - prev.ndviMean,
+              }
+            : null,
+        ...(prev && !(latest.observedAt.getTime() - prev.observedAt.getTime() <= TREND_WINDOW_DAYS * 86_400_000)
+          ? { trend_note: `Poprzedni odczyt sprzed ponad ${TREND_WINDOW_DAYS} dni (inny etap sezonu lub poprzednia uprawa) — nie porównuj.` }
+          : {}),
       };
     }
 
