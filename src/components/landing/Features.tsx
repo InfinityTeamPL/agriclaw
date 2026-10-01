@@ -1,56 +1,58 @@
 'use client';
 
 import {
-  Wheat,
-  CloudRain,
-  Brain,
+  Camera,
+  ShieldCheck,
+  BookOpenCheck,
+  Scale,
+  Timer,
   MessageSquareText,
-  WifiOff,
-  Settings2,
 } from 'lucide-react';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 
+// Każda karta = funkcja, którą da się sprawdzić w demo (bez obietnic na wyrost —
+// jury i rolnicy klikają). Kolejność: od problemu rolnika, nie od technologii.
 const FEATURES = [
   {
-    icon: Wheat,
-    title: 'Obraz z góry',
+    icon: Camera,
+    title: 'Diagnoza ze zdjęcia',
     body:
-      'Widok pola w 10 m rozdzielczości, odświeżany co kilka dni. Widzisz czy pole jest zdrowe, chore, czy po prostu suche.',
-    tone: 'healthy',
-  },
-  {
-    icon: CloudRain,
-    title: 'Prognoza parowania',
-    body:
-      'Nie tylko „ile spadnie deszczu". Liczymy ile wody pole straci jutro i pojutrze, nie tylko ile ma dziś.',
-    tone: 'frost',
-  },
-  {
-    icon: Brain,
-    title: 'Twój AgroAgent',
-    body:
-      'Agent pamięta historię Twojego pola przez 2+ sezony. Uczy się Twojego gospodarstwa, nie cudzych.',
+      'Robisz zdjęcie liścia — dostajesz chorobę lub szkodnika, pewność rozpoznania i co z tym zrobić. Gdy model nie jest pewny, mówi to wprost.',
     tone: 'disease',
   },
   {
-    icon: MessageSquareText,
-    title: 'WhatsApp + głos',
+    icon: ShieldCheck,
+    title: 'Tylko legalne środki',
     body:
-      'Piszesz „co z polem 3?" — agent odpowiada po polsku. Nie ma progu wejścia, nie ma klikania.',
+      'Każdy polecany środek sprawdzamy w rejestrze ŚOR ministerstwa (dane.gov.pl). Wycofany preparat dostaje czerwoną flagę, zanim trafi do opryskiwacza.',
+    tone: 'healthy',
+  },
+  {
+    icon: BookOpenCheck,
+    title: 'Księga polowa gotowa na 2027',
+    body:
+      'Od 1 stycznia 2027 ewidencja zabiegów ŚOR musi być elektroniczna. Wpis zajmuje pół minuty, PDF dla inspektora IJHARS — jednym kliknięciem.',
+    tone: 'frost',
+  },
+  {
+    icon: Scale,
+    title: 'Kontrola zgodności WPR',
+    body:
+      'Dywersyfikacja (GAEC 7), okrywa zimowa, rotacja. Nie tylko „naruszenie" — mówimy ile hektarów przesunąć, żeby dopłaty były bezpieczne.',
     tone: 'heat',
   },
   {
-    icon: WifiOff,
-    title: 'Działa offline',
+    icon: Timer,
+    title: 'Okno oprysku i alerty',
     body:
-      'W polu bez zasięgu otwierasz ostatnią analizę. Dane pobierają się z powrotem, gdy wróci internet.',
+      'Wiatr, deszcz, temperatura i wilgotność godzina po godzinie. Ostrzeżenie o przymrozku, upale i presji chorób liczonej z fazy rozwojowej (BBCH).',
     tone: 'drought',
   },
   {
-    icon: Settings2,
-    title: 'Ty decydujesz',
+    icon: MessageSquareText,
+    title: 'AgroAgent mówi „dlaczego"',
     body:
-      'Zmieniasz plan, zatrzymujesz się, eksportujesz dane. Zawsze po Twojej stronie.',
+      'Pytasz po polsku „co z polem 3?". Każda rada pokazuje przesłanki i progi, na których się opiera — możesz się nie zgodzić, decyzja zostaje Twoja.',
     tone: 'foreground',
   },
 ];
@@ -78,7 +80,7 @@ export function Features() {
             <span className="hud-label">Co dostajesz</span>
           </div>
           <h2 className="font-display text-3xl sm:text-5xl font-semibold tracking-tight text-foreground">
-            Nie kolejny dashboard.
+            Mniej papierów, mniej strat.
             <br />
             <span className="relative inline-block pb-2">
               Konkretna rada, kiedy trzeba.

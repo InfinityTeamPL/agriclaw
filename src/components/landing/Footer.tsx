@@ -17,7 +17,7 @@ export function Footer() {
               <span className="font-display font-semibold text-foreground text-lg tracking-tight">AgriClaw</span>
             </div>
             <p className="text-sm max-w-md">
-              Twój cyfrowy agronom. Skan pola z góry + konkretna rada przez WhatsApp.
+              Twój cyfrowy agronom. Satelita nad polem, legalne środki w opryskiwaczu, księga polowa gotowa na kontrolę.
             </p>
           </div>
 
