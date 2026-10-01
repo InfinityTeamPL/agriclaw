@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 import { ndviColorHex } from '@/lib/design/ndvi-scale';
-import { pluralPL, severityStyle, formatHa, formatDatePL } from '@/lib/ui/format';
+import { pluralPL, severityStyle, formatHa, formatDatePL, formatIndexPL } from '@/lib/ui/format';
 import { cn } from '@/lib/utils';
 
 export interface AttentionItem {
@@ -30,6 +30,8 @@ export interface AttentionItem {
   title: string;
   createdAt: string;
   ndviMean: number | null;
+  /** Najważniejsza przesłanka (warstwa „dlaczego"), np. „NDVI 0,32 · próg poniżej 0,35". */
+  reason?: string | null;
 }
 
 export interface TodayWeather {
@@ -143,6 +145,11 @@ export function TodayBriefing({
                         <div className="text-sm text-muted-foreground truncate">
                           {a.title} <span className="text-muted-foreground/70">· {ago(a.createdAt)}</span>
                         </div>
+                        {a.reason && (
+                          <div className="mt-0.5 font-mono tabular text-[11px] text-muted-foreground/80 truncate">
+                            dlaczego: {a.reason}
+                          </div>
+                        )}
                       </div>
                       {a.ndviMean !== null && (
                         <span className="hidden sm:inline-flex items-center gap-1.5 font-mono tabular text-xs text-muted-foreground">
@@ -150,7 +157,7 @@ export function TodayBriefing({
                             className="w-2 h-2 rounded-full"
                             style={{ background: ndviColorHex(a.ndviMean) }}
                           />
-                          NDVI {a.ndviMean.toFixed(2)}
+                          NDVI {formatIndexPL(a.ndviMean)}
                         </span>
                       )}
                       <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground shrink-0" />
