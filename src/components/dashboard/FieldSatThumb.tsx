@@ -15,10 +15,15 @@ interface Props {
   fieldId: string;
   polygon: GeoJSON.Polygon;
   fallbackColor: string;
+  /** Data ostatniego odczytu — zmiana unieważnia obraz zapamiętany w przeglądarce. */
+  version?: string | null;
   className?: string;
 }
 
-export function FieldSatThumb({ fieldId, polygon, fallbackColor, className }: Props) {
+/** Podbij, gdy zmienia się to, co serwer zwraca pod tym samym adresem (np. naprawa pustych PNG). Endpoint ma max-age=6h. */
+const THUMB_REV = 2;
+
+export function FieldSatThumb({ fieldId, polygon, fallbackColor, version, className }: Props) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [src, setSrc] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -28,7 +33,7 @@ export function FieldSatThumb({ fieldId, polygon, fallbackColor, className }: Pr
     if (!el || src || failed) return;
     let alive = true;
     const load = () => {
-      fetch(`/api/analysis/${fieldId}/layer?type=ndvi&size=256`)
+      fetch(`/api/analysis/${fieldId}/layer?type=ndvi&size=256&v=${THUMB_REV}-${version ? version.slice(0, 10) : 'x'}`)
         .then(async (r) => {
           if (!r.ok) throw new Error(String(r.status));
           return (await r.json()) as { dataUrl?: string };
