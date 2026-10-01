@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Loader2, Layers, Sprout, Leaf, Droplets, MountainSnow, Camera } from 'lucide-react';
-import { hybridStyle } from '@/lib/map-style';
+import { hybridStyle, EMBEDDED_MAP_OPTIONS } from '@/lib/map-style';
 import { cn } from '@/lib/utils';
 
 type LayerType = 'ndvi' | 'ndre' | 'ndwi' | 'savi' | 'truecolor';
@@ -94,6 +94,7 @@ export function FieldLayerMap({ fieldId, polygon, centroid, className }: Props) 
     if (!containerRef.current || mapRef.current) return;
 
     const map = new maplibregl.Map({
+      ...EMBEDDED_MAP_OPTIONS,
       container: containerRef.current,
       style: hybridStyle,
       center: [centroid.lon, centroid.lat],

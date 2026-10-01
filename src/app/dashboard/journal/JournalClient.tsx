@@ -25,7 +25,7 @@ import {
   getTreatmentTypeIcon,
   type CommonProduct,
 } from '@/lib/treatment-types';
-import { cropLabel, formatDatePL, formatHa } from '@/lib/ui/format';
+import { cropLabel, formatDatePL, formatHa, parsePlNumber, formatNumberPL } from '@/lib/ui/format';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 
 interface FieldOpt {
@@ -320,7 +320,7 @@ function TreatmentRow({
                 {t.productName}
                 {t.doseValue && (
                   <span className="ml-2 text-sm font-normal font-mono tabular text-muted-foreground">
-                    · {t.doseValue} {t.doseUnit} × {formatHa(t.areaTreated)} ha
+                    · {formatNumberPL(t.doseValue)} {t.doseUnit} × {formatHa(t.areaTreated)} ha
                   </span>
                 )}
               </div>
@@ -470,12 +470,12 @@ function TreatmentModal({
         productName: productName.trim(),
         purpose: purpose || null,
         activeSubstance: activeSubstance.trim() || null,
-        doseValue: doseValue ? Number(doseValue) : null,
+        doseValue: parsePlNumber(doseValue),
         doseUnit: doseUnit || null,
         operatorName: operatorName.trim() || null,
         notes: notes.trim() || null,
       };
-      const areaNum = Number(areaTreated);
+      const areaNum = parsePlNumber(areaTreated) ?? NaN;
       if (areaNum > 0) patch.areaTreated = areaNum;
 
       try {
@@ -504,11 +504,14 @@ function TreatmentModal({
       performedAt,
       type,
       productName: productName.trim(),
-      areaTreated: Number(areaTreated) || selectedField?.areaHectares || 0,
+      areaTreated: parsePlNumber(areaTreated) || selectedField?.areaHectares || 0,
     };
     if (purpose) body.purpose = purpose;
     if (activeSubstance) body.activeSubstance = activeSubstance;
-    if (doseValue) body.doseValue = Number(doseValue);
+    {
+      const dose = parsePlNumber(doseValue);
+      if (dose !== null) body.doseValue = dose;
+    }
     if (doseUnit) body.doseUnit = doseUnit;
     if (operatorName) body.operatorName = operatorName;
     if (notes) body.notes = notes;
@@ -686,8 +689,9 @@ function TreatmentModal({
           <div className="grid grid-cols-3 gap-3">
             <Field label="Dawka">
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
+                placeholder="np. 1,5"
                 value={doseValue}
                 onChange={(e) => setDoseValue(e.target.value)}
                 className="w-full px-3 py-2 border border-input rounded-md bg-card text-foreground font-mono tabular"
@@ -701,17 +705,18 @@ function TreatmentModal({
               >
                 <option value="l/ha">l/ha</option>
                 <option value="kg/ha">kg/ha</option>
+                <option value="t/ha">t/ha</option>
                 <option value="g/ha">g/ha</option>
                 <option value="dt/ha">dt/ha</option>
               </select>
             </Field>
             <Field label="Pow. obrobiona (ha)">
               <input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 value={areaTreated}
                 onChange={(e) => setAreaTreated(e.target.value)}
-                placeholder={selectedField?.areaHectares.toFixed(2) ?? ''}
+                placeholder={selectedField ? formatHa(selectedField.areaHectares) : ''}
                 className="w-full px-3 py-2 border border-input rounded-md bg-card text-foreground font-mono tabular"
               />
             </Field>

@@ -36,11 +36,7 @@ export async function GET(
 
   const crop = field.crop as Crop;
   const currentYear = new Date().getFullYear();
-  const { sowingDate, isEstimate: sowingDateIsEstimate } = resolveSowingDate(
-    field.sowing_date,
-    crop,
-    currentYear,
-  );
+  const { sowingDate, isEstimate: sowingDateIsEstimate } = resolveSowingDate(field.sowing_date, crop, new Date());
 
   // 1. Pobierz historyczne temperatury od siewu (dla GDD → BBCH)
   const today = new Date().toISOString().slice(0, 10);

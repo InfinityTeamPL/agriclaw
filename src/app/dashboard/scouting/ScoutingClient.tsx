@@ -466,7 +466,7 @@ function AddScoutingModal({
                 onChange={(e) => setRunDiagnose(e.target.checked)}
                 className="rounded text-primary"
               />
-              Wyślij zdjęcie do AgroAgent do automatycznej diagnozy (Gemma 4)
+              Wyślij zdjęcie do AgroAgent do automatycznej diagnozy (AI)
             </label>
           )}
 

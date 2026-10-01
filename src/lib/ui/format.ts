@@ -104,3 +104,23 @@ export function severityStyle(severity: string): SeverityStyle {
       };
   }
 }
+
+/**
+ * Liczba wpisana przez polskiego użytkownika: akceptuje przecinek i kropkę
+ * dziesiętną oraz spacje tysięcy („2,5", „2.5", „1 250,5"). Zwraca null dla
+ * pustego/niepoprawnego wejścia — NIGDY NaN (NaN po cichu gubił dawkę
+ * w księdze polowej, gdy rolnik wpisał „2,5").
+ */
+export function parsePlNumber(raw: string | number | null | undefined): number | null {
+  if (raw === null || raw === undefined) return null;
+  if (typeof raw === 'number') return Number.isFinite(raw) ? raw : null;
+  const s = raw.replace(/[\s\u00a0]/g, '').replace(',', '.');
+  if (!s || !/^-?\d*\.?\d+$/.test(s)) return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Liczba po polsku bez zbędnych zer: 2,5 · 3 · 0,075. */
+export function formatNumberPL(n: number, maxFractionDigits = 3): string {
+  return n.toLocaleString('pl-PL', { maximumFractionDigits: maxFractionDigits });
+}

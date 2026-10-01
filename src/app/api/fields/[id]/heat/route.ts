@@ -35,11 +35,7 @@ export async function GET(
   if (!field) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const crop = field.crop as Crop;
-  const { sowingDate, isEstimate: sowingDateIsEstimate } = resolveSowingDate(
-    field.sowing_date,
-    crop,
-    new Date().getFullYear(),
-  );
+  const { sowingDate, isEstimate: sowingDateIsEstimate } = resolveSowingDate(field.sowing_date, crop, new Date());
   const sowingStr = sowingDate.toISOString().slice(0, 10);
   const today = new Date().toISOString().slice(0, 10);
   const dailyTemps: Array<{ date: string; tMax: number; tMin: number }> = [];

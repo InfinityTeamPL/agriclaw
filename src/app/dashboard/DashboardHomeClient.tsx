@@ -12,22 +12,18 @@ import {
   Plus,
   Sprout,
   Satellite,
-  AlertTriangle,
-  Gauge,
+  AlertTriangle,
   ArrowUpRight,
   MapPin,
   Activity,
   MessageSquare,
   CheckCircle2,
-  CircleDot,
-  Loader2,
-  Radar,
-  ShieldCheck,
+  CircleDot,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { CountUp } from '@/components/dashboard/CountUp';
 import { Sparkline } from '@/components/dashboard/Sparkline';
 import { FieldSatThumb } from '@/components/dashboard/FieldSatThumb';
+import { TodayBriefing, type AttentionItem, type TodayWeather } from '@/components/dashboard/TodayBriefing';
 // Lazy-load MapLibre (~250 kB gzip) — poza First Load JS panelu, ładowany dopiero
 // przy renderze mapy. Audyt: perf (maplibre statycznie w bundlu dashboardu).
 const FarmMiniMap = dynamic(
@@ -84,6 +80,9 @@ interface Props {
   };
   recentRecs: RecItem[];
   recentEvents: EventItem[];
+  attention: AttentionItem[];
+  weather: TodayWeather | null;
+  sprayWindow: { label: string; quality: string } | null;
 }
 
 const container = {
@@ -106,7 +105,7 @@ const item = {
   },
 };
 
-export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEvents }: Props) {
+export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEvents, attention, weather, sprayWindow }: Props) {
   const router = useRouter();
   const [scanning, setScanning] = useState(false);
 
@@ -150,162 +149,24 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
       animate="show"
       className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8"
     >
-      {/* Header */}
-      <motion.div variants={item} className="flex items-end justify-between flex-wrap gap-4">
-        <div>
-          <div className="inline-flex items-center gap-2 border border-border bg-card px-3 py-1.5 rounded-md">
-            <span className="w-1.5 h-1.5 rounded-full bg-signal-healthy" />
-            <span className="hud-label">Dzisiaj na Twoim gospodarstwie</span>
-          </div>
-          <h1 className="mt-3 font-display text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
-            Dzień dobry w <span className="text-primary">{farm.name}</span>
-          </h1>
-          <p className="mt-1.5 text-sm text-muted-foreground inline-flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5" />
-            {farm.address}
-          </p>
-        </div>
-        <Link
-          href="/dashboard/fields/new"
-          className="group inline-flex items-center gap-2 bg-primary text-primary-foreground font-semibold px-5 py-2.5 rounded-md shadow-card hover:brightness-110 transition-all"
-        >
-          <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" />
-          Dodaj pole
-        </Link>
-      </motion.div>
-
-      {/* Pilne sygnały hero banner — tylko gdy są high severity */}
-      {highSeverityRecs.length > 0 && (
-        <motion.div
-          variants={item}
-          className="rounded-lg bg-card border border-destructive/40 shadow-card p-5"
-        >
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-md bg-destructive/10 text-destructive border border-destructive/30 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="font-display font-semibold tracking-tight text-foreground text-lg">
-                  {highSeverityRecs.length === 1
-                    ? 'Pilny sygnał wymaga uwagi'
-                    : `${highSeverityRecs.length} pilnych sygnałów wymaga uwagi`}
-                </div>
-                <div className="text-sm text-muted-foreground mt-0.5">
-                  Kliknij w sygnał, żeby przejść do pola.
-                </div>
-              </div>
-            </div>
-            <button
-              onClick={runScan}
-              disabled={scanning || fields.length === 0}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md bg-card border border-border text-foreground text-sm font-semibold hover:border-foreground/30 transition disabled:opacity-50"
-            >
-              {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radar className="w-4 h-4" />}
-              {scanning ? 'Skanuję…' : 'Skanuj wszystkie pola'}
-            </button>
-          </div>
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-            {highSeverityRecs.slice(0, 6).map((r) => (
-              <Link
-                key={r.id}
-                href={`/dashboard/fields/${r.fieldId}`}
-                className="group rounded-md bg-card border border-destructive/20 p-3 hover:border-destructive/40 hover:shadow-card transition flex items-start gap-2"
-              >
-                <div className="w-2 h-2 rounded-full bg-destructive shrink-0 mt-1.5 animate-pulse" />
-                <div className="min-w-0 flex-1">
-                  <div className="hud-label truncate">{r.fieldName}</div>
-                  <div className="text-sm font-medium text-foreground truncate group-hover:text-destructive">
-                    {r.title}
-                  </div>
-                  <div className="mt-0.5 font-mono tabular text-[10px] text-muted-foreground">
-                    {formatDateTimePL(r.createdAt)}
-                  </div>
-                </div>
-                <ArrowUpRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-destructive shrink-0" />
-              </Link>
-            ))}
-          </div>
-        </motion.div>
-      )}
-
-      {/* Skan banner — tylko gdy brak high-severity i user może skanować */}
-      {highSeverityRecs.length === 0 && fields.length > 0 && (
-        <motion.div
-          variants={item}
-          className="rounded-lg bg-card border border-border shadow-card p-4 flex items-center justify-between gap-3 flex-wrap"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-md bg-signal-healthy/10 text-signal-healthy border border-signal-healthy/30 flex items-center justify-center">
-              <CheckCircle2 className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="font-semibold text-foreground">Brak pilnych sygnałów</div>
-              <div className="text-sm text-muted-foreground">
-                Skanuj wszystkie pola żeby sprawdzić przymrozki, upały, choroby i bilans wodny.
-              </div>
-            </div>
-          </div>
-          <button
-            onClick={runScan}
-            disabled={scanning}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:brightness-110 transition disabled:opacity-50"
-          >
-            {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Radar className="w-4 h-4" />}
-            {scanning ? 'Skanuję…' : 'Skanuj pola'}
-          </button>
-        </motion.div>
-      )}
-
-      {/* Hero stats grid */}
-      <motion.div
-        variants={item}
-        className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4"
-      >
-        <StatTile
-          icon={<Sprout className="w-4 h-4" />}
-          label="Pola"
-          value={<CountUp value={stats.fieldsCount} />}
-          accent="healthy"
-          trend={stats.fieldsCount > 0 ? 'aktywne' : 'brak'}
+      {/* Dziś — stan gospodarstwa, co zrobić, pogoda i okno oprysku */}
+      <motion.div variants={item}>
+        <TodayBriefing
+          farmName={farm.name}
+          address={farm.address}
+          attention={attention}
+          attentionTotal={stats.activeAlerts}
+          weather={weather}
+          sprayWindow={sprayWindow}
+          stats={{
+            fieldsCount: stats.fieldsCount,
+            totalHa: stats.totalHa,
+            lastAnalysisAt: stats.lastAnalysisAt,
+            complianceScore: stats.complianceScore,
+          }}
+          scanning={scanning}
+          onScan={runScan}
         />
-        <StatTile
-          icon={<Gauge className="w-4 h-4" />}
-          label="Łącznie hektarów"
-          value={<CountUp value={stats.totalHa} format={(v) => formatHa(v)} />}
-          suffix="ha"
-          accent="frost"
-          trend="powierzchnia"
-        />
-        <StatTile
-          icon={<Satellite className="w-4 h-4" />}
-          label="Ostatnia analiza"
-          valueText={stats.lastAnalysisAt ? formatDatePL(stats.lastAnalysisAt) : '—'}
-          accent="neutral"
-          trend={stats.lastAnalysisAt ? 'satelita Sentinel-2' : 'nie uruchomiono'}
-        />
-        <StatTile
-          icon={<AlertTriangle className="w-4 h-4" />}
-          label="Pilne sygnały"
-          value={<CountUp value={stats.activeAlerts} />}
-          accent={stats.activeAlerts > 0 ? 'heat' : 'healthy'}
-          trend={stats.activeAlerts > 0 ? 'sprawdź pola' : 'wszystko spokojne'}
-        />
-        <Link href="/dashboard/compliance" className="contents">
-          <StatTile
-            icon={<ShieldCheck className="w-4 h-4" />}
-            label="Zgodność ARiMR"
-            value={<><CountUp value={stats.complianceScore} />%</>}
-            accent={stats.complianceScore >= 80 ? 'healthy' : stats.complianceScore >= 50 ? 'heat' : 'drought'}
-            trend={
-              stats.complianceFails > 0
-                ? `${stats.complianceFails} ${pluralPL(stats.complianceFails, 'naruszenie', 'naruszenia', 'naruszeń')}`
-                : stats.complianceWarns > 0
-                  ? `${stats.complianceWarns} ${pluralPL(stats.complianceWarns, 'ostrzeżenie', 'ostrzeżenia', 'ostrzeżeń')}`
-                  : 'WPR 2023-2027'
-            }
-          />
-        </Link>
       </motion.div>
 
       {/* Map + Activity stream */}
@@ -541,45 +402,6 @@ const accentTokens: Record<AccentColor, { icon: string; trend: string }> = {
     trend: 'text-muted-foreground',
   },
 };
-
-function StatTile({
-  icon,
-  label,
-  value,
-  valueText,
-  suffix,
-  accent,
-  trend,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value?: React.ReactNode;
-  valueText?: string;
-  suffix?: string;
-  accent: AccentColor;
-  trend?: string;
-}) {
-  const tokens = accentTokens[accent];
-  return (
-    <div className="relative rounded-lg bg-card border border-border p-4 sm:p-5 overflow-hidden group hover:-translate-y-0.5 hover:shadow-pop transition-all duration-300 shadow-card">
-      <div className="relative flex items-start justify-between gap-3">
-        <div>
-          <div className="hud-label">{label}</div>
-          <div className="mt-2 font-mono tabular text-2xl sm:text-3xl font-semibold tracking-tight text-foreground flex items-baseline gap-1">
-            {value ?? <span>{valueText}</span>}
-            {suffix && <span className="text-sm text-muted-foreground font-normal">{suffix}</span>}
-          </div>
-          {trend && (
-            <div className={`text-[11px] font-medium mt-1 ${tokens.trend}`}>{trend}</div>
-          )}
-        </div>
-        <div className={`w-9 h-9 rounded-md ${tokens.icon} flex items-center justify-center shrink-0`}>
-          {icon}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function FieldCard({ field }: { field: FieldItem }) {
   const ndviColor = field.ndviMean !== null ? ndviColorHex(field.ndviMean) : '#64748b';
