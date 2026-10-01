@@ -5,7 +5,7 @@
    - Dla nawigacji: network, a kiedy brak sieci → cached `/offline`.
 */
 
-const VERSION = 'v2';
+const VERSION = 'v3';
 const STATIC_CACHE = `agriclaw-static-${VERSION}`;
 const RUNTIME_CACHE = `agriclaw-runtime-${VERSION}`;
 const OFFLINE_URL = '/offline';
@@ -172,6 +172,47 @@ self.addEventListener('fetch', (event) => {
         })
         .catch(() => null);
       return cached || (await networkPromise) || new Response('', { status: 504 });
+    })()
+  );
+});
+
+// ── Web Push (lib/push.ts) ──
+// Payload: { title, body, url?, tag? }. Zły/pusty payload → ogólny komunikat,
+// bo push bez pokazania powiadomienia jest przez przeglądarki karany (cofnięcie zgody).
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { body: event.data ? event.data.text() : '' };
+  }
+  const title = data.title || 'AgriClaw';
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || 'Nowa informacja o Twoich polach.',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      tag: data.tag,
+      renotify: Boolean(data.tag),
+      data: { url: data.url || '/dashboard' },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = new URL((event.notification.data && event.notification.data.url) || '/dashboard', self.location.origin).href;
+  event.waitUntil(
+    (async () => {
+      const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const c of all) {
+        if (c.url.startsWith(self.location.origin) && 'focus' in c) {
+          await c.focus();
+          if ('navigate' in c) return c.navigate(url);
+          return;
+        }
+      }
+      return self.clients.openWindow(url);
     })()
   );
 });

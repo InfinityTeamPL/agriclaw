@@ -31,8 +31,27 @@ model User {
 
   farms              Farm[]
   verificationTokens VerificationToken[]
+  pushSubscriptions  PushSubscription[]
 
   @@map("users")
+}
+
+// Web Push (VAPID) — alert na telefon bez WhatsApp/SMS. Jedna subskrypcja = jedna
+// przeglądarka/urządzenie. Endpoint 404/410 → subskrypcja wygasła, kasujemy (lib/push).
+model PushSubscription {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  endpoint      String    @unique
+  p256dh        String
+  auth          String
+  userAgent     String?   @map("user_agent")
+  lastSuccessAt DateTime? @map("last_success_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }
 
 model VerificationToken {
