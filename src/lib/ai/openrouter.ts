@@ -1,9 +1,9 @@
-// OpenRouter client — darmowy dostęp do Gemma 4 i innych modeli
-// `google/gemma-4-27b-it:free` jest dostępny w puli `:free` OpenRouter (~20 req/min)
+// OpenRouter client — modele wizyjne do diagnozy z kamery (wybór: benchmark 10.2026)
+// Łańcuch modeli wizyjnych z failoverem — patrz VISION_FALLBACK_CHAIN niżej.
 //
 // Używamy OpenRouter jako:
 // 1. Tani fallback kiedy OpenClaw Gateway jest niedostępny
-// 2. Image analysis z Gemma 4 (klasyfikacja uprawy, segmentacja pola z obrazu satelitarnego)
+// 2. Analiza obrazu (diagnoza z kamery, rośliny domowe, klasyfikacja uprawy)
 // 3. Szybkie klasyfikatory (np. "czy to stres suszowy czy choroba?") — mniej kosztowne niż Claude
 //
 // Docs: https://openrouter.ai/docs
@@ -17,21 +17,23 @@ const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 // slugi (qwen ...-2.5-...:free, llama-3.2-11b-...:free, gemini-2.0-flash-exp:free),
 // przez co środek łańcucha zawsze rzucał błąd i wydłużał failover. Audyt: model list.
 export type VisionModel =
-  | 'google/gemma-4-31b-it:free'
-  | 'google/gemma-4-31b-it'
-  | 'google/gemma-4-26b-a4b-it:free'
-  | 'google/gemma-4-26b-a4b-it'
-  | 'qwen/qwen2.5-vl-72b-instruct'; // poprawny slug (bez myślnika, wariant paid)
+  | 'google/gemini-3.8-flash'
+  | 'anthropic/claude-sonnet-5.5'
+  | 'google/gemini-3.5-flash-lite'
+  | 'google/gemma-4-31b-it:free';
 
-// Fallback chain: najpierw darmowa Gemma 4 31B (najlepsze diagnozy PL), potem ten
-// sam model paid (bez rate-limitu), darmowa mniejsza Gemma, non-Google backup (Qwen VL),
-// na końcu paid Gemma 26B.
+// Łańcuch wybrany BENCHMARKIEM (10.2026, 8 opisanych zdjęć chorób/szkodników,
+// docs/research/benchmark-modeli-diagnozy-2026-10.md):
+//   Gemini 3.8 Flash 8/8 (6 s, ~0,01 zł/zdj.) · Claude Sonnet 5.5 6/8 · Flash-Lite 6/8 (1,6 s)
+//   · poprzednia Gemma 4 31B 3/8 (16 s) — myliła zarazę ziemniaka z alternariozą
+//   i rdzę żółtą z brunatną, czyli choroby zwalczane INNYMI środkami.
+// Zapas od innego dostawcy (Anthropic) na wypadek awarii Google; darmowa Gemma
+// tylko jako ostatnia deska ratunku.
 const VISION_FALLBACK_CHAIN: VisionModel[] = [
-  'google/gemma-4-31b-it:free', // #1 preferowany (free priority)
-  'google/gemma-4-31b-it', // #2 ten sam paid — bez rate-limitu
-  'google/gemma-4-26b-a4b-it:free', // #3 Gemma mniejsza :free
-  'qwen/qwen2.5-vl-72b-instruct', // #4 non-Google backup — inny bucket
-  'google/gemma-4-26b-a4b-it', // #5 ostatni ratunek paid
+  'google/gemini-3.8-flash',
+  'anthropic/claude-sonnet-5.5',
+  'google/gemini-3.5-flash-lite',
+  'google/gemma-4-31b-it:free',
 ];
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -71,7 +73,7 @@ export interface OpenRouterCompletionOptions {
 export class OpenRouterClient {
   constructor(
     private readonly apiKey: string = process.env.OPENROUTER_API_KEY ?? '',
-    private readonly defaultModel: VisionModel = 'google/gemma-4-31b-it:free',
+    private readonly defaultModel: VisionModel = 'google/gemini-3.8-flash',
   ) {
     if (!apiKey) {
       throw new Error('OpenRouterClient: brak OPENROUTER_API_KEY');

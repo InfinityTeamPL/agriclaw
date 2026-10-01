@@ -1,5 +1,5 @@
 // POST /api/diagnose — diagnoza z kamery.
-// Rolnik wysyła zdjęcie liścia/rośliny → Gemma 4 27B (via OpenRouter) analizuje
+// Rolnik wysyła zdjęcie liścia/rośliny → Gemini 3.8 Flash (via OpenRouter, wybór benchmarkiem) analizuje
 // i zwraca JSON z diagnozą + rekomendacją środka ochrony roślin.
 
 import { NextRequest, NextResponse } from 'next/server';
