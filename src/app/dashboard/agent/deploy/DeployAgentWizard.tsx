@@ -66,8 +66,13 @@ const MODEL_ORDER = [
   'mistral-small-4',
   'minimax-m2.7',
 ];
+// Modele spoza listy dostawały indexOf = -1 i lądowały NA POCZĄTKU, przed zalecanym Sonnetem.
+const modelRank = (id: string) => {
+  const i = MODEL_ORDER.indexOf(id);
+  return i === -1 ? 999 : i;
+};
 const SORTED_MODELS = [...AI_MODELS].sort(
-  (a, b) => MODEL_ORDER.indexOf(a.id) - MODEL_ORDER.indexOf(b.id),
+  (a, b) => modelRank(a.id) - modelRank(b.id),
 );
 
 export function DeployAgentWizard({ farmId, farmName }: Props) {
@@ -93,15 +98,16 @@ export function DeployAgentWizard({ farmId, farmName }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ farmId, channel, model }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error ?? 'Deploy failed');
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data) {
+        throw new Error(typeof data?.error === 'string' ? data.error : 'Spróbuj ponownie za chwilę.');
       }
       setAgentId(data.agentId);
       setMock(Boolean(data.mock));
       await pollUntilReady(data.agentId);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      // TypeError z fetch to brak sieci — komunikat przeglądarki jest po angielsku.
+      const msg = err instanceof TypeError ? 'brak połączenia z serwerem.' : err instanceof Error ? err.message : 'nieznany błąd.';
       toast.error(`Nie udało się uruchomić agenta: ${msg}`);
       setAgentStatus('ERROR');
       setDeploying(false);

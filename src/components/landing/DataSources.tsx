@@ -65,9 +65,9 @@ export function DataSources() {
           />
           <div className="absolute bottom-4 right-4 w-[calc(100%-32px)] rounded-xl border border-white/40 bg-[#0c1f14]/80 p-6 backdrop-blur-xl sm:bottom-6 sm:right-6 sm:w-[min(420px,calc(100%-48px))]">
             <Eyebrow>Skąd bierzemy dane</Eyebrow>
-            <strong className="mb-1 mt-5 block font-[family-name:var(--font-manrope)] text-[23px] leading-tight tracking-[-0.05em]">
+            <h2 className="mb-1 mt-5 block font-[family-name:var(--font-manrope)] text-[23px] font-bold leading-tight tracking-[-0.05em]">
               Otwarte dane, sprawdzalne źródła — Ty widzisz tylko gotową odpowiedź.
-            </strong>
+            </h2>
             <p className="mt-3 text-[11px] uppercase tracking-[0.12em] opacity-60">
               Zdjęcie ilustracyjne, nie odczyt rzeczywisty
             </p>

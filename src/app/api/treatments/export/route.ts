@@ -4,6 +4,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
+import { cropLabel } from '@/lib/ui/format';
+import { TREATMENT_TYPES, TREATMENT_PURPOSES } from '@/lib/treatment-types';
+
+// Dokument trafia do inspektora (IJHARS/ARiMR) — etykiety po polsku, nie slugi z bazy
+// ("wheat", "spray"). Liczby z przecinkiem i separator ';' otwierają się poprawnie w polskim Excelu.
+const typeLabel = (t: string) => TREATMENT_TYPES.find((x) => x.value === t)?.label ?? t;
+const purposeLabel = (type: string, p: string | null) => {
+  if (!p) return '';
+  const list = (TREATMENT_PURPOSES as Record<string, ReadonlyArray<{ value: string; label: string }>>)[type] ?? [];
+  return list.find((x) => x.value === p)?.label ?? p;
+};
+const plNum = (v: unknown, digits?: number) => {
+  if (v === null || v === undefined || v === '') return '';
+  const n = Number(v);
+  if (!Number.isFinite(n)) return String(v);
+  return (digits === undefined ? String(n) : n.toFixed(digits)).replace('.', ',');
+};
 
 /**
  * Escapuje pojedynczą komórkę CSV:
@@ -96,30 +113,30 @@ export async function GET(req: NextRequest) {
     const rowsCsv = rows.map((r) =>
       [
         r.field_name,
-        r.field_crop,
-        Number(r.area_hectares).toFixed(2),
+        cropLabel(r.field_crop),
+        plNum(r.area_hectares, 2),
         r.performed_at.toISOString().slice(0, 10),
-        r.type,
-        r.purpose ?? '',
+        typeLabel(r.type),
+        purposeLabel(r.type, r.purpose),
         r.product_name,
         r.active_substance ?? '',
         r.registration_no ?? '',
-        r.dose_value ?? '',
+        plNum(r.dose_value),
         r.dose_unit ?? '',
-        Number(r.area_treated).toFixed(2),
-        r.water_volume ?? '',
+        plNum(r.area_treated, 2),
+        plNum(r.water_volume),
         r.operator_name ?? '',
         r.equipment ?? '',
-        r.weather_temp ?? '',
-        r.weather_wind ?? '',
-        r.weather_humidity ?? '',
+        plNum(r.weather_temp),
+        plNum(r.weather_wind),
+        plNum(r.weather_humidity),
         r.pre_harvest_interval_days ?? '',
         r.notes ?? '',
       ]
         .map(csvCell)
-        .join(','),
+        .join(';'),
     );
-    const csv = [header.map(csvCell).join(','), ...rowsCsv].join('\r\n');
+    const csv = [header.map(csvCell).join(';'), ...rowsCsv].join('\r\n');
     const filename = `ksiega-polowa-${new Date().toISOString().slice(0, 10)}.csv`;
     return new NextResponse('\uFEFF' + csv, {
       headers: {

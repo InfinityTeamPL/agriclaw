@@ -16,6 +16,7 @@ export function AgentProvisioningPanel({ agentId, mock }: Props) {
   const router = useRouter();
   const [elapsed, setElapsed] = useState(0);
   const [nowReady, setNowReady] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
     const started = Date.now();
@@ -27,6 +28,11 @@ export function AgentProvisioningPanel({ agentId, mock }: Props) {
 
     const poll = async () => {
       while (!aborted) {
+        // Bez limitu spinner kręcił się w nieskończoność, gdy API zwracało błąd.
+        if (Date.now() - started > 20 * 60 * 1000) {
+          if (!aborted) setTimedOut(true);
+          return;
+        }
         try {
           const res = await fetch(`/api/agents/${agentId}/health`, { cache: 'no-store' });
           if (res.ok) {
@@ -59,7 +65,17 @@ export function AgentProvisioningPanel({ agentId, mock }: Props) {
 
   return (
     <div className="bg-card border border-border rounded-lg shadow-card p-8 text-center space-y-4">
-      {nowReady ? (
+      {timedOut ? (
+        <>
+          <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">
+            Wdrożenie trwa dłużej niż zwykle
+          </h2>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            Zwykle zajmuje to 5-10 minut. Odśwież stronę za chwilę. Jeśli agent dalej się nie uruchamia,
+            napisz do nas: contact@infinityteam.io.
+          </p>
+        </>
+      ) : nowReady ? (
         <>
           <CheckCircle2 className="w-12 h-12 text-signal-healthy mx-auto" />
           <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">Agent gotowy</h2>
@@ -69,12 +85,12 @@ export function AgentProvisioningPanel({ agentId, mock }: Props) {
         <>
           <Loader2 className="w-12 h-12 text-primary mx-auto animate-spin" />
           <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">
-            {mock ? 'Mock provisioning w toku' : 'Tworzę Twojego agenta'}
+            {mock ? 'Symulacja wdrożenia (tryb deweloperski)' : 'Tworzę Twojego agenta'}
           </h2>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
             {mock
-              ? 'Dev mode — symulacja, zwykle 3 sekundy.'
-              : 'Tworzę VM na Hetznerze i stawiam OpenClaw Gateway. Zwykle 5-10 minut. Możesz zamknąć stronę — provisioning pracuje w tle.'}
+              ? 'To tylko symulacja, zwykle trwa kilka sekund.'
+              : 'Przygotowuję Twojego agenta na osobnym, bezpiecznym serwerze. Zwykle 5-10 minut. Możesz zamknąć stronę — wdrożenie trwa w tle.'}
           </p>
           <div className="text-xs text-muted-foreground">
             {formatElapsed(elapsed)} · sprawdzam status co 5 sekund
