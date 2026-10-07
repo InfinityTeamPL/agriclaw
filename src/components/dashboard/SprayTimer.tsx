@@ -87,8 +87,10 @@ export function SprayTimer({ fieldId }: Props) {
 
   // Grupujemy po dniach dla label
   const days: { date: string; label: string; hours: HourlyPoint[] }[] = [];
-  const today = new Date().toISOString().slice(0, 10);
-  const tomorrow = new Date(Date.now() + 864e5).toISOString().slice(0, 10);
+  // Daty "dziś/jutro" wg czasu Warszawy (a nie UTC), bo czasy z prognozy to czas ścienny pola.
+  const dayKey = (d: Date) => d.toLocaleDateString('sv-SE', { timeZone: 'Europe/Warsaw' });
+  const today = dayKey(new Date());
+  const tomorrow = dayKey(new Date(Date.now() + 864e5));
   for (const h of data.hourly) {
     const date = h.time.slice(0, 10);
     const existing = days.find((d) => d.date === date);
@@ -99,7 +101,8 @@ export function SprayTimer({ fieldId }: Props) {
           ? 'Dziś'
           : date === tomorrow
             ? 'Jutro'
-            : new Date(date).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw',
+            : new Date(`${date}T12:00:00Z`).toLocaleDateString('pl-PL', {
+                timeZone: 'UTC',
                 weekday: 'short',
                 day: 'numeric',
                 month: 'short',
@@ -160,7 +163,7 @@ export function SprayTimer({ fieldId }: Props) {
                   style={{ background: qualityColor[h.sprayQuality], opacity: 0.9 }}
                 >
                   <div className="absolute -top-0.5 left-1/2 -translate-x-1/2 text-[8px] text-muted-foreground font-mono tabular opacity-0 group-hover:opacity-100 whitespace-nowrap">
-                    {new Date(h.time).getHours()}
+                    {Number(h.time.slice(11, 13))}
                   </div>
                 </div>
               ))}
@@ -174,15 +177,13 @@ export function SprayTimer({ fieldId }: Props) {
         <div className="rounded-md bg-secondary border border-border p-3 text-xs">
           <div className="flex items-center justify-between mb-2">
             <div className="font-mono tabular font-semibold text-foreground">
-              {new Date(hover.time).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw',
+              {new Date(`${hover.time.slice(0, 10)}T12:00:00Z`).toLocaleDateString('pl-PL', {
+                timeZone: 'UTC',
                 weekday: 'short',
                 day: 'numeric',
                 month: 'short',
               })}{' '}
-              {new Date(hover.time).toLocaleTimeString('pl-PL', { timeZone: 'Europe/Warsaw',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {hover.time.slice(11, 16)}
             </div>
             <span
               className="px-2 py-0.5 rounded-full text-[10px] font-mono tabular font-semibold text-white"

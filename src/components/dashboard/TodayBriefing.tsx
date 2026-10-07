@@ -104,7 +104,9 @@ export function TodayBriefing({
     stats.fieldsCount === 0
       ? 'Dodaj pierwsze pole, a zacznę je obserwować z satelity.'
       : attentionTotal === 0
-        ? `Wszystkie ${stats.fieldsCount} ${pluralPL(stats.fieldsCount, 'pole', 'pola', 'pól')} w normie.`
+        ? stats.fieldsCount === 1
+          ? 'Twoje pole jest w normie.'
+          : `Wszystkie ${stats.fieldsCount} ${pluralPL(stats.fieldsCount, 'pole', 'pola', 'pól')} w normie.`
         : `${attentionTotal} ${pluralPL(attentionTotal, 'pole wymaga', 'pola wymagają', 'pól wymaga')} uwagi.`;
 
   return (

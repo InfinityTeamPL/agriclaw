@@ -104,28 +104,53 @@ function scoreSprayHour(h: {
   return { score, quality };
 }
 
-function findBestWindows(hourly: HourlyPoint[], minHours = 3, count = 3): SprayWindow[] {
-  // Szukamy ciągłych okien 3+ godziny ze średnim score >= 55
+// Open-Meteo (timezone=Europe/Warsaw) zwraca czas ścienny BEZ strefy: "2026-10-07T17:00".
+// Nie parsujemy go przez Date (serwer na Vercelu działa w UTC i przesunąłby godziny o 2 h) —
+// godziny i dni czytamy wprost z napisu.
+const WARSAW = 'Europe/Warsaw';
+
+/** Ścienny czas Warszawy jako "YYYY-MM-DDTHH:MM" (porównywalny leksykograficznie z czasem z Open-Meteo). */
+export function warsawWallClock(at: Date = new Date()): string {
+  return at.toLocaleString('sv-SE', { timeZone: WARSAW, hour12: false }).slice(0, 16).replace(' ', 'T');
+}
+
+const hourOf = (iso: string): number => Number(iso.slice(11, 13));
+
+/** Noc (22:00–03:59) — wtedy nie pryskamy, więc nie wchodzi do okien. */
+export function isSprayNight(iso: string): boolean {
+  const h = hourOf(iso);
+  return h >= 22 || h < 4;
+}
+
+const addHour = (iso: string): string => {
+  const h = hourOf(iso) + 1;
+  return h === 24 ? '24:00' : String(h).padStart(2, '0') + ':00';
+};
+
+export function findBestWindows(
+  hourly: HourlyPoint[],
+  minHours = 3,
+  count = 3,
+  nowIso: string = warsawWallClock(),
+): SprayWindow[] {
+  // Szukamy ciągłych okien 3+ godziny ze score >= 55, bez nocy (22–4) i bez przeskoków czasu.
   const windows: SprayWindow[] = [];
   let start: number | null = null;
   for (let i = 0; i <= hourly.length; i++) {
     const point = hourly[i];
-    const good = point && point.sprayScore >= 55;
+    const good = Boolean(point) && point.sprayScore >= 55 && !isSprayNight(point.time);
+    // Okno przerywa też luka w danych (np. po odfiltrowaniu godzin) lub zmiana dnia kalendarzowego.
+    const continues =
+      good && start !== null && hourly[i - 1].time.slice(0, 10) === point.time.slice(0, 10) && hourOf(point.time) === hourOf(hourly[i - 1].time) + 1;
+    if (good && start !== null && !continues) {
+      // zamknij poprzednie okno i zacznij nowe od tej godziny
+      pushWindow(windows, hourly, start, i, minHours, nowIso);
+      start = i;
+      continue;
+    }
     if (good && start === null) start = i;
     if (!good && start !== null) {
-      const len = i - start;
-      if (len >= minHours) {
-        const slice = hourly.slice(start, i);
-        const avg = slice.reduce((a, b) => a + b.sprayScore, 0) / slice.length;
-        windows.push({
-          startIso: hourly[start].time,
-          endIso: hourly[i - 1].time,
-          durationHours: len,
-          avgScore: avg,
-          quality: avg >= 75 ? 'excellent' : avg >= 55 ? 'good' : 'marginal',
-          label: formatSprayWindowLabel(hourly[start].time, hourly[i - 1].time),
-        });
-      }
+      pushWindow(windows, hourly, start, i, minHours, nowIso);
       start = null;
     }
   }
@@ -133,21 +158,43 @@ function findBestWindows(hourly: HourlyPoint[], minHours = 3, count = 3): SprayW
   return windows.slice(0, count);
 }
 
-function formatSprayWindowLabel(startIso: string, endIso: string): string {
-  const s = new Date(startIso);
-  const e = new Date(endIso);
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
-  const tomorrow = new Date(today.getTime() + 864e5).toISOString().slice(0, 10);
+function pushWindow(
+  windows: SprayWindow[],
+  hourly: HourlyPoint[],
+  start: number,
+  end: number,
+  minHours: number,
+  nowIso: string,
+) {
+  const len = end - start;
+  if (len < minHours) return;
+  const slice = hourly.slice(start, end);
+  const avg = slice.reduce((a, b) => a + b.sprayScore, 0) / slice.length;
+  windows.push({
+    startIso: hourly[start].time,
+    endIso: hourly[end - 1].time,
+    durationHours: len,
+    avgScore: avg,
+    quality: avg >= 75 ? 'excellent' : avg >= 55 ? 'good' : 'marginal',
+    label: formatSprayWindowLabel(hourly[start].time, hourly[end - 1].time, nowIso),
+  });
+}
+
+export function formatSprayWindowLabel(
+  startIso: string,
+  endIso: string,
+  nowIso: string = warsawWallClock(),
+): string {
+  const day = startIso.slice(0, 10);
+  const today = nowIso.slice(0, 10);
+  const tomorrow = warsawWallClock(new Date(new Date(today + 'T12:00:00Z').getTime() + 864e5 + 2 * 3600e3)).slice(0, 10);
   const dayLabel =
-    s.toISOString().slice(0, 10) === todayStr
+    day === today
       ? 'dziś'
-      : s.toISOString().slice(0, 10) === tomorrow
+      : day === tomorrow
         ? 'jutro'
-        : s.toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw', weekday: 'long' });
-  const fmt = (d: Date) =>
-    d.toLocaleTimeString('pl-PL', { timeZone: 'Europe/Warsaw', hour: '2-digit', minute: '2-digit' });
-  return `${dayLabel} ${fmt(s)}–${fmt(new Date(e.getTime() + 3600 * 1000))}`;
+        : new Date(day + 'T12:00:00Z').toLocaleDateString('pl-PL', { timeZone: 'UTC', weekday: 'long' });
+  return `${dayLabel} ${startIso.slice(11, 16)}–${addHour(endIso)}`;
 }
 
 export async function fetchSprayForecast(
@@ -164,7 +211,7 @@ export async function fetchSprayForecast(
       'wind_gusts_10m',
       'relative_humidity_2m',
     ].join(','),
-    timezone: 'auto',
+    timezone: WARSAW,
     forecast_days: '3',
   });
   const res = await fetchWithTimeout(`${API_URL}?${params.toString()}`, { timeoutMs: 15_000, retries: 1 });
@@ -198,11 +245,9 @@ export async function fetchSprayForecast(
     };
   });
 
-  // Filtruj tylko 72 godziny od teraz + usuń godziny nocne (22-4 nie pryskamy)
-  const now = Date.now();
-  const next72h = hourly.filter(
-    (p) => new Date(p.time).getTime() >= now - 3600_000,
-  );
+  // Tylko 72 godziny od teraz (ścienny czas Warszawy, bez parsowania przez Date).
+  const nowIso = warsawWallClock(new Date(Date.now() - 3600_000));
+  const next72h = hourly.filter((p) => p.time >= nowIso);
 
   const topWindows = findBestWindows(next72h, 3, 3);
 
