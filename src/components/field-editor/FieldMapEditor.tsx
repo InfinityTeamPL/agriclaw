@@ -50,6 +50,8 @@ export function FieldMapEditor({ farmId, center }: Props) {
       center: [center.lon, center.lat],
       zoom: 16,
       attributionControl: false,
+      // Dwuklik przybliżał mapę ORAZ dodawał dwa punkty w tym samym miejscu.
+      doubleClickZoom: false,
     });
 
     map.addControl(
@@ -113,7 +115,7 @@ export function FieldMapEditor({ farmId, center }: Props) {
         source: 'field-points',
         paint: {
           'circle-color': '#059669',
-          'circle-radius': 5,
+          'circle-radius': 7,
           'circle-stroke-color': '#fff',
           'circle-stroke-width': 2,
         },
@@ -123,7 +125,12 @@ export function FieldMapEditor({ farmId, center }: Props) {
       updateMapSources(map, pointsRef.current);
     });
 
+    let lastClickAt = 0;
     map.on('click', (e) => {
+      // Ignorujemy drugie stuknięcie w ciągu 350 ms (palec na ekranie dotykowym często „dubluje").
+      const now = Date.now();
+      if (now - lastClickAt < 350) return;
+      lastClickAt = now;
       const next: Lnglat = [e.lngLat.lng, e.lngLat.lat];
       setPoints((prev) => [...prev, next]);
     });
@@ -291,10 +298,17 @@ export function FieldMapEditor({ farmId, center }: Props) {
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           {saving ? 'Zapisuję...' : 'Zapisz pole'}
         </button>
+        {!saving && (!polygonReady || !name.trim()) && (
+          <p className="text-xs text-muted-foreground text-center">
+            {!polygonReady
+              ? `Zaznacz na mapie jeszcze ${Math.max(0, 3 - points.length)} ${points.length >= 2 ? 'punkt' : 'punkty'}, żeby zapisać pole.`
+              : 'Wpisz nazwę pola, żeby je zapisać.'}
+          </p>
+        )}
       </div>
 
       {/* Prawa kolumna — mapa */}
-      <div className="relative w-full h-[420px] sm:h-[560px] rounded-lg overflow-hidden border border-border bg-muted">
+      <div className="relative w-full h-[420px] sm:h-[560px] rounded-lg overflow-hidden border border-border bg-muted order-first lg:order-none">
         <div ref={mapContainerRef} className="w-full h-full" />
         {!mapReady && (
           <div className="absolute inset-0 flex items-center justify-center bg-card/80">
@@ -316,7 +330,9 @@ function emptyFeatureCollection(): GeoJSON.FeatureCollection {
 }
 
 function updateMapSources(map: maplibregl.Map | null, points: Lnglat[]) {
-  if (!map || !map.isStyleLoaded()) return;
+  // Bez isStyleLoaded(): w maplibre zwraca false, gdy dociągane są kafle (wolny LTE), a efekt
+  // zależy tylko od [points] — więc kliknięty punkt nie rysował się do następnego kliknięcia.
+  if (!map) return;
   const polygonSrc = map.getSource('field-polygon') as
     | maplibregl.GeoJSONSource
     | undefined;

@@ -16,6 +16,7 @@ interface Props {
 export function AgentErrorPanel({ agentId }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
   const handleRetry = async () => {
     if (busy) return;
@@ -24,14 +25,20 @@ export function AgentErrorPanel({ agentId }: Props) {
       const res = await fetch(`/api/agents/${agentId}`, { method: 'DELETE' });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body?.error ?? 'Nie mogę usunąć agenta');
+        throw new Error(typeof body?.error === 'string' ? body.error : 'Nie udało się usunąć agenta.');
       }
       toast.success('Usunięto uszkodzonego agenta — zaczynam od nowa');
       router.push('/dashboard/agent/deploy');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg =
+        err instanceof TypeError
+          ? 'Brak połączenia z serwerem. Spróbuj ponownie.'
+          : err instanceof Error
+            ? err.message
+            : 'Nie udało się usunąć agenta.';
       toast.error(msg);
       setBusy(false);
+      setConfirming(false);
     }
   };
 
@@ -47,15 +54,41 @@ export function AgentErrorPanel({ agentId }: Props) {
           nowa — zajmie to kilka minut.
         </p>
       </div>
-      <button
-        type="button"
-        onClick={handleRetry}
-        disabled={busy}
-        className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-md shadow-card hover:brightness-110 disabled:opacity-50 transition"
-      >
-        <RotateCcw className={busy ? 'w-4 h-4 animate-spin' : 'w-4 h-4'} />
-        {busy ? 'Usuwam...' : 'Uruchom ponownie'}
-      </button>
+      {confirming ? (
+        <div className="space-y-3" role="alert">
+          <p className="text-sm font-medium text-foreground">
+            Na pewno? Uszkodzony agent i jego serwer zostaną trwale usunięte.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <button
+              type="button"
+              onClick={handleRetry}
+              disabled={busy}
+              className="inline-flex items-center justify-center gap-2 min-h-11 bg-destructive text-destructive-foreground font-semibold px-4 rounded-md shadow-card hover:brightness-110 disabled:opacity-50 transition"
+            >
+              <RotateCcw className={busy ? 'w-4 h-4 animate-spin' : 'w-4 h-4'} />
+              {busy ? 'Usuwam...' : 'Tak, usuń i wdróż od nowa'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              disabled={busy}
+              className="inline-flex items-center justify-center min-h-11 px-4 rounded-md border border-border font-medium text-foreground hover:bg-secondary transition"
+            >
+              Anuluj
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setConfirming(true)}
+          className="inline-flex items-center gap-2 min-h-11 bg-primary text-primary-foreground font-semibold px-4 rounded-md shadow-card hover:brightness-110 transition"
+        >
+          <RotateCcw className="w-4 h-4" />
+          Wdróż od nowa
+        </button>
+      )}
     </div>
   );
 }
