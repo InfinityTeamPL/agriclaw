@@ -32,6 +32,7 @@ export function FieldMapEditor({ farmId, center }: Props) {
   const [points, setPoints] = useState<Lnglat[]>([]);
   const [saving, setSaving] = useState(false);
   const [mapReady, setMapReady] = useState(false);
+  const [mapError, setMapError] = useState(false);
 
   // State ref dla callbacków wewnątrz map handlers
   const pointsRef = useRef<Lnglat[]>([]);
@@ -44,7 +45,9 @@ export function FieldMapEditor({ farmId, center }: Props) {
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    const map = new maplibregl.Map({
+    let map: maplibregl.Map;
+    try {
+      map = new maplibregl.Map({
       container: mapContainerRef.current,
       style: hybridStyle,
       center: [center.lon, center.lat],
@@ -52,7 +55,13 @@ export function FieldMapEditor({ farmId, center }: Props) {
       attributionControl: false,
       // Dwuklik przybliżał mapę ORAZ dodawał dwa punkty w tym samym miejscu.
       doubleClickZoom: false,
-    });
+      });
+    } catch (err) {
+      // Najczęściej brak WebGL. Zamiast błędu całej strony pokazujemy komunikat z wyjściem awaryjnym.
+      console.error('[mapa] nie udało się uruchomić', err);
+      setMapError(true);
+      return;
+    }
 
     map.addControl(
       new maplibregl.NavigationControl({ showCompass: false }),
@@ -310,7 +319,13 @@ export function FieldMapEditor({ farmId, center }: Props) {
       {/* Prawa kolumna — mapa */}
       <div className="relative w-full h-[420px] sm:h-[560px] rounded-lg overflow-hidden border border-border bg-muted order-first lg:order-none">
         <div ref={mapContainerRef} className="w-full h-full" />
-        {!mapReady && (
+        {mapError && (
+          <div className="absolute inset-0 flex items-center justify-center bg-card p-6 text-center text-sm text-foreground">
+            Nie udało się uruchomić mapy (przeglądarka może nie obsługiwać grafiki 3D). Odśwież stronę albo dodaj pole
+            przez import z ARiMR (opcja A powyżej).
+          </div>
+        )}
+        {!mapReady && !mapError && (
           <div className="absolute inset-0 flex items-center justify-center bg-card/80">
             <div className="flex items-center gap-2 text-primary text-sm">
               <Loader2 className="w-4 h-4 animate-spin" />

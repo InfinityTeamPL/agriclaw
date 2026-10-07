@@ -184,7 +184,7 @@ export default async function DashboardHome() {
         message: r.message,
         createdAt: r.createdAt.toISOString(),
       }))}
-      attention={attention.slice(0, 4).map((r) => ({
+      attention={attention.slice(0, 8).map((r) => ({
         id: r.id,
         fieldId: r.fieldId,
         fieldName: r.field.name,

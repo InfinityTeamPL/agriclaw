@@ -105,6 +105,12 @@ export async function GET(req: NextRequest) {
     FROM "fields" f
     JOIN "farms" fa ON fa.id = f.farm_id
     WHERE fa.suspended = FALSE AND f.deleted_at IS NULL
+    -- Najdłużej bez realnego odczytu najpierw. Bez ORDER BY przy przekroczeniu budżetu czasu
+    -- te same końcowe pola codziennie nie dostawały analizy ani powiadomień.
+    ORDER BY (
+      SELECT MAX(r.observed_at) FROM "ndvi_readings" r
+      WHERE r.field_id = f.id AND r.source <> 'mock'
+    ) ASC NULLS FIRST
   `;
 
   const cdse = getCopernicusClient();

@@ -322,7 +322,11 @@ function StepIndicator({ step }: { step: Step }) {
     { n: 3, label: 'Potwierdzenie' },
   ] as const;
   return (
-    <div className="flex items-center justify-center gap-2">
+    <div
+      className="flex items-center justify-center gap-2"
+      role="group"
+      aria-label={`Krok ${step} z ${steps.length}: ${steps[step - 1].label}`}
+    >
       {steps.map((s, i) => {
         const isActive = s.n === step;
         const isDone = s.n < step;
@@ -330,6 +334,7 @@ function StepIndicator({ step }: { step: Step }) {
           <div key={s.n} className="flex items-center gap-2">
             <div className="flex items-center gap-2">
               <div
+                aria-current={isActive ? 'step' : undefined}
                 className={cn(
                   'w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300',
                   isActive && 'bg-primary text-primary-foreground shadow-card scale-110',
