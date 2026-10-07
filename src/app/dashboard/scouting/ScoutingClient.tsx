@@ -17,7 +17,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { cropLabel, formatDateTimePL } from '@/lib/ui/format';
+import { cropLabel, formatDateTimePL, formatFixedPL } from '@/lib/ui/format';
 import { downscaleImageFile } from '@/lib/ui/image';
 
 interface FieldOpt {
@@ -162,6 +162,12 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
   );
 }
 
+const SEVERITY_LABEL: Record<string, string> = {
+  low: 'Niska waga',
+  medium: 'Średnia waga',
+  high: 'Wysoka waga',
+};
+
 function ScoutingCard({ item }: { item: ScoutingItem }) {
   const meta = tagMeta(item.tag);
   const Icon = meta.icon;
@@ -170,7 +176,7 @@ function ScoutingCard({ item }: { item: ScoutingItem }) {
       {item.photoUrl && (
         <img
           src={item.photoUrl}
-          alt=""
+          alt={`Zdjęcie obserwacji: ${item.fieldName}`}
           className="w-full h-40 object-cover"
           loading="lazy"
         />
@@ -181,9 +187,12 @@ function ScoutingCard({ item }: { item: ScoutingItem }) {
             <Icon className="w-3 h-3" />
             {meta.label}
           </div>
-          {item.resolvedAt && (
-            <span className="hud-label">naprawione</span>
-          )}
+          <div className="flex items-center gap-2">
+            {item.severity && SEVERITY_LABEL[item.severity] && (
+              <span className="text-xs font-medium text-muted-foreground">{SEVERITY_LABEL[item.severity]}</span>
+            )}
+            {item.resolvedAt && <span className="hud-label">naprawione</span>}
+          </div>
         </div>
         <div className="text-sm">
           <span className="font-medium text-foreground">{item.fieldName}</span>
@@ -193,7 +202,7 @@ function ScoutingCard({ item }: { item: ScoutingItem }) {
         <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1 border-t border-border">
           <span className="font-mono tabular">{formatDateTimePL(item.createdAt)}</span>
           <span className="font-mono tabular">
-            {item.lat.toFixed(4)}, {item.lon.toFixed(4)}
+            {formatFixedPL(item.lat, 4)}, {formatFixedPL(item.lon, 4)}
           </span>
         </div>
       </div>
