@@ -11,8 +11,6 @@ import type { StyleSpecification } from 'maplibre-gl';
 
 const ATTRIBUTION_ESRI =
   '&copy; <a href="https://www.esri.com/">Esri</a>, Maxar, Earthstar Geographics';
-const ATTRIBUTION_OSM =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 const ATTRIBUTION_S2 =
   '<a href="https://s2maps.eu">Sentinel-2 cloudless</a> by <a href="https://eox.at/">EOX IT Services GmbH</a>';
 
@@ -31,6 +29,11 @@ const GUGIK_ORTHO_WMS =
 
 const ATTRIBUTION_GUGIK =
   '&copy; <a href="http://www.gugik.gov.pl/">GUGiK</a> Geoportal.gov.pl';
+
+// Etykiety (nazwy miejscowości, granice) jako przezroczysta nakładka — bez klucza API.
+const ESRI_LABELS_TILES = [
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+];
 
 // World_Imagery ma max native zoom 19 (30 cm dla większości PL) — pozwalamy aż tam.
 const ESRI_IMAGERY_TILES = [
@@ -133,16 +136,15 @@ export const hybridStyle: StyleSpecification = {
       maxzoom: 19,
       attribution: ATTRIBUTION_ESRI,
     },
+    // Etykiety miejscowości i granic. Wcześniej CARTO (light_only_labels) — od jakiegoś czasu
+    // zwraca na KAŻDYM kaflu znak wodny „API KEY REQUIRED", który zasłaniał zdjęcia na wszystkich
+    // mapach w aplikacji. ESRI Reference działa bez klucza (ta sama rodzina co zdjęcia).
     labels: {
       type: 'raster',
-      tiles: [
-        'https://cartodb-basemaps-a.global.ssl.fastly.net/light_only_labels/{z}/{x}/{y}.png',
-        'https://cartodb-basemaps-b.global.ssl.fastly.net/light_only_labels/{z}/{x}/{y}.png',
-        'https://cartodb-basemaps-c.global.ssl.fastly.net/light_only_labels/{z}/{x}/{y}.png',
-      ],
+      tiles: [ESRI_LABELS_TILES[0]],
       tileSize: 256,
-      maxzoom: 19,
-      attribution: ATTRIBUTION_OSM,
+      maxzoom: 16,
+      attribution: ATTRIBUTION_ESRI,
     },
   },
   layers: [
@@ -170,7 +172,7 @@ export const hybridStyle: StyleSpecification = {
       minzoom: 6,
       maxzoom: 22,
       paint: {
-        'raster-opacity': 0.75,
+        'raster-opacity': 0.9,
       },
     },
   ],
