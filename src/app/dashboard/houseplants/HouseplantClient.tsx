@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import { ScanLine } from '@/components/brand/ScanLine';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 import { downscaleImageFile } from '@/lib/ui/image';
+import { fetchJson } from '@/lib/ui/api-error';
 
 interface CarePlan {
   podlewanie?: string;
@@ -86,23 +87,21 @@ export function HouseplantClient() {
     setLoading(true);
     setError(null);
     setResult(null);
-    try {
-      const res = await fetch('/api/houseplant-diagnose', {
+    const res = await fetchJson<{ diagnosis: HouseplantResult }>(
+      '/api/houseplant-diagnose',
+      {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageBase64: imageData, note: note || undefined }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(typeof data.error === 'string' ? data.error : 'Błąd diagnozy');
-      } else {
-        setResult(data.diagnosis as HouseplantResult);
-      }
-    } catch (err) {
-      setError(String(err));
-    } finally {
-      setLoading(false);
+      },
+      'Nie udało się przeanalizować zdjęcia. Spróbuj ponownie.',
+    );
+    if (res.ok) {
+      setResult(res.data.diagnosis);
+    } else {
+      setError(res.message);
     }
+    setLoading(false);
   };
 
   const clearImage = () => {
