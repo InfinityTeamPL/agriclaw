@@ -1,5 +1,4 @@
-'use client';
-
+import Image from 'next/image';
 import {
   Satellite,
   Radar,
@@ -8,7 +7,7 @@ import {
   FileCheck2,
   Sprout,
 } from 'lucide-react';
-import { NdviKeyline } from '@/components/brand/NdviKeyline';
+import { Eyebrow, WRAP } from './ui';
 
 // Nazwane, sprawdzalne źródła — jury (CASSINI/Copernicus, AGROSTRATEG) pyta
 // „skąd te dane?". Każdy wpis ma realny odpowiednik w kodzie (lib/satellite, lib/sor-registry, lib/bbch).
@@ -53,44 +52,41 @@ const ITEMS = [
 
 export function DataSources() {
   return (
-    <section className="relative py-20 overflow-hidden bg-secondary">
-      {/* Tło: siatka kartograficzna zamiast dekoracyjnego radialnego blobu */}
-      <div className="absolute inset-0 cadastral-grid opacity-60 [mask-image:radial-gradient(ellipse_at_top,black,transparent_70%)]" />
-
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 relative">
-        <div className="mb-12 text-center">
-          {/* Eyebrow jako odczyt HUD — nie badge z pillem */}
-          <div className="inline-flex items-center gap-2 mb-5">
-            <span className="w-1.5 h-1.5 rounded-full bg-signal-healthy" />
-            <span className="hud-label">Skąd bierzemy dane</span>
+    <section id="zrodla" className="scroll-mt-24 py-[75px] md:py-[110px]">
+      <div className={WRAP}>
+        {/* Panel ze zdjęciem + szklana karta (jak „image-panel" w wariancie filmowym) */}
+        <div className="relative h-[480px] overflow-hidden rounded-[20px] md:h-[620px]">
+          <Image
+            src="/landing/agriclaw-field-analysis.webp"
+            alt="Widok pól z lotu ptaka z ilustracyjną wizualizacją kondycji roślin"
+            fill
+            sizes="(min-width: 1280px) 1280px, 100vw"
+            className="object-cover"
+          />
+          <div className="absolute bottom-4 right-4 w-[calc(100%-32px)] rounded-xl border border-white/40 bg-[#0c1f14]/80 p-6 backdrop-blur-xl sm:bottom-6 sm:right-6 sm:w-[min(420px,calc(100%-48px))]">
+            <Eyebrow>Skąd bierzemy dane</Eyebrow>
+            <strong className="mb-1 mt-5 block font-[family-name:var(--font-manrope)] text-[23px] leading-tight tracking-[-0.05em]">
+              Otwarte dane, sprawdzalne źródła — Ty widzisz tylko gotową odpowiedź.
+            </strong>
+            <p className="mt-3 text-[11px] uppercase tracking-[0.12em] opacity-60">
+              Zdjęcie ilustracyjne, nie odczyt rzeczywisty
+            </p>
           </div>
-          <h2 className="font-display text-3xl sm:text-5xl font-semibold tracking-tight text-foreground">
-            Otwarte dane, sprawdzalne źródła —
-            <br className="hidden sm:block" />
-            <span className="relative inline-block pb-3 text-foreground">
-              Ty widzisz tylko gotową odpowiedź.
-              {/* Rampa NDVI jako sygnatura marki, zamiast gradient-textu */}
-              <NdviKeyline className="absolute -bottom-0.5 left-0" height={4} />
-            </span>
-          </h2>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="mt-6 grid gap-x-3.5 gap-y-10 rounded-[24px] bg-[#182a1c] p-6 sm:grid-cols-2 md:p-[50px] lg:grid-cols-3">
           {ITEMS.map((s) => {
             const Icon = s.icon;
             return (
-              <div
-                key={s.title}
-                className="rounded-lg bg-card border border-border p-6 shadow-card hover:border-foreground/30 transition-colors"
-              >
-                <div className="inline-flex items-center justify-center w-11 h-11 rounded-md bg-secondary border border-border mb-4">
-                  <Icon className="w-5 h-5 text-primary" />
+              <div key={s.title} className="border-t border-current px-2 pt-6">
+                <div className="flex items-center justify-between">
+                  <span className="text-[13px] uppercase tracking-[0.12em]">{s.source}</span>
+                  <Icon className="h-5 w-5 text-[#b4e46c]" aria-hidden="true" />
                 </div>
-                <div className="font-display font-semibold text-lg tracking-tight text-foreground">
+                <b className="mb-2 mt-4 block font-[family-name:var(--font-manrope)] text-xl tracking-[-0.04em]">
                   {s.title}
-                </div>
-                <div className="hud-label mt-1 mb-2.5">{s.source}</div>
-                <div className="text-sm text-muted-foreground leading-relaxed">{s.desc}</div>
+                </b>
+                <p className="max-w-[38ch] text-[15px] leading-[1.55] opacity-70">{s.desc}</p>
               </div>
             );
           })}
