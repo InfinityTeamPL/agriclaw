@@ -10,12 +10,13 @@ const nextConfig = {
     // node_modules w runtime. Potrzebne dla /api/agents/deploy (SSH)
     // i /api/chat/stream (WebSocket do OpenClaw Gateway).
     serverComponentsExternalPackages: ['ssh2', 'ws'],
-  },
-  // Osadzone lokalnie czcionki (src/assets/fonts) czytane w runtime przez
-  // /api/treatments/export/pdf muszą trafić do bundla funkcji serverless,
-  // inaczej po `next build` fs.readFile ich nie znajdzie.
-  outputFileTracingIncludes: {
-    '/api/treatments/export/pdf': ['./src/assets/fonts/**'],
+    // Osadzone lokalnie czcionki (src/assets/fonts) czytane w runtime przez
+    // /api/treatments/export/pdf muszą trafić do bundla funkcji serverless, inaczej po
+    // `next build` fs.readFile ich nie znajdzie. W Next 14 ten klucz działa TYLKO w experimental
+    // (na górze poziomu był ignorowany z ostrzeżeniem przy każdym starcie).
+    outputFileTracingIncludes: {
+      '/api/treatments/export/pdf': ['./src/assets/fonts/**'],
+    },
   },
 };
 
