@@ -162,6 +162,8 @@ export function ChatInterface({
           ),
         );
         toast.error(err);
+        // Pytanie nie przepadło: wraca do pola, żeby nie pisać od nowa po błędzie sieci/serwera.
+        setInput((cur) => cur || text);
         setSending(false);
         return;
       }
@@ -169,6 +171,7 @@ export function ChatInterface({
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      let finished = false;
 
       // eslint-disable-next-line no-constant-condition
       while (true) {
@@ -200,12 +203,14 @@ export function ChatInterface({
                 ),
               );
             } else if (parsed.type === 'done') {
+              finished = true;
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantMsgId ? { ...m, streaming: false } : m,
                 ),
               );
             } else if (parsed.type === 'error') {
+              finished = true;
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === assistantMsgId
@@ -225,11 +230,30 @@ export function ChatInterface({
         }
       }
 
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantMsgId ? { ...m, streaming: false } : m,
-        ),
-      );
+      if (!finished) {
+        // Połączenie urwało się w trakcie (np. zasięg w polu) — nie udajemy kompletnej odpowiedzi.
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsgId
+              ? {
+                  ...m,
+                  streaming: false,
+                  content: m.content
+                    ? `${m.content}\n\n(Odpowiedź urwana — połączenie zostało przerwane. Zadaj pytanie ponownie.)`
+                    : 'Błąd: połączenie zostało przerwane. Spróbuj ponownie.',
+                }
+              : m,
+          ),
+        );
+        toast.error('Połączenie zostało przerwane przed końcem odpowiedzi.');
+        setInput((cur) => cur || text);
+      } else {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsgId ? { ...m, streaming: false } : m,
+          ),
+        );
+      }
     } catch (err) {
       if (controller.signal.aborted || !mountedRef.current) return;
       console.error(err);
@@ -245,6 +269,7 @@ export function ChatInterface({
         ),
       );
       toast.error('Nieoczekiwany błąd. Spróbuj ponownie.');
+      setInput((cur) => cur || text);
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
       if (mountedRef.current) setSending(false);
@@ -265,6 +290,17 @@ export function ChatInterface({
 
   const streaming = messages.some((m) => m.streaming);
 
+  // Nowa rozmowa: czyścimy widok i identyfikator — kolejna wiadomość założy świeży wątek.
+  const newConversation = () => {
+    if (sending) return;
+    setMessages([]);
+    setConversationId(null);
+    setInput('');
+    stickToBottomRef.current = true;
+    setShowJumpDown(false);
+    textareaRef.current?.focus();
+  };
+
   return (
     // ChatGPT-owo: pełny panel bez chrome karty i bez nagłówka — czat to cała
     // powierzchnia. Scroll wyłącznie w liście wiadomości; kompozytor przypięty
@@ -278,7 +314,12 @@ export function ChatInterface({
         onScroll={handleScroll}
         className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-4 py-4 sm:py-6"
       >
-        <div className="max-w-3xl mx-auto space-y-4 sm:space-y-5">
+        <div
+          className="max-w-3xl mx-auto space-y-4 sm:space-y-5"
+          role="log"
+          aria-live="polite"
+          aria-label="Rozmowa z agentem"
+        >
           {messages.length === 0 ? (
             <EmptyChatTip onPick={(q) => void sendMessage(q)} />
           ) : (
@@ -321,6 +362,17 @@ export function ChatInterface({
           safe-area na telefonach z notchem. */}
       <div className="shrink-0 px-3 sm:px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="max-w-3xl mx-auto">
+          {messages.length > 0 && !sending && (
+            <div className="mb-1.5 flex justify-center">
+              <button
+                type="button"
+                onClick={newConversation}
+                className="min-h-8 rounded-full px-3 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition"
+              >
+                + Nowa rozmowa
+              </button>
+            </div>
+          )}
           <div className="flex items-end gap-2 rounded-2xl border border-input bg-card shadow-card focus-within:ring-2 focus-within:ring-ring/40 focus-within:border-ring transition px-2 py-1.5">
             <textarea
               ref={textareaRef}
@@ -328,7 +380,8 @@ export function ChatInterface({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={sending}
+              readOnly={sending}
+              aria-label="Wiadomość do agenta"
               placeholder="Zapytaj o swoje pola — dane satelitarne, pogoda, rejestr ŚOR…"
               // text-base na mobile — poniżej 16px iOS zoomuje stronę przy focusie
               className="flex-1 resize-none px-2 py-1.5 bg-transparent focus:outline-none text-base sm:text-sm placeholder:text-muted-foreground max-h-[160px]"
@@ -340,7 +393,7 @@ export function ChatInterface({
               disabled={sending || !input.trim()}
               aria-label="Wyślij wiadomość"
               className={cn(
-                'inline-flex items-center justify-center rounded-xl h-9 w-9 shrink-0 transition',
+                'inline-flex items-center justify-center rounded-xl h-11 w-11 shrink-0 transition',
                 sending || !input.trim()
                   ? 'bg-muted text-muted-foreground cursor-not-allowed'
                   : 'bg-primary text-primary-foreground hover:brightness-110',
@@ -349,10 +402,11 @@ export function ChatInterface({
               <Send className={cn('w-4 h-4', sending && 'animate-pulse')} />
             </button>
           </div>
-          <p className="mt-1.5 text-center text-[11px] text-muted-foreground hidden sm:block">
-            {streaming
-              ? 'Agent analizuje…'
-              : 'Enter — wyślij · Shift+Enter — nowa linia · zalecenia wspierają decyzję, środki zweryfikuj z etykietą'}
+          <p className="mt-1.5 text-center text-[11px] text-muted-foreground">
+            <span className="hidden sm:inline">
+              {streaming ? 'Agent analizuje… · ' : 'Enter — wyślij · Shift+Enter — nowa linia · '}
+            </span>
+            Zalecenia wspierają decyzję — środki zweryfikuj z etykietą.
           </p>
         </div>
       </div>
@@ -452,7 +506,7 @@ function CopyButton({ text }: { text: string }) {
     <button
       type="button"
       onClick={copy}
-      className="mt-1 inline-flex items-center gap-1 hud-label opacity-0 group-hover:opacity-100 focus:opacity-100 transition hover:text-foreground"
+      className="mt-1 inline-flex items-center gap-1 hud-label md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 transition hover:text-foreground min-h-8"
       aria-label="Kopiuj odpowiedź"
     >
       {copied ? <Check className="w-3 h-3 text-signal-healthy" /> : <Copy className="w-3 h-3" />}

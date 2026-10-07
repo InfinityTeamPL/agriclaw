@@ -234,10 +234,12 @@ export async function POST(req: NextRequest) {
           );
         }
       } catch (err) {
+        // Szczegóły (adresy maszyn, komunikaty bibliotek) tylko do logów — rolnik dostaje zdanie po polsku.
+        console.error('[chat] błąd strumienia', err);
         try {
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ type: 'error', error: String(err) })}\n\n`,
+              `data: ${JSON.stringify({ type: 'error', error: 'Agent nie mógł dokończyć odpowiedzi. Spróbuj ponownie za chwilę.' })}\n\n`,
             ),
           );
         } catch {
@@ -274,7 +276,7 @@ async function runBuiltinAgentStream(
     return new Response(
       JSON.stringify({
         error:
-          'Czat AI wymaga konfiguracji MINIMAX_API_KEY (wbudowany agent) albo wdrożenia agenta OpenClaw przez /dashboard/agent.',
+          'Agent AI jest chwilowo niedostępny. Spróbuj ponownie później albo napisz do nas: contact@infinityteam.io.',
       }),
       { status: 503, headers: { 'Content-Type': 'application/json' } },
     );

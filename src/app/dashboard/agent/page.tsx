@@ -47,12 +47,13 @@ export default async function AgentPage() {
             },
       orderBy: { updatedAt: 'desc' },
       include: {
-        messages: { orderBy: { createdAt: 'asc' }, take: 50 },
+        // Najnowsze 50 (desc), poniżej odwracamy do kolejności chronologicznej.
+        messages: { orderBy: { createdAt: 'desc' }, take: 50 },
       },
     });
     if (lastConversation) {
       conversationId = lastConversation.id;
-      initialMessages = lastConversation.messages.map((m) => ({
+      initialMessages = [...lastConversation.messages].reverse().map((m) => ({
         id: m.id,
         role: m.role === 'ASSISTANT' ? 'assistant' : 'user',
         content: m.content,
@@ -97,6 +98,8 @@ export default async function AgentPage() {
         </div>
       ) : (
         <ChatInterface
+          // Zmiana silnika lub rozmowy = świeży stan (inaczej widać starą transkrypcję innego silnika).
+          key={`${engine}:${conversationId ?? 'new'}`}
           farmId={farm.id}
           initialConversationId={conversationId}
           initialMessages={initialMessages}

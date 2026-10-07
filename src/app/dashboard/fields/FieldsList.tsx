@@ -17,7 +17,7 @@ import {
   ArrowDownUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { cropLabel, formatDatePL, formatHa, CROPS } from '@/lib/ui/format';
+import { cropLabel, formatDatePL, formatHa, CROPS, formatFixedPL } from '@/lib/ui/format';
 import { classifyNdvi } from '@/lib/satellite/ndvi';
 import { ndviColorHex } from '@/lib/design/ndvi-scale';
 import { FieldSatThumb } from '@/components/dashboard/FieldSatThumb';
@@ -272,7 +272,7 @@ function FieldGridCard({ field }: { field: FieldListItem }) {
               style={{ borderColor: `${ndviColor}55` }}
             >
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ndviColor }} />
-              NDVI {field.ndviMean.toFixed(2)}
+              NDVI {formatFixedPL(field.ndviMean, 2)}
             </div>
           ) : (
             <div className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-md bg-card border border-border text-muted-foreground">
@@ -320,7 +320,7 @@ function NdviCell({ mean }: { mean: number | null }) {
       style={{ backgroundColor: `${color}1A`, borderColor: `${color}55` }}
     >
       <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} aria-hidden="true" />
-      {mean.toFixed(2)}
+      {formatFixedPL(mean, 2)}
     </span>
   );
 }

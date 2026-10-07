@@ -8,6 +8,7 @@ import { Wind, Droplets, Thermometer, Clock } from 'lucide-react';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 import { ScanLine } from '@/components/brand/ScanLine';
 import { AdvisoryNotice } from './AdvisoryNotice';
+import { formatFixedPL } from '@/lib/ui/format';
 
 interface HourlyPoint {
   time: string;
@@ -53,30 +54,59 @@ export function SprayTimer({ fieldId }: Props) {
   const [data, setData] = useState<{ hourly: HourlyPoint[]; topWindows: SprayWindow[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [hover, setHover] = useState<HourlyPoint | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
+    setFailed(false);
     const qs = fieldId ? `?fieldId=${fieldId}` : '';
     fetch(`/api/weather/spray-window${qs}`)
-      .then((r) => r.json())
+      .then(async (r) => {
+        const d = await r.json().catch(() => null);
+        // Odpowiedź błędu ({ error }) nie ma tablicy hourly — bez tego sprawdzenia
+        // data.hourly.length rzucało TypeError i wywracało całą stronę pola.
+        if (!r.ok || !d || !Array.isArray(d.hourly)) throw new Error('bad response');
+        return d;
+      })
       .then((d) => {
         if (alive) setData(d);
       })
-      .catch(() => {})
+      .catch(() => {
+        if (alive) setFailed(true);
+      })
       .finally(() => {
         if (alive) setLoading(false);
       });
     return () => {
       alive = false;
     };
-  }, [fieldId]);
+  }, [fieldId, attempt]);
 
   if (loading) {
     return (
       <div className="rounded-lg bg-card border border-border shadow-card p-5 space-y-4">
         <div className="hud-label">Okno oprysku</div>
         <ScanLine className="h-16" label="Skanowanie prognozy…" />
+      </div>
+    );
+  }
+
+  if (failed) {
+    return (
+      <div className="rounded-lg bg-card border border-border shadow-card p-5 space-y-3">
+        <div className="hud-label">Okno oprysku</div>
+        <p className="text-sm text-muted-foreground">
+          Prognoza oprysku jest chwilowo niedostępna.
+        </p>
+        <button
+          type="button"
+          onClick={() => setAttempt((n) => n + 1)}
+          className="min-h-11 rounded-md border border-border px-4 text-sm font-medium hover:bg-secondary transition"
+        >
+          Spróbuj ponownie
+        </button>
       </div>
     );
   }
@@ -159,6 +189,11 @@ export function SprayTimer({ fieldId }: Props) {
                   key={h.time}
                   onMouseEnter={() => setHover(h)}
                   onMouseLeave={() => setHover(null)}
+                  onClick={() => setHover(h)}
+                  onFocus={() => setHover(h)}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`${h.time.slice(11, 16)}: ${qualityLabel[h.sprayQuality]}, wiatr ${Math.round(h.wind)} km/h, opad ${formatFixedPL(h.precip, 1)} mm`}
                   className="flex-1 h-8 rounded-sm cursor-pointer transition-transform hover:scale-y-125 relative group"
                   style={{ background: qualityColor[h.sprayQuality], opacity: 0.9 }}
                 >
@@ -195,7 +230,7 @@ export function SprayTimer({ fieldId }: Props) {
           <div className="grid grid-cols-4 gap-2 text-muted-foreground">
             <div className="flex items-center gap-1">
               <Thermometer className="w-3 h-3" />
-              <span className="font-mono tabular">{hover.temp.toFixed(1)}°C</span>
+              <span className="font-mono tabular">{formatFixedPL(hover.temp, 1)}°C</span>
             </div>
             <div className="flex items-center gap-1">
               <Wind className="w-3 h-3" />
@@ -203,7 +238,7 @@ export function SprayTimer({ fieldId }: Props) {
             </div>
             <div className="flex items-center gap-1">
               <Droplets className="w-3 h-3" />
-              <span className="font-mono tabular">{hover.precip.toFixed(1)} mm</span>
+              <span className="font-mono tabular">{formatFixedPL(hover.precip, 1)} mm</span>
             </div>
             <div className="flex items-center gap-1">
               <Droplets className="w-3 h-3 text-signal-frost" />

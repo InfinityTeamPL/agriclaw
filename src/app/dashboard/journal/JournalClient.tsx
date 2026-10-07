@@ -471,6 +471,20 @@ function TreatmentModal({
       toast.error('Wybierz pole i datę zabiegu.');
       return;
     }
+    // Wpisana, ale nieczytelna dawka lub powierzchnia (np. „1,5 l/ha", „2,5 ha") nie może
+    // zniknąć po cichu: dawka wyleciałaby z dokumentu kontrolnego, a powierzchnia zamieniłaby
+    // się w całe pole. Wymagamy samej liczby.
+    if (doseValue.trim() && parsePlNumber(doseValue) === null) {
+      toast.error('Dawka musi być samą liczbą (np. 1,5). Jednostkę wybierz obok.');
+      return;
+    }
+    if (areaTreated.trim()) {
+      const area = parsePlNumber(areaTreated);
+      if (area === null || area <= 0) {
+        toast.error('Powierzchnia zabiegu musi być liczbą większą od zera (np. 2,5). Zostaw puste, żeby wpisać całe pole.');
+        return;
+      }
+    }
     setSaving(true);
 
     // Tryb EDYCJI — PATCH obsługuje tylko podzbiór pól (bez fieldId/type/karencji).

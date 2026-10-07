@@ -39,8 +39,8 @@ export interface ComplianceReport {
   failCount: number;
   /** Liczba reguł ze statusem warn. */
   warnCount: number;
-  /** Procentowa zgodność 0-100. */
-  score: number;
+  /** Procentowa zgodność 0-100. null = brak danych do oceny (np. gospodarstwo bez pól). */
+  score: number | null;
 }
 
 export interface ComplianceFieldInput {
@@ -62,6 +62,11 @@ export interface ComplianceInput {
 }
 
 export function evaluateCompliance(input: ComplianceInput): ComplianceReport {
+  // Bez pól nie ma czego oceniać. Wcześniej reguła „rejestracja kompletna" przechodziła
+  // na pustej liście i wychodziło „100% — wszystko gra".
+  if (input.fields.length === 0) {
+    return { totalHectares: 0, fieldsCount: 0, rules: [], failCount: 0, warnCount: 0, score: null };
+  }
   const rules: ComplianceRule[] = [];
   const cropAreas = new Map<string, number>();
   for (const f of input.fields) {
@@ -126,7 +131,7 @@ export function evaluateCompliance(input: ComplianceInput): ComplianceReport {
         category: 'rotation',
         title: `Rotacja upraw — pole "${f.name}"`,
         status: 'fail',
-        detail: `${f.crop} 3 sezony z rzędu + planowana w tym roku. Narusza wymóg rotacji.`,
+        detail: `${cropLabel(f.crop)} 3 sezony z rzędu + planowana w tym roku. Narusza wymóg rotacji.`,
         action: `Zmień uprawę w tym roku lub podziel pole na części. Preferowane: strączkowe (wiążą azot, "regenerują" glebę) albo rzepak.`,
         legalBasis: 'GAEC 7 (od 2025)',
       });
@@ -136,7 +141,7 @@ export function evaluateCompliance(input: ComplianceInput): ComplianceReport {
         category: 'rotation',
         title: `Rotacja upraw — pole "${f.name}"`,
         status: 'warn',
-        detail: `${f.crop} 2 sezony z rzędu. W przyszłym roku musisz zmienić uprawę.`,
+        detail: `${cropLabel(f.crop)} 2 sezony z rzędu. W przyszłym roku musisz zmienić uprawę.`,
         action: `Zaplanuj inną uprawę na następny sezon (np. rzepak po pszenicy, strączkowe po zbożu).`,
         legalBasis: 'GAEC 7 (od 2025)',
       });
@@ -217,6 +222,7 @@ export function evaluateCompliance(input: ComplianceInput): ComplianceReport {
   const warns = rules.filter((r) => r.status === 'warn').length;
   const passes = rules.filter((r) => r.status === 'pass').length;
   const evaluated = passes + fails + warns;
+  // Są pola, ale żadna reguła nie podlega ocenie (np. gospodarstwo <10 ha) — nic nie narusza norm.
   const score = evaluated > 0 ? Math.round((passes / evaluated) * 100) : 100;
 
   return {
