@@ -27,23 +27,11 @@ async function main() {
 
   console.log(`✓ User: ${user.email}`);
 
-  // Gospodarstwo we Włocławku
-  const farm = await prisma.farm.upsert({
-    where: { id: user.id }, // nie istnieje więc utworzy
-    update: {},
-    create: {
-      userId: user.id,
-      name: 'Demo Gospodarstwo',
-      address: 'Włocławek, Polska',
-      lat: 52.6482,
-      lon: 19.0678,
-      apiKey: `agri_${crypto.randomBytes(24).toString('hex')}`,
-      plan: 'free',
-    },
-  }).catch(async () => {
-    const existing = await prisma.farm.findFirst({ where: { userId: user.id } });
-    if (existing) return existing;
-    return prisma.farm.create({
+  // Gospodarstwo we Włocławku. Idempotentnie: wcześniejszy upsert po id=user.id nigdy nie trafiał
+  // w istniejący rekord, więc każde uruchomienie seeda zakładało NOWE gospodarstwo.
+  const farm =
+    (await prisma.farm.findFirst({ where: { userId: user.id }, orderBy: { createdAt: 'asc' } })) ??
+    (await prisma.farm.create({
       data: {
         userId: user.id,
         name: 'Demo Gospodarstwo',
@@ -53,43 +41,51 @@ async function main() {
         apiKey: `agri_${crypto.randomBytes(24).toString('hex')}`,
         plan: 'free',
       },
-    });
-  });
+    }));
 
   console.log(`✓ Farm: ${farm.name} (${farm.id})`);
 
-  // Pole o powierzchni ok. 5 ha koło Włocławka
+  // Pole ~5 ha na gruntach ornych na południe od Włocławka (pas pod uprawą, zweryfikowany na
+  // zdjęciu lotniczym). Wcześniejszy prostokąt leżał na zabudowie miejskiej i miał ~26 ha,
+  // choć w bazie stało 5,12 — powierzchnię liczymy teraz z geometrii.
   const polygon = {
     type: 'Polygon' as const,
     coordinates: [
       [
-        [19.065, 52.645],
-        [19.072, 52.645],
-        [19.072, 52.65],
-        [19.065, 52.65],
-        [19.065, 52.645],
+        [19.013825, 52.55125],
+        [19.015425, 52.55125],
+        [19.015625, 52.547],
+        [19.014025, 52.547],
+        [19.013825, 52.55125],
       ],
     ],
   };
 
-  await prisma.$executeRaw(
-    Prisma.sql`
-      INSERT INTO "fields" (id, farm_id, name, crop, area_hectares, polygon, created_at, updated_at)
-      VALUES (
-        gen_random_uuid(),
-        ${farm.id},
-        'Pole za stodołą',
-        'wheat',
-        5.12,
-        ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(polygon)}), 4326),
-        NOW(),
-        NOW()
-      )
-      ON CONFLICT DO NOTHING
-    `,
-  );
+  // Idempotentnie: kolejne uruchomienie seeda nie dokłada duplikatu pola.
+  const existingField = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT id FROM "fields"
+    WHERE farm_id = ${farm.id} AND name = 'Pole za stodołą' AND deleted_at IS NULL
+    LIMIT 1
+  `;
+  if (existingField.length === 0) {
+    await prisma.$executeRaw(
+      Prisma.sql`
+        INSERT INTO "fields" (id, farm_id, name, crop, area_hectares, polygon, created_at, updated_at)
+        VALUES (
+          gen_random_uuid(),
+          ${farm.id},
+          'Pole za stodołą',
+          'wheat',
+          ROUND((ST_Area(ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(polygon)}), 4326)::geography) / 10000.0)::numeric, 2),
+          ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(polygon)}), 4326),
+          NOW(),
+          NOW()
+        )
+      `,
+    );
+  }
 
-  console.log(`✓ Field: Pole za stodołą (pszenica, 5.12 ha)`);
+  console.log(`✓ Field: Pole za stodołą (pszenica, ok. 5,1 ha)`);
 
   console.log('\nZaloguj się na:');
   console.log(`   Email:    ${email}`);
