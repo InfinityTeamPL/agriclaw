@@ -48,7 +48,7 @@ export function SettingsForm({ defaultValues }: Props) {
       router.refresh();
     } catch (err) {
       console.error(err);
-      toast.error('Nieoczekiwany błąd.');
+      toast.error('Brak połączenia z serwerem. Spróbuj ponownie.');
     } finally {
       setSaving(false);
     }
@@ -71,7 +71,7 @@ export function SettingsForm({ defaultValues }: Props) {
           className="w-full px-3 py-2 border border-input rounded-md bg-muted text-muted-foreground"
         />
         <p className="mt-1 text-xs text-muted-foreground">
-          Email nie może zostać zmieniony. Skontaktuj się z pomocą, aby go zmienić.
+          Email nie może zostać zmieniony tutaj. Napisz do nas: contact@infinityteam.io.
         </p>
       </div>
 

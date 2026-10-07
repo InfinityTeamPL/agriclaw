@@ -7,6 +7,7 @@ import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { LogoMark } from '@/components/brand/LogoMark';
 import { OnboardingForm } from './OnboardingForm';
+import { SignOutLink } from './SignOutLink';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,7 +52,9 @@ export default async function OnboardingPage() {
           </div>
         </div>
 
-        <OnboardingForm defaultName={user.name ? `Gospodarstwo ${user.name}` : ''} />
+        {/* Bez domyślnej nazwy: „Gospodarstwo Jan Kowalski" brzmi sztucznie, wystarcza podpowiedź w polu. */}
+        <OnboardingForm defaultName="" />
+        <SignOutLink email={user.email} />
       </div>
     </main>
   );

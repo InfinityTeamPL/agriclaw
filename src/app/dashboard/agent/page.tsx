@@ -21,7 +21,14 @@ import { EngineSelector } from './EngineSelector';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AgentPage() {
+export default async function AgentPage({
+  searchParams,
+}: {
+  searchParams?: { q?: string | string[] };
+}) {
+  // ?q= — gotowy szkic pytania (np. z karty pola). Tylko tekst, przycięty.
+  const rawQ = Array.isArray(searchParams?.q) ? searchParams?.q[0] : searchParams?.q;
+  const draft = (rawQ ?? '').slice(0, 300);
   const { farm } = await requireFarm();
 
   const agent = await prisma.agent.findFirst({
@@ -101,6 +108,7 @@ export default async function AgentPage() {
           // Zmiana silnika lub rozmowy = świeży stan (inaczej widać starą transkrypcję innego silnika).
           key={`${engine}:${conversationId ?? 'new'}`}
           farmId={farm.id}
+          initialDraft={draft}
           initialConversationId={conversationId}
           initialMessages={initialMessages}
         />

@@ -33,7 +33,9 @@ export async function geocodeAddress(
     timeoutMs: 10_000,
   });
 
-  if (!res.ok) return null;
+  // Błąd usługi to NIE „brak wyniku": wywołujący pokaże komunikat o awarii, a nie mylące
+  // „Nie znaleziono adresu" przy poprawnym adresie.
+  if (!res.ok) throw new Error(`Nominatim HTTP ${res.status}`);
   const data = (await res.json()) as Array<{
     lat: string;
     lon: string;

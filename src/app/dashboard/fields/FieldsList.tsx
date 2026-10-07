@@ -82,9 +82,10 @@ export function FieldsList({ items }: { items: FieldListItem[] }) {
           <input
             type="text"
             placeholder="Szukaj pola po nazwie..."
+            aria-label="Szukaj pola po nazwie"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+            className="w-full min-h-11 pl-9 pr-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
           />
         </div>
 
@@ -95,7 +96,7 @@ export function FieldsList({ items }: { items: FieldListItem[] }) {
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             aria-label="Filtruj wg uprawy"
-            className="px-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+            className="min-h-11 px-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
           >
             <option value="all">Wszystkie uprawy ({items.length})</option>
             {availableCrops.map((c) => (
@@ -113,7 +114,7 @@ export function FieldsList({ items }: { items: FieldListItem[] }) {
             value={sortKey}
             onChange={(e) => setSortKey(e.target.value as SortKey)}
             aria-label="Sortuj"
-            className="px-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+            className="min-h-11 px-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
           >
             <option value="created">Najnowsze</option>
             <option value="ndvi">Najwyższy NDVI</option>
@@ -128,12 +129,13 @@ export function FieldsList({ items }: { items: FieldListItem[] }) {
             type="button"
             onClick={() => setView('grid')}
             className={cn(
-              'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition',
+              'inline-flex items-center justify-center gap-1.5 px-3 min-h-10 rounded-md text-xs font-medium transition',
               view === 'grid'
                 ? 'bg-card text-primary shadow-card'
                 : 'text-muted-foreground hover:text-foreground',
             )}
             aria-pressed={view === 'grid'}
+            aria-label="Widok siatki"
           >
             <LayoutGrid className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Siatka</span>
@@ -142,12 +144,13 @@ export function FieldsList({ items }: { items: FieldListItem[] }) {
             type="button"
             onClick={() => setView('list')}
             className={cn(
-              'inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition',
+              'inline-flex items-center justify-center gap-1.5 px-3 min-h-10 rounded-md text-xs font-medium transition',
               view === 'list'
                 ? 'bg-card text-primary shadow-card'
                 : 'text-muted-foreground hover:text-foreground',
             )}
             aria-pressed={view === 'list'}
+            aria-label="Widok listy"
           >
             <List className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Lista</span>
@@ -157,8 +160,18 @@ export function FieldsList({ items }: { items: FieldListItem[] }) {
 
       {/* Results */}
       {filtered.length === 0 ? (
-        <div className="rounded-lg bg-card border border-border p-10 text-center text-sm text-muted-foreground">
-          Brak pól pasujących do filtru. Zmień kryteria.
+        <div className="rounded-lg bg-card border border-border p-10 text-center text-sm text-muted-foreground space-y-3">
+          <p>Brak pól pasujących do filtru.</p>
+          <button
+            type="button"
+            onClick={() => {
+              setQuery('');
+              setFilter('all');
+            }}
+            className="min-h-11 rounded-md border border-border px-4 font-medium text-foreground hover:bg-secondary transition"
+          >
+            Wyczyść filtry
+          </button>
         </div>
       ) : view === 'grid' ? (
         <motion.div
