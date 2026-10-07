@@ -105,6 +105,18 @@ const item = {
   },
 };
 
+// Pole detail zdarzeń bywa techniczne (JSON diagnozy, „serverId=… ip=…", komunikaty wyjątków).
+// Rolnikowi pokazujemy tylko zdania — resztę pomijamy.
+function humanDetail(detail: string | null): string | null {
+  if (!detail) return null;
+  const d = detail.trim();
+  if (!d) return null;
+  if (/^[{[]/.test(d)) return null; // JSON
+  if (/^[a-zA-Z_.]+=/.test(d)) return null; // klucz=wartość
+  if (/(^|\s)(Error|Exception|TypeError|PrismaClient)\b/.test(d)) return null; // wyjątek
+  return d;
+}
+
 export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEvents, attention, weather, sprayWindow }: Props) {
   const router = useRouter();
   const [scanning, setScanning] = useState(false);
@@ -280,9 +292,9 @@ export function DashboardHomeClient({ farm, fields, stats, recentRecs, recentEve
                         <div className="mt-0.5 text-sm font-medium text-foreground truncate">
                           {e.title}
                         </div>
-                        {e.detail && (
+                        {humanDetail(e.detail) && (
                           <div className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                            {e.detail}
+                            {humanDetail(e.detail)}
                           </div>
                         )}
                       </div>

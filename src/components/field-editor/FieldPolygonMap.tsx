@@ -29,11 +29,14 @@ export function FieldPolygonMap({ polygon, centroid, ndviMean, className }: Prop
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [ready, setReady] = useState(false);
+  const [mapError, setMapError] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    const map = new maplibregl.Map({
+    let map: maplibregl.Map;
+    try {
+      map = new maplibregl.Map({
       ...EMBEDDED_MAP_OPTIONS,
       container: containerRef.current,
       style: hybridStyle,
@@ -41,7 +44,12 @@ export function FieldPolygonMap({ polygon, centroid, ndviMean, className }: Prop
       zoom: 16,
       interactive: true,
       attributionControl: false,
-    });
+      });
+    } catch (err) {
+      console.error('[mapa] nie udało się uruchomić', err);
+      setMapError(true);
+      return;
+    }
 
     map.addControl(
       new maplibregl.NavigationControl({ showCompass: false }),
@@ -116,7 +124,12 @@ export function FieldPolygonMap({ polygon, centroid, ndviMean, className }: Prop
       <div className="absolute inset-0 bg-muted">
         <div ref={containerRef} className="w-full h-full" />
       </div>
-      {!ready && (
+      {mapError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-card p-4 text-center text-sm text-foreground">
+          Nie udało się uruchomić mapy. Odśwież stronę — dane pola poniżej są dostępne.
+        </div>
+      )}
+      {!ready && !mapError && (
         <div className="absolute inset-0 flex items-center justify-center bg-card/60">
           <div className="flex items-center gap-2 text-primary text-sm">
             <Loader2 className="w-4 h-4 animate-spin" />

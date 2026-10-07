@@ -173,7 +173,7 @@ export function TodayBriefing({
           )}
           {attentionTotal > attention.length && (
             <Link href="/dashboard/fields" className="mt-2 inline-block text-sm text-primary hover:underline">
-              + {attentionTotal - attention.length} więcej
+              + {attentionTotal - attention.length} więcej — otwórz listę pól
             </Link>
           )}
 
