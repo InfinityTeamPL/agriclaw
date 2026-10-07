@@ -6,6 +6,7 @@
 // Bez żadnych zewnętrznych zależności — szybki, bezpieczny (escape HTML).
 
 import { Fragment } from 'react';
+import { safeHref } from '@/lib/ui/safe-href';
 
 interface Props {
   text: string;
@@ -126,17 +127,25 @@ function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
         mode = 'linkUrl';
         break;
       case '__LINK_END__':
-        out.push(
-          <a
-            key={`${keyPrefix}-l-${key++}`}
-            href={decodeEntities(buffer)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary underline underline-offset-2 hover:brightness-110"
-          >
-            {decodeEntities(linkText)}
-          </a>,
-        );
+        {
+          // javascript:/data: z odpowiedzi agenta nie mogą trafić do href — wtedy zwykły tekst.
+          const href = safeHref(decodeEntities(buffer));
+          if (href) {
+            out.push(
+              <a
+                key={`${keyPrefix}-l-${key++}`}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary underline underline-offset-2 hover:brightness-110"
+              >
+                {decodeEntities(linkText)}
+              </a>,
+            );
+          } else {
+            out.push(decodeEntities(linkText));
+          }
+        }
         buffer = '';
         linkText = '';
         mode = 'plain';

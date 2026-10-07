@@ -54,7 +54,7 @@ interface Props {
     fieldsCount: number;
     totalHa: number;
     lastAnalysisAt: string | null;
-    complianceScore: number;
+    complianceScore: number | null;
   };
   scanning: boolean;
   onScan: () => void;
@@ -278,14 +278,16 @@ export function TodayBriefing({
           <span
             className={cn(
               'font-medium tabular',
-              stats.complianceScore >= 80
-                ? 'text-signal-healthy'
-                : stats.complianceScore >= 50
-                  ? 'text-signal-heat'
-                  : 'text-destructive',
+              stats.complianceScore === null
+                ? 'text-muted-foreground'
+                : stats.complianceScore >= 80
+                  ? 'text-signal-healthy'
+                  : stats.complianceScore >= 50
+                    ? 'text-signal-heat'
+                    : 'text-destructive',
             )}
           >
-            {stats.complianceScore}%
+            {stats.complianceScore === null ? '—' : `${stats.complianceScore}%`}
           </span>
         </Link>
       </div>

@@ -40,13 +40,24 @@ export function HistoryChart({ fieldId }: { fieldId: string }) {
   const [data, setData] = useState<HistoryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [backfilling, setBackfilling] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const load = () => {
     setLoading(true);
+    setLoadError(false);
     fetch(`/api/fields/${fieldId}/history`)
-      .then((r) => r.json())
+      .then(async (r) => {
+        const d = await r.json().catch(() => null);
+        // 404 zwraca { error }, bez tablicy monthly — nie wolno jej czytać (TypeError).
+        if (r.status === 404) return null; // pole bez żadnych odczytów = pusta historia
+        if (!r.ok || !d || !Array.isArray(d.monthly)) throw new Error('bad response');
+        return d as HistoryResponse;
+      })
       .then((d) => setData(d))
-      .catch(() => setData(null))
+      .catch(() => {
+        setData(null);
+        setLoadError(true);
+      })
       .finally(() => setLoading(false));
   };
 
@@ -64,7 +75,7 @@ export function HistoryChart({ fieldId }: { fieldId: string }) {
       });
       const result = await res.json();
       if (!res.ok) {
-        toast.error(result.error ?? 'Backfill nie powiodł się');
+        toast.error(result.error ?? 'Nie udało się pobrać historii. Spróbuj ponownie.');
         return;
       }
       toast.success(
@@ -72,7 +83,8 @@ export function HistoryChart({ fieldId }: { fieldId: string }) {
       );
       load();
     } catch (err) {
-      toast.error(String(err));
+      console.error(err);
+      toast.error('Brak połączenia z serwerem. Spróbuj ponownie.');
     } finally {
       setBackfilling(false);
     }
@@ -85,6 +97,25 @@ export function HistoryChart({ fieldId }: { fieldId: string }) {
         <div className="p-5 space-y-3">
           <div className="hud-label">Historia pola</div>
           <ScanLine className="h-24" label="Wczytywanie serii NDVI…" />
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="rounded-lg bg-card border border-border shadow-card overflow-hidden">
+        <NdviKeyline height={3} rounded={false} />
+        <div className="p-6 text-center space-y-3">
+          <div className="font-display tracking-tight font-semibold text-foreground">Nie udało się wczytać historii</div>
+          <p className="text-sm text-muted-foreground">To zwykle chwilowy problem z połączeniem.</p>
+          <button
+            type="button"
+            onClick={load}
+            className="min-h-11 rounded-md border border-border px-4 text-sm font-medium hover:bg-secondary transition"
+          >
+            Spróbuj ponownie
+          </button>
         </div>
       </div>
     );

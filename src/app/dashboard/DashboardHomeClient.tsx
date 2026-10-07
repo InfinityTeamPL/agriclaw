@@ -74,7 +74,7 @@ interface Props {
     totalHa: number;
     activeAlerts: number;
     lastAnalysisAt: string | null;
-    complianceScore: number;
+    complianceScore: number | null;
     complianceFails: number;
     complianceWarns: number;
   };

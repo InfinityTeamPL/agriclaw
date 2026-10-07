@@ -4,7 +4,7 @@
 
 import { requireFarm } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
-import { evaluateCompliance } from '@/lib/compliance';
+import { loadComplianceReport } from '@/lib/compliance-data';
 import { fetchWeatherForecast, fetchSprayForecast } from '@/lib/satellite/weather';
 import { DashboardHomeClient } from './DashboardHomeClient';
 import { topReason } from '@/lib/why';
@@ -123,31 +123,8 @@ export default async function DashboardHome() {
     : null;
   const latestReading = readings[0];
 
-  // Compliance — mini score do pokazania w dashboard home
-  const treatmentCounts = fieldIds.length
-    ? await prisma.treatment.groupBy({
-        by: ['fieldId'],
-        where: {
-          fieldId: { in: fieldIds },
-          performedAt: { gte: new Date(new Date().getFullYear(), 0, 1) },
-        },
-        _count: true,
-      })
-    : [];
-  const treatmentCountByField = new Map(
-    treatmentCounts.map((t) => [t.fieldId, t._count]),
-  );
-  const complianceReport = evaluateCompliance({
-    totalHectares: totalHa,
-    fields: fields.map((f) => ({
-      id: f.id,
-      name: f.name,
-      crop: f.crop,
-      areaHectares: Number(f.area_hectares),
-      treatmentsCountThisSeason: treatmentCountByField.get(f.id) ?? 0,
-      lastTreatmentAt: null,
-    })),
-  });
+  // Zgodność: ten sam loader co strona /dashboard/compliance (spójny wynik).
+  const { report: complianceReport } = await loadComplianceReport(farm.id);
 
   const fieldsForClient = fields.map((f) => {
     const history = ndviByField.get(f.id) ?? [];

@@ -4,10 +4,10 @@
 
 import Link from 'next/link';
 import { requireFarm } from '@/lib/session';
-import { prisma } from '@/lib/prisma';
-import { evaluateCompliance } from '@/lib/compliance';
+import { loadComplianceReport } from '@/lib/compliance-data';
 import { AlertTriangle, AlertCircle, Info, CheckCircle2, Sprout, Layers } from 'lucide-react';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
+import { pluralPL } from '@/lib/ui/format';
 const haPL = (n: number) => n.toLocaleString('pl-PL', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 export const dynamic = 'force-dynamic';
@@ -15,68 +15,8 @@ export const dynamic = 'force-dynamic';
 export default async function CompliancePage() {
   const { farm } = await requireFarm();
 
-  // Pobierz pola + zabiegi w tym sezonie
-  const fields = await prisma.field.findMany({
-    where: { farmId: farm.id, deletedAt: null },
-    select: {
-      id: true,
-      name: true,
-      crop: true,
-      areaHectares: true,
-      treatments: {
-        where: {
-          performedAt: {
-            gte: new Date(new Date().getFullYear(), 0, 1),
-          },
-        },
-        select: { performedAt: true, type: true, productName: true },
-        orderBy: { performedAt: 'desc' },
-      },
-    },
-  });
-
-  // Historia uprav z Treatment.type='sowing' ostatnie 4 lata
-  const cutoff = new Date(new Date().getFullYear() - 4, 0, 1);
-  const sowings = await prisma.treatment.findMany({
-    where: {
-      field: { farmId: farm.id },
-      type: 'sowing',
-      performedAt: { gte: cutoff },
-    },
-    select: { fieldId: true, performedAt: true, productName: true },
-    orderBy: { performedAt: 'asc' },
-  });
-
-  const previousByField = new Map<string, string[]>();
-  for (const s of sowings) {
-    const lower = s.productName.toLowerCase();
-    let crop = 'other';
-    if (/pszen/.test(lower)) crop = 'wheat';
-    else if (/rzepak/.test(lower)) crop = 'rapeseed';
-    else if (/kukurydz/.test(lower)) crop = 'corn';
-    else if (/jęczm|jeczm/.test(lower)) crop = 'barley';
-    else if (/żyt|zyt/.test(lower)) crop = 'rye';
-    else if (/owies|owi/.test(lower)) crop = 'oats';
-    else if (/ziemniak/.test(lower)) crop = 'potato';
-    else if (/burak/.test(lower)) crop = 'sugarbeet';
-    const arr = previousByField.get(s.fieldId) ?? [];
-    arr.push(crop);
-    previousByField.set(s.fieldId, arr);
-  }
-
-  const totalHectares = fields.reduce((s, f) => s + f.areaHectares, 0);
-  const report = evaluateCompliance({
-    totalHectares,
-    fields: fields.map((f) => ({
-      id: f.id,
-      name: f.name,
-      crop: f.crop,
-      areaHectares: f.areaHectares,
-      previousCrops: previousByField.get(f.id),
-      treatmentsCountThisSeason: f.treatments.length,
-      lastTreatmentAt: f.treatments[0]?.performedAt ?? null,
-    })),
-  });
+  // Te same dane i reguły co na pulpicie (lib/compliance-data) — jeden wynik w całej aplikacji.
+  const { report, fields, totalHectares } = await loadComplianceReport(farm.id);
 
   const cropAreas = new Map<string, number>();
   for (const f of fields) {
@@ -88,9 +28,11 @@ export default async function CompliancePage() {
 
   // Kolor wskaźnika wg poziomu zgodności — sygnał danych (zdrowie/upał/susza)
   const scoreColor =
-    report.score >= 80
-      ? 'text-signal-healthy'
-      : report.score >= 50
+    report.score === null
+      ? 'text-muted-foreground'
+      : report.score >= 80
+        ? 'text-signal-healthy'
+        : report.score >= 50
         ? 'text-signal-heat'
         : 'text-signal-drought';
 
@@ -143,12 +85,12 @@ export default async function CompliancePage() {
           <div>
             <div className="hud-label">Ogólny poziom zgodności</div>
             <div className={`font-mono tabular text-6xl font-semibold mt-1 ${scoreColor}`}>
-              {report.score}%
+              {report.score === null ? '—' : `${report.score}%`}
             </div>
             <div className="text-sm text-muted-foreground mt-1">
               {report.failCount > 0 && (
                 <span className="text-signal-drought font-semibold">
-                  {report.failCount} naruszenie{report.failCount > 1 ? 'nia' : ''}
+                  {report.failCount} {pluralPL(report.failCount, 'naruszenie', 'naruszenia', 'naruszeń')}
                 </span>
               )}
               {report.failCount > 0 && report.warnCount > 0 && (
@@ -156,10 +98,13 @@ export default async function CompliancePage() {
               )}
               {report.warnCount > 0 && (
                 <span className="text-signal-heat font-semibold">
-                  {report.warnCount} ostrzeżenie{report.warnCount > 1 ? 'nia' : ''}
+                  {report.warnCount} {pluralPL(report.warnCount, 'ostrzeżenie', 'ostrzeżenia', 'ostrzeżeń')}
                 </span>
               )}
-              {report.failCount === 0 && report.warnCount === 0 && (
+              {report.score === null && (
+                <span className="text-muted-foreground">Brak danych — dodaj pierwsze pole</span>
+              )}
+              {report.score !== null && report.failCount === 0 && report.warnCount === 0 && (
                 <span className="text-signal-healthy font-semibold">Wszystko gra</span>
               )}
             </div>
