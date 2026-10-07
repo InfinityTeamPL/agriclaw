@@ -21,6 +21,7 @@ import {
   Home,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatFixedPL } from '@/lib/ui/format';
 
 type Step = 1 | 2 | 3;
 
@@ -250,7 +251,7 @@ export function OnboardingForm({ defaultName = '' }: { defaultName?: string }) {
                       {geo.displayName ?? address}
                     </div>
                     <div className="text-[11px] text-muted-foreground font-mono mt-0.5">
-                      {geo.lat.toFixed(5)}°N, {geo.lon.toFixed(5)}°E
+                      {formatFixedPL(geo.lat, 5)}°N, {formatFixedPL(geo.lon, 5)}°E
                     </div>
                   </div>
                 </motion.div>
@@ -292,7 +293,7 @@ export function OnboardingForm({ defaultName = '' }: { defaultName?: string }) {
                 icon={<MapPin className="w-4 h-4 text-signal-frost" />}
                 label="Adres"
                 value={geo.displayName ?? address}
-                sub={`${geo.lat.toFixed(5)}°N, ${geo.lon.toFixed(5)}°E`}
+                sub={`${formatFixedPL(geo.lat, 5)}°N, ${formatFixedPL(geo.lon, 5)}°E`}
               />
 
               {/* Mini map preview via static tile */}
@@ -473,7 +474,7 @@ function MiniMapPreview({ lat, lon }: { lat: number; lon: number }) {
 
       {/* Coords label */}
       <div className="absolute bottom-2 left-2 text-[10px] font-mono text-foreground/80 bg-card rounded-md px-1.5 py-0.5 border border-border">
-        {lat.toFixed(3)}°N, {lon.toFixed(3)}°E
+        {formatFixedPL(lat, 3)}°N, {formatFixedPL(lon, 3)}°E
       </div>
     </div>
   );

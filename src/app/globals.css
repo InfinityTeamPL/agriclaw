@@ -127,3 +127,14 @@
   from { opacity: 0; transform: translateY(18px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Amber jako TEKST: bazowy odcień (48% jasności) ma kontrast ok. 2,7:1 i nie spełnia WCAG AA (4,5:1).
+   Ciemniejszy wariant tylko dla koloru tekstu; tła, kropki i wykresy zostają w kolorze marki. */
+html .text-signal-heat {
+  color: hsl(32 90% 32%);
+}
+
+/* Linki w atrybucji mapy muszą być odróżnialne nie tylko kolorem (WCAG 1.4.1). */
+.maplibregl-ctrl-attrib a {
+  text-decoration: underline;
+}
