@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: 'asc' },
   });
   const farm = farms[0];
-  if (!farm) return NextResponse.json({ error: 'No farm' }, { status: 404 });
+  if (!farm) return NextResponse.json({ error: 'Brak gospodarstwa.' }, { status: 404 });
 
   // Zabiegi
   const treatments = await prisma.treatment.findMany({

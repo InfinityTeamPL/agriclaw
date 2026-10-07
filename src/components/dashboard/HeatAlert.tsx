@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react';
 import { Flame, AlertTriangle, Thermometer, ShieldCheck, Loader2, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { todayIsoPL } from '@/lib/ui/format';
 
 type HeatLevel = 'safe' | 'watch' | 'warning' | 'critical';
 
@@ -66,11 +67,11 @@ const levelLabel: Record<HeatLevel, string> = {
 };
 
 function dayLabel(iso: string): string {
-  const today = new Date().toISOString().slice(0, 10);
-  const tomorrow = new Date(Date.now() + 864e5).toISOString().slice(0, 10);
+  const today = todayIsoPL();
+  const tomorrow = todayIsoPL(1);
   if (iso === today) return 'Dziś';
   if (iso === tomorrow) return 'Jutro';
-  return new Date(iso).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw', weekday: 'short', day: 'numeric' });
+  return new Date(`${iso}T12:00:00Z`).toLocaleDateString('pl-PL', { timeZone: 'UTC', weekday: 'short', day: 'numeric' });
 }
 
 export function HeatAlert({ fieldId }: Props) {

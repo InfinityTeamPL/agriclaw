@@ -33,7 +33,7 @@ export async function POST(
 
   const field = rows[0];
   if (!field) {
-    return NextResponse.json({ error: 'Field not found' }, { status: 404 });
+    return NextResponse.json({ error: 'Nie znaleziono pola.' }, { status: 404 });
   }
 
   if (!isCopernicusConfigured()) {

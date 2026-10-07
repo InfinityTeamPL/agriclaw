@@ -3,6 +3,7 @@ import * as turf from '@turf/turf';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { createFieldSchema } from '@/lib/schemas';
+import { validationError } from '@/lib/http/validation-error';
 
 export async function GET() {
   const { user } = await requireAuth();
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = createFieldSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return validationError(parsed.error);
   }
 
   const { farmId, name, polygon, crop } = parsed.data;
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
     where: { id: farmId, userId: user.id },
   });
   if (!farm) {
-    return NextResponse.json({ error: 'Farm not found' }, { status: 404 });
+    return NextResponse.json({ error: 'Nie znaleziono gospodarstwa.' }, { status: 404 });
   }
 
   // Odrzuć poligon z samoprzecięciami — turf.area policzyłby błędną powierzchnię

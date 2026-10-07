@@ -20,7 +20,7 @@ export async function GET(
     WHERE f.id = ${params.id} AND fa.user_id = ${user.id} AND f.deleted_at IS NULL
     LIMIT 1
   `;
-  if (rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (rows.length === 0) return NextResponse.json({ error: 'Nie znaleziono.' }, { status: 404 });
 
   // Wykluczamy odczyty mock (source='mock') — historia/trendy mają pokazywać
   // wyłącznie realne pomiary satelitarne (patrz audyt 2.3).

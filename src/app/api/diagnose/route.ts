@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma';
 import { getOpenRouterClient } from '@/lib/ai/openrouter';
 import { PROMPT_ADVISORY_DISCIPLINE, ADVISORY_SHORT } from '@/lib/advisory';
 import { checkSorProduct, checkSubstances } from '@/lib/sor-registry';
+import { validationError } from '@/lib/http/validation-error';
 
 const bodySchema = z.object({
   imageBase64: z.string().startsWith('data:image/'),
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return validationError(parsed.error);
   }
 
   // Jeśli fieldId podane, zweryfikuj własność + dociągnij kontekst (uprawa)

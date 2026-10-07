@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { updateFieldSchema } from '@/lib/schemas';
+import { validationError } from '@/lib/http/validation-error';
 
 async function ensureOwnership(userId: string, fieldId: string) {
   const rows = await prisma.$queryRaw<Array<{ id: string; farm_id: string }>>`
@@ -18,7 +19,7 @@ export async function GET(
 ) {
   const { user } = await requireAuth();
   const ownership = await ensureOwnership(user.id, params.id);
-  if (!ownership) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (!ownership) return NextResponse.json({ error: 'Nie znaleziono.' }, { status: 404 });
 
   const rows = await prisma.$queryRaw<
     Array<{
@@ -36,7 +37,7 @@ export async function GET(
     FROM "fields" WHERE id = ${params.id} AND deleted_at IS NULL
   `;
   const field = rows[0];
-  if (!field) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (!field) return NextResponse.json({ error: 'Nie znaleziono.' }, { status: 404 });
 
   const readings = await prisma.ndviReading.findMany({
     where: { fieldId: field.id },
@@ -75,12 +76,12 @@ export async function PATCH(
 ) {
   const { user } = await requireAuth();
   const ownership = await ensureOwnership(user.id, params.id);
-  if (!ownership) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (!ownership) return NextResponse.json({ error: 'Nie znaleziono.' }, { status: 404 });
 
   const body = await req.json().catch(() => null);
   const parsed = updateFieldSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return validationError(parsed.error);
   }
 
   const updated = await prisma.field.update({
@@ -97,7 +98,7 @@ export async function DELETE(
 ) {
   const { user } = await requireAuth();
   const ownership = await ensureOwnership(user.id, params.id);
-  if (!ownership) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (!ownership) return NextResponse.json({ error: 'Nie znaleziono.' }, { status: 404 });
 
   // Twarde usunięcie ATOMOWO tylko gdy pole nie ma ŻADNEGO zabiegu — jedno
   // zapytanie DELETE ... WHERE NOT EXISTS(...). Dzięki temu zabieg dodany w

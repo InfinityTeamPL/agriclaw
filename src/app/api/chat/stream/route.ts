@@ -8,6 +8,7 @@ import { runAgroAgent } from '@/lib/agent/agro-agent';
 import { resolveChatEngine } from '@/lib/agent/engine';
 import type { LlmMessage } from '@/lib/ai/minimax';
 import { chatMessageSchema } from '@/lib/schemas';
+import { validationError } from '@/lib/http/validation-error';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120; // pętla narzędziowa v2 (kilka rund LLM + DB/API)
@@ -17,10 +18,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = chatMessageSchema.safeParse(body);
   if (!parsed.success) {
-    return new Response(JSON.stringify({ error: parsed.error.flatten() }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return validationError(parsed.error);
   }
 
   const { farmId, conversationId, message, image } = parsed.data;
@@ -38,7 +36,7 @@ export async function POST(req: NextRequest) {
   });
 
   if (!farm) {
-    return new Response(JSON.stringify({ error: 'Farm not found' }), { status: 404 });
+    return new Response(JSON.stringify({ error: 'Nie znaleziono gospodarstwa.' }), { status: 404 });
   }
 
   const agent = farm.agents[0];
@@ -91,7 +89,7 @@ export async function POST(req: NextRequest) {
       });
 
   if (!conversation) {
-    return new Response(JSON.stringify({ error: 'Conversation not found' }), {
+    return new Response(JSON.stringify({ error: 'Nie znaleziono rozmowy.' }), {
       status: 404,
     });
   }
@@ -291,7 +289,7 @@ async function runBuiltinAgentStream(
         },
       });
   if (!conversation) {
-    return new Response(JSON.stringify({ error: 'Conversation not found' }), { status: 404 });
+    return new Response(JSON.stringify({ error: 'Nie znaleziono rozmowy.' }), { status: 404 });
   }
 
   // Historia tej rozmowy jako kontekst (ostatnie 12 tur USER/ASSISTANT).

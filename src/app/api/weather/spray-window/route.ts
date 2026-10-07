@@ -21,13 +21,13 @@ export async function GET(req: NextRequest) {
       LIMIT 1
     `;
     if (rows.length === 0) {
-      return NextResponse.json({ error: 'Field not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Nie znaleziono pola.' }, { status: 404 });
     }
     lat = rows[0].lat;
     lon = rows[0].lon;
   } else {
     const farm = await prisma.farm.findFirst({ where: { userId: user.id } });
-    if (!farm) return NextResponse.json({ error: 'Farm not found' }, { status: 404 });
+    if (!farm) return NextResponse.json({ error: 'Nie znaleziono gospodarstwa.' }, { status: 404 });
     lat = farm.lat;
     lon = farm.lon;
   }

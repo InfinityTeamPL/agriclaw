@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { createFarmSchema } from '@/lib/schemas';
+import { validationError } from '@/lib/http/validation-error';
 
 export async function GET() {
   const { user } = await requireAuth();
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = createFarmSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return validationError(parsed.error);
   }
 
   const apiKey = `agri_${crypto.randomBytes(24).toString('hex')}`;

@@ -4,6 +4,7 @@ import { signIn } from 'next-auth/react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { fetchJson } from '@/lib/ui/api-error';
 import Link from 'next/link';
 import { GoogleButton } from '@/components/auth/GoogleButton';
 import { LogoMark } from '@/components/brand/LogoMark';
@@ -15,39 +16,46 @@ export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<{ text: string; exists?: boolean } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
+    setError(null);
 
-    const res = await fetch('/api/auth/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name.trim(), email: email.trim(), password }),
-    });
+    try {
+      const created = await fetchJson(
+        '/api/auth/signup',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: name.trim(), email: email.trim(), password }),
+        },
+        'Nie udało się utworzyć konta. Spróbuj ponownie.',
+      );
+      if (!created.ok) {
+        setError({ text: created.message, exists: created.status === 409 });
+        return;
+      }
 
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({ error: 'Błąd rejestracji' }));
-      toast.error(typeof data.error === 'string' ? data.error : 'Nie udało się utworzyć konta');
+      const login = await signIn('credentials', {
+        email: email.trim(),
+        password,
+        redirect: false,
+      });
+      if (login?.error) {
+        toast.error('Konto utworzone. Zaloguj się, żeby zacząć.');
+        router.push('/login');
+        return;
+      }
+      router.push('/onboarding');
+      router.refresh();
+    } catch {
+      setError({ text: 'Brak połączenia z serwerem. Sprawdź internet i spróbuj ponownie.' });
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const login = await signIn('credentials', {
-      email: email.trim(),
-      password,
-      redirect: false,
-    });
-
-    setLoading(false);
-    if (login?.error) {
-      toast.error('Konto utworzone, ale logowanie nie powiodło się');
-      router.push('/login');
-      return;
-    }
-    router.push('/onboarding');
-    router.refresh();
   };
 
   return (
@@ -103,9 +111,10 @@ export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
                 id="name"
                 type="text"
                 required
+                autoComplete="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition"
+                className="w-full min-h-11 px-3 py-2 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition"
               />
             </div>
             <div>
@@ -116,9 +125,10 @@ export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
                 id="email"
                 type="email"
                 required
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3 py-2 bg-background border border-input rounded-md font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition"
+                className="w-full min-h-11 px-3 py-2 bg-background border border-input rounded-md font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition"
               />
             </div>
             <div>
@@ -130,19 +140,45 @@ export function SignupForm({ googleEnabled }: { googleEnabled: boolean }) {
                 type="password"
                 required
                 minLength={8}
+                autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 bg-background border border-input rounded-md font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition"
+                className="w-full min-h-11 px-3 py-2 bg-background border border-input rounded-md font-mono text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition"
               />
             </div>
+
+            {error && (
+              <p
+                role="alert"
+                className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+              >
+                {error.text}{' '}
+                {error.exists && (
+                  <Link href="/login" className="font-semibold underline underline-offset-2">
+                    Zaloguj się
+                  </Link>
+                )}
+              </p>
+            )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary text-primary-foreground font-semibold py-2.5 rounded-md shadow-card hover:brightness-110 disabled:opacity-50 transition-all"
+              className="w-full min-h-11 bg-primary text-primary-foreground font-semibold py-2.5 rounded-md shadow-card hover:brightness-110 disabled:opacity-50 transition-all"
             >
               {loading ? 'Tworzę konto...' : 'Utwórz konto'}
             </button>
+            <p className="text-xs text-center text-muted-foreground">
+              Zakładając konto, akceptujesz{' '}
+              <Link href="/terms" className="underline underline-offset-2 hover:text-foreground">
+                Regulamin
+              </Link>{' '}
+              i{' '}
+              <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">
+                Politykę prywatności
+              </Link>
+              .
+            </p>
           </form>
 
           <p className="text-sm text-center text-muted-foreground">

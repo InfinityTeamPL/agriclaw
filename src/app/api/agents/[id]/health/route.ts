@@ -20,7 +20,7 @@ export async function GET(
     include: { farm: { select: { userId: true } } },
   });
   if (!agent || agent.farm.userId !== user.id) {
-    return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+    return NextResponse.json({ error: 'Nie znaleziono agenta.' }, { status: 404 });
   }
 
   const lastChecked = new Date().toISOString();

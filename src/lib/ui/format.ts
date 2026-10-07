@@ -43,6 +43,15 @@ export function formatHa(ha: number): string {
   });
 }
 
+/**
+ * Dzisiejsza data (YYYY-MM-DD) wg czasu w Polsce, z opcjonalnym przesunięciem o dni.
+ * NIE używaj new Date().toISOString().slice(0, 10) — to data UTC i między 0:00 a 2:00
+ * w Polsce wskazuje „wczoraj" (np. domyślna data zabiegu w księdze polowej).
+ */
+export function todayIsoPL(offsetDays = 0): string {
+  return new Date(Date.now() + offsetDays * 864e5).toLocaleDateString('sv-SE', { timeZone: 'Europe/Warsaw' });
+}
+
 export function formatDatePL(date: Date | string | null | undefined): string {
   if (!date) return '—';
   const d = typeof date === 'string' ? new Date(date) : date;

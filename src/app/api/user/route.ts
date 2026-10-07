@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
+import { validationError } from '@/lib/http/validation-error';
 
 const updateUserSchema = z.object({
   name: z.string().trim().min(1).max(100).optional().nullable(),
@@ -24,7 +25,7 @@ export async function PATCH(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = updateUserSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return validationError(parsed.error);
   }
 
   const data: { name?: string | null; phoneNumber?: string | null } = {};
