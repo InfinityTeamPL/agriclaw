@@ -172,9 +172,25 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
         setProfileOpen(false);
       }
     };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setProfileOpen(false);
+    };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      document.removeEventListener('keydown', onKey);
+    };
   }, [profileOpen]);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setDrawerOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [drawerOpen]);
 
   // Restore collapsed state
   useEffect(() => {
@@ -251,6 +267,9 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 260 }}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Menu"
               className="md:hidden fixed top-0 left-0 bottom-0 w-72 bg-card z-40 shadow-pop flex flex-col border-r border-border"
             >
               {/* Sygnatura: keyline rampy NDVI — jak w desktopowym sidebarze */}
@@ -265,7 +284,7 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
                 </div>
                 <button
                   onClick={() => setDrawerOpen(false)}
-                  className="p-1.5 rounded-md text-muted-foreground hover:bg-secondary"
+                  className="inline-flex items-center justify-center w-11 h-11 rounded-md text-muted-foreground hover:bg-secondary"
                   aria-label="Zamknij menu"
                 >
                   <X className="w-5 h-5" />
@@ -302,8 +321,9 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
         <header className="sticky top-0 z-20 h-16 border-b border-border bg-card flex items-center gap-3 px-4 sm:px-6">
           <button
             onClick={() => setDrawerOpen(true)}
-            className="md:hidden p-2 rounded-md text-muted-foreground hover:bg-secondary"
+            className="md:hidden inline-flex items-center justify-center w-11 h-11 -ml-2 rounded-md text-muted-foreground hover:bg-secondary"
             aria-label="Otwórz menu"
+            aria-expanded={drawerOpen}
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -319,7 +339,6 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
               </div>
               <div className="flex items-center gap-1.5 min-w-0">
                 <div className="text-sm font-semibold text-foreground truncate">{farm.name}</div>
-                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               </div>
             </div>
           </div>
@@ -330,10 +349,10 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
             <TopbarSlotTarget className="flex items-center" />
 
             <Link
-              href="/dashboard"
-              className="hidden sm:inline-flex relative items-center justify-center w-10 h-10 rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground transition"
-              aria-label="Alerty i pilne sygnały"
-              title="Alerty i pilne sygnały"
+              href="/dashboard/settings"
+              className="hidden sm:inline-flex relative items-center justify-center w-11 h-11 rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground transition"
+              aria-label="Powiadomienia — ustawienia"
+              title="Powiadomienia — ustawienia"
             >
               <Bell className="w-[18px] h-[18px]" />
             </Link>
@@ -342,7 +361,10 @@ export function DashboardShell({ farm, user, children }: DashboardShellProps) {
             <div className="relative" ref={profileRef}>
               <button
                 onClick={() => setProfileOpen((v) => !v)}
-                className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 rounded-md hover:bg-secondary transition"
+                aria-haspopup="menu"
+                aria-expanded={profileOpen}
+                aria-label="Menu konta"
+                className="flex items-center gap-2 pl-1.5 pr-2.5 py-1.5 min-h-11 rounded-md hover:bg-secondary transition"
               >
                 <UserAvatar name={user.name} email={user.email} size={32} />
                 <span className="hidden sm:inline text-sm font-medium text-foreground max-w-[140px] truncate">
