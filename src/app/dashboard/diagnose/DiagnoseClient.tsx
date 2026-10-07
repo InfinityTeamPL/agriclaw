@@ -119,7 +119,7 @@ export function DiagnoseClient({ fields }: Props) {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       <div>
         <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground flex items-center gap-3">
           <Camera className="w-8 h-8 text-primary" />
