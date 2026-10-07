@@ -11,6 +11,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { Loader2, Layers, Sprout, Leaf, Droplets, MountainSnow, Camera } from 'lucide-react';
 import { hybridStyle, EMBEDDED_MAP_OPTIONS } from '@/lib/map-style';
 import { cn } from '@/lib/utils';
+import { createScoutingPopupContent, scoutingTagColor } from '@/lib/ui/scouting-popup';
 
 type LayerType = 'ndvi' | 'ndre' | 'ndwi' | 'savi' | 'truecolor';
 
@@ -147,45 +148,18 @@ export function FieldLayerMap({ fieldId, polygon, centroid, className }: Props) 
         id: string; lat: number; lon: number; tag: string; severity: string;
         note: string | null; photoUrl: string | null; createdAt: string;
       }>) => {
-        const tagColors: Record<string, string> = {
-          disease: '#f59e0b',
-          pest: '#dc2626',
-          frost: '#0ea5e9',
-          mechanical: '#78716c',
-          weed: '#16a34a',
-          other: '#6b7280',
-        };
-        const tagLabels: Record<string, string> = {
-          disease: 'Choroba',
-          pest: 'Szkodnik',
-          frost: 'Przymrozek',
-          mechanical: 'Mechaniczne',
-          weed: 'Chwasty',
-          other: 'Inne',
-        };
         for (const s of items) {
           const el = document.createElement('div');
           el.className = 'scouting-pin';
           el.style.cssText = `
             width: 22px; height: 22px; border-radius: 50%;
-            background: ${tagColors[s.tag] ?? '#6b7280'};
+            background: ${scoutingTagColor(s.tag)};
             border: 3px solid white;
             box-shadow: 0 2px 6px rgba(0,0,0,0.4);
             cursor: pointer;
           `;
-          const date = new Date(s.createdAt).toLocaleDateString('pl-PL', { timeZone: 'Europe/Warsaw' });
-          const notePart = s.note ? `<div style="margin-top:4px;color:#555">${s.note.slice(0, 100)}</div>` : '';
-          const photoPart = s.photoUrl
-            ? `<img src="${s.photoUrl}" style="margin-top:6px;max-width:200px;max-height:120px;border-radius:6px" />`
-            : '';
-          const popup = new maplibregl.Popup({ offset: 14, maxWidth: '260px' }).setHTML(
-            `<div style="font-family:system-ui;font-size:12px;line-height:1.4">
-              <div style="font-weight:600;color:${tagColors[s.tag] ?? '#6b7280'}">${tagLabels[s.tag] ?? s.tag} · ${s.severity}</div>
-              <div style="color:#888;font-size:10px">${date}</div>
-              ${notePart}
-              ${photoPart}
-            </div>`,
-          );
+          const popup = new maplibregl.Popup({ offset: 14, maxWidth: '260px' })
+            .setDOMContent(createScoutingPopupContent(s));
           new maplibregl.Marker({ element: el })
             .setLngLat([s.lon, s.lat])
             .setPopup(popup)
