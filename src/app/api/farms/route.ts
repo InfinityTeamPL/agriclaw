@@ -18,7 +18,8 @@ export async function GET() {
       },
     },
   });
-  return NextResponse.json(farms);
+  // apiKey służy serwerowi (skille agenta) — przeglądarka go nie potrzebuje.
+  return NextResponse.json(farms.map(({ apiKey: _apiKey, ...safe }) => safe));
 }
 
 export async function POST(req: NextRequest) {
@@ -37,5 +38,6 @@ export async function POST(req: NextRequest) {
       ...parsed.data,
     },
   });
-  return NextResponse.json(farm, { status: 201 });
+  const { apiKey: _apiKey, ...safe } = farm;
+  return NextResponse.json(safe, { status: 201 });
 }

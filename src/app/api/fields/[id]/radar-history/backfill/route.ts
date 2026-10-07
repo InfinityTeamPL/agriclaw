@@ -14,6 +14,7 @@ import { prisma } from '@/lib/prisma';
 import { getCopernicusClient, extractRadarValues } from '@/lib/satellite/copernicus';
 import { computeRadarStats } from '@/lib/satellite/radar';
 import { isCopernicusConfigured } from '@/lib/satellite/ndvi-mock';
+import { limitUser } from '@/lib/rate-limit';
 
 export const maxDuration = 300;
 
@@ -24,6 +25,9 @@ export async function POST(
   { params }: { params: { id: string } },
 ) {
   const { user } = await requireAuth();
+  // Backfill to do ~120 zapytań Copernicus (miesięczny limit jednostek wspólny dla całej aplikacji).
+  const limited = await limitUser(user.id, 'backfill', 3, 60 * 60_000);
+  if (limited) return limited;
 
   const monthsRaw = parseInt(req.nextUrl.searchParams.get('months') ?? '6', 10);
   const months = Number.isFinite(monthsRaw) ? Math.max(1, Math.min(12, monthsRaw)) : 6;

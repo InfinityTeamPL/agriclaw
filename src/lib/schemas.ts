@@ -10,11 +10,17 @@ export const polygonSchema = z
       .array(
         z
           .array(z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)]))
-          .max(10_000, 'Zbyt wiele punktów w pierścieniu poligonu'),
+          .max(5_000, 'Zbyt wiele punktów w pierścieniu poligonu'),
       )
       .min(1)
-      .max(50, 'Zbyt wiele pierścieni w poligonie'),
+      .max(10, 'Zbyt wiele pierścieni w poligonie'),
   })
+  // Łącznie ≤ 5000 punktów: sprawdzanie samoprzecięć jest kwadratowe, więc bez tego
+  // kilka żądań z ogromnym wielokątem zajęłoby funkcję aż do timeoutu.
+  .refine(
+    (poly) => poly.coordinates.reduce((n, ring) => n + ring.length, 0) <= 5_000,
+    'Granica pola ma zbyt wiele punktów (max 5000).',
+  )
   .refine(
     (poly) => poly.coordinates[0].length >= 4,
     'Polygon musi mieć min 4 punkty (z zamknięciem)',

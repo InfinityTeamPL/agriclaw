@@ -9,12 +9,16 @@ import { resolveChatEngine } from '@/lib/agent/engine';
 import type { LlmMessage } from '@/lib/ai/minimax';
 import { chatMessageSchema } from '@/lib/schemas';
 import { validationError } from '@/lib/http/validation-error';
+import { limitUser } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120; // pętla narzędziowa v2 (kilka rund LLM + DB/API)
 
 export async function POST(req: NextRequest) {
   const { user } = await requireAuth();
+  // Każda wiadomość uruchamia pętlę LLM z narzędziami.
+  const limited = await limitUser(user.id, 'chat', 20, 60_000);
+  if (limited) return limited;
   const body = await req.json().catch(() => null);
   const parsed = chatMessageSchema.safeParse(body);
   if (!parsed.success) {

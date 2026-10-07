@@ -5,25 +5,17 @@ import { z } from 'zod';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { validationError } from '@/lib/http/validation-error';
-
-// Data: pełny ISO datetime LUB YYYY-MM-DD, z realnym sprawdzeniem kalendarza
-// (zakotwiczony regex + Date.parse) — inaczej '2026-99-99' dawał 500. Audyt 2.MEDIUM.
-const dateOnlyOrIso = z
-  .string()
-  .refine(
-    (v) => /^\d{4}-\d{2}-\d{2}$/.test(v) ? !Number.isNaN(Date.parse(v)) : !Number.isNaN(Date.parse(v)),
-    'Nieprawidłowa data (YYYY-MM-DD lub ISO datetime)',
-  );
+import { treatmentDateSchema, plannedDateSchema } from '@/lib/treatment-dates';
 
 const updateSchema = z.object({
-  performedAt: dateOnlyOrIso.optional(),
-  plannedAt: dateOnlyOrIso.nullable().optional(),
+  performedAt: treatmentDateSchema.optional(),
+  plannedAt: plannedDateSchema.nullable().optional(),
   purpose: z.string().max(100).nullable().optional(),
   productName: z.string().min(1).max(200).optional(),
   activeSubstance: z.string().max(500).nullable().optional(),
   doseValue: z.number().positive().nullable().optional(),
   doseUnit: z.string().max(20).nullable().optional(),
-  areaTreated: z.number().positive().optional(),
+  areaTreated: z.number().positive().max(100_000).optional(),
   operatorName: z.string().max(200).nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
 });
