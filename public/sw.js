@@ -5,7 +5,7 @@
    - Dla nawigacji: network, a kiedy brak sieci → cached `/offline`.
 */
 
-const VERSION = 'v3';
+const VERSION = 'v4';
 const STATIC_CACHE = `agriclaw-static-${VERSION}`;
 const RUNTIME_CACHE = `agriclaw-runtime-${VERSION}`;
 const OFFLINE_URL = '/offline';
@@ -158,6 +158,11 @@ self.addEventListener('fetch', (event) => {
     );
     return;
   }
+
+  // Prywatne ścieżki (np. zapytania RSC ?_rsc= o strony panelu) — tylko sieć, bez cache.
+  // Wcześniej trafiały do poniższego stale-while-revalidate: dane gospodarstwa zostawały na
+  // urządzeniu po wylogowaniu, a rolnik widział stare dane zamiast świeżych.
+  if (isPrivatePath(url.pathname)) return;
 
   // Reszta — stale-while-revalidate lekko
   event.respondWith(
