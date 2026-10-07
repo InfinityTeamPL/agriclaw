@@ -8,6 +8,7 @@ import { requireFarm } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 import { formatHa, pluralPL } from '@/lib/ui/format';
+import { selectMonitoringReadings } from '@/lib/ui/field-monitoring';
 import { FieldsList, type FieldListItem } from './FieldsList';
 
 export const dynamic = 'force-dynamic';
@@ -35,19 +36,15 @@ export default async function FieldsPage() {
   const fieldIds = rows.map((r) => r.id);
   const readings = fieldIds.length
     ? await prisma.ndviReading.findMany({
-        // Tylko najnowszy realny odczyt każdego pola (wcześniej pobierało całą historię wszystkich pól).
-        where: { fieldId: { in: fieldIds }, source: { not: 'mock' } },
+        // Najnowszy odczyt każdego źródła dla pola; wybór poniżej daje pierwszeństwo rzeczywistej scenie.
+        where: { fieldId: { in: fieldIds } },
+        distinct: ['fieldId', 'source'],
         orderBy: { observedAt: 'desc' },
-        distinct: ['fieldId'],
+        select: { fieldId: true, ndviMean: true, observedAt: true, source: true },
       })
     : [];
 
-  const latest = new Map<string, { mean: number; observedAt: Date }>();
-  for (const r of readings) {
-    if (!latest.has(r.fieldId)) {
-      latest.set(r.fieldId, { mean: r.ndviMean, observedAt: r.observedAt });
-    }
-  }
+  const latest = selectMonitoringReadings(readings);
 
   const items: FieldListItem[] = rows.map((r) => {
     const ndvi = latest.get(r.id);
@@ -58,8 +55,9 @@ export default async function FieldsPage() {
       areaHectares: Number(r.area_hectares),
       createdAt: r.created_at.toISOString(),
       polygon: JSON.parse(r.polygon) as GeoJSON.Polygon,
-      ndviMean: ndvi?.mean ?? null,
+      ndviMean: ndvi?.ndviMean ?? null,
       ndviObservedAt: ndvi?.observedAt.toISOString() ?? null,
+      ndviSource: ndvi?.source ?? null,
     };
   });
 
@@ -117,7 +115,7 @@ export default async function FieldsPage() {
           </Link>
         </div>
       ) : (
-        <FieldsList items={items} />
+        <FieldsList items={items} asOf={new Date().toISOString()} />
       )}
     </div>
   );
