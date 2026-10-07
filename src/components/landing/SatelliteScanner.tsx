@@ -26,7 +26,8 @@ type Patch = {
 // Kolor zdrowia roślin z KANONICZNEJ rampy NDVI (jedno źródło = brand).
 const ndviColor = ndviColorHex;
 
-export function SatelliteScanner() {
+export function SatelliteScanner({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
+  const dark = variant === 'dark';
   const [scanActive, setScanActive] = useState(false);
 
   const patches = useMemo<Patch[]>(() => {
@@ -166,9 +167,9 @@ export function SatelliteScanner() {
 
     {/* ────── Odczyty POD animacją — instrumenty stacji naziemnej ────── */}
     <div className="grid grid-cols-3 gap-2 sm:gap-3">
-      <StatCard label="Zdrowie pola" value="0,42" note="spadek" tone="drought" show={scanActive} delay={0.9} />
-      <StatCard label="Wilgoć gleby" value="18%" note="niska" tone="heat" show={scanActive} delay={1.05} />
-      <StatCard label="Okno oprysku" value="5:30" note="jutro" tone="healthy" show={scanActive} delay={1.2} />
+      <StatCard dark={dark} label="Zdrowie pola" value="0,42" note="spadek" tone="drought" show={scanActive} delay={0.9} />
+      <StatCard dark={dark} label="Wilgoć gleby" value="18%" note="niska" tone="heat" show={scanActive} delay={1.05} />
+      <StatCard dark={dark} label="Okno oprysku" value="5:30" note="jutro" tone="healthy" show={scanActive} delay={1.2} />
     </div>
     </div>
   );
@@ -183,7 +184,9 @@ function StatCard({
   tone,
   show,
   delay,
+  dark = false,
 }: {
+  dark?: boolean;
   label: string;
   value: string;
   note: string;
@@ -205,7 +208,9 @@ function StatCard({
         : 'bg-signal-drought';
   return (
     <div
-      className="rounded-lg bg-card border border-border shadow-card px-3 py-2.5 sm:px-4 sm:py-3"
+      className={`rounded-lg border px-3 py-2.5 sm:px-4 sm:py-3 ${
+        dark ? 'bg-white/5 border-white/15' : 'bg-card border-border shadow-card'
+      }`}
       style={{
         opacity: show ? 1 : 0,
         transform: show ? 'translateY(0)' : 'translateY(10px)',
@@ -214,11 +219,11 @@ function StatCard({
     >
       <div className="flex items-center gap-1.5">
         <span className={`w-1.5 h-1.5 rounded-full ${toneDot}`} />
-        <span className="hud-label truncate">{label}</span>
+        <span className={`hud-label truncate ${dark ? '!text-white/60' : ''}`}>{label}</span>
       </div>
       <div className="mt-1 flex items-baseline gap-1.5">
         <span className={`font-mono tabular text-lg sm:text-2xl font-semibold ${toneText}`}>{value}</span>
-        <span className="text-[11px] sm:text-xs text-muted-foreground">{note}</span>
+        <span className={`text-[11px] sm:text-xs ${dark ? 'text-white/60' : 'text-muted-foreground'}`}>{note}</span>
       </div>
     </div>
   );
