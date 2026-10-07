@@ -37,13 +37,21 @@ export default async function DashboardHome() {
 
   const fieldIds = fields.map((f) => f.id);
 
-  const readings = fieldIds.length
-    ? await prisma.ndviReading.findMany({
-        where: { fieldId: { in: fieldIds } },
-        orderBy: { observedAt: 'desc' },
-        take: 200,
-      })
-    : [];
+  // Ostatnie odczyty KAŻDEGO pola (wcześniej jedno globalne take: 200 — przy wielu polach lub po
+  // backfillu starsze pola traciły sparkline i pokazywały „Brak analizy"). Bez odczytów mock.
+  const readings = (
+    await Promise.all(
+      fieldIds.map((id) =>
+        prisma.ndviReading.findMany({
+          where: { fieldId: id, source: { not: 'mock' } },
+          orderBy: { observedAt: 'desc' },
+          take: 30,
+        }),
+      ),
+    )
+  )
+    .flat()
+    .sort((a, b) => b.observedAt.getTime() - a.observedAt.getTime());
 
   const ndviByField = new Map<string, { mean: number; observedAt: Date }[]>();
   for (const r of readings) {

@@ -1,5 +1,5 @@
 // Księga polowa — e-rejestr zabiegów agrotechnicznych.
-// Obowiązek prawny PL/UE dla gospodarstw > 10 ha.
+// Ewidencja zabiegów ŚOR dotyczy każdego profesjonalnego użytkownika (bez progu hektarów).
 
 import { requireFarm } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
@@ -23,9 +23,13 @@ export default async function JournalPage() {
     take: 200,
   });
 
+  // Licznik z bazy, nie z długości pobranej listy — inaczej ewidencja po cichu „kończyła się" na 200.
+  const totalCount = await prisma.treatment.count({ where: { field: { farmId: farm.id } } });
+
   return (
     <JournalClient
       farmId={farm.id}
+      totalCount={totalCount}
       fields={fields.map((f) => ({
         id: f.id,
         name: f.name,

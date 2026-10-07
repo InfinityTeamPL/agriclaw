@@ -32,6 +32,11 @@ export async function fetchJson<T = unknown>(
   } catch {
     return { ok: false, status: 0, message: 'Brak połączenia z serwerem. Sprawdź internet i spróbuj ponownie.' };
   }
+  // Wygasła sesja: middleware przekierowuje na /login i fetch dostaje HTML (status 200).
+  // Bez tego rolnik widział „Unexpected token <" albo pustą odpowiedź uznaną za sukces.
+  if (res.redirected && /\/login(\?|$)/.test(res.url)) {
+    return { ok: false, status: 401, message: 'Sesja wygasła. Zaloguj się ponownie i spróbuj jeszcze raz.' };
+  }
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     return { ok: false, status: res.status, message: apiErrorMessage(data, fallbackError) };

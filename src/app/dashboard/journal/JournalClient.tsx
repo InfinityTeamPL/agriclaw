@@ -59,9 +59,11 @@ interface Props {
   farmId: string;
   fields: FieldOpt[];
   treatments: Treatment[];
+  /** Wszystkie wpisy w bazie (lista może pokazywać tylko najnowsze). */
+  totalCount: number;
 }
 
-export function JournalClient({ fields, treatments: initial }: Props) {
+export function JournalClient({ fields, treatments: initial, totalCount }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Treatment | null>(null);
@@ -93,7 +95,7 @@ export function JournalClient({ fields, treatments: initial }: Props) {
           Date.now(),
     ).length;
     return {
-      total: initial.length,
+      total: totalCount,
       year: yearTreatments.length,
       sprays,
       fertilizers,
@@ -190,6 +192,11 @@ export function JournalClient({ fields, treatments: initial }: Props) {
           {filtered.length} / {initial.length} zapisów
         </span>
       </div>
+      {totalCount > initial.length && (
+        <p className="text-xs text-muted-foreground">
+          Pokazano {initial.length} najnowszych z {totalCount} wpisów. Pełną księgę pobierzesz przyciskami CSV i PDF.
+        </p>
+      )}
 
       {/* Lista */}
       {filtered.length === 0 ? (

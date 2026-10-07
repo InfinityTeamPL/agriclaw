@@ -7,7 +7,8 @@ import { ScanLine } from '@/components/brand/ScanLine';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 import { AdvisoryNotice } from '@/components/dashboard/AdvisoryNotice';
 import { downscaleImageFile } from '@/lib/ui/image';
-import { cropLabel } from '@/lib/ui/format';
+import { cropLabel, pluralPL } from '@/lib/ui/format';
+import { fetchJson } from '@/lib/ui/api-error';
 
 interface FieldOpt {
   id: string;
@@ -57,7 +58,7 @@ export function DiagnoseClient({ fields }: Props) {
   // starszego downscale (async), żeby nie ustawić nieaktualnego zdjęcia.
   const fileReqRef = useRef(0);
   const [imageData, setImageData] = useState<string | null>(null);
-  const [fieldId, setFieldId] = useState<string>(fields[0]?.id ?? '');
+  const [fieldId, setFieldId] = useState<string>(fields.length === 1 ? fields[0].id : '');
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<DiagnosisResult | null>(null);
@@ -88,8 +89,9 @@ export function DiagnoseClient({ fields }: Props) {
     setLoading(true);
     setError(null);
     setResult(null);
-    try {
-      const res = await fetch('/api/diagnose', {
+    const res = await fetchJson<{ diagnosis: DiagnosisResult }>(
+      '/api/diagnose',
+      {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -97,18 +99,15 @@ export function DiagnoseClient({ fields }: Props) {
           fieldId: fieldId || undefined,
           note: note || undefined,
         }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(typeof data.error === 'string' ? data.error : 'Błąd diagnozy');
-      } else {
-        setResult(data.diagnosis as DiagnosisResult);
-      }
-    } catch (err) {
-      setError(String(err));
-    } finally {
-      setLoading(false);
+      },
+      'Nie udało się przeanalizować zdjęcia. Spróbuj ponownie.',
+    );
+    if (res.ok) {
+      setResult(res.data.diagnosis);
+    } else {
+      setError(res.message);
     }
+    setLoading(false);
   };
 
   const clearImage = () => {
@@ -139,7 +138,7 @@ export function DiagnoseClient({ fields }: Props) {
           <div className="border border-dashed border-border rounded-md p-10 text-center">
             <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
             <p className="text-foreground font-medium mb-1">Wybierz lub zrób zdjęcie</p>
-            <p className="hud-label mb-4">JPG · PNG · MAX 10 MB</p>
+            <p className="hud-label mb-4">JPG · PNG · do 20 MB</p>
             <input
               ref={fileRef}
               type="file"
@@ -238,7 +237,7 @@ export function DiagnoseClient({ fields }: Props) {
         </div>
       )}
       {error && (
-        <div className="rounded-lg bg-signal-drought/10 border border-signal-drought/30 p-5 flex gap-3">
+        <div role="alert" className="rounded-lg bg-signal-drought/10 border border-signal-drought/30 p-5 flex gap-3">
           <AlertCircle className="w-5 h-5 text-signal-drought flex-shrink-0 mt-0.5" />
           <div>
             <div className="font-display font-semibold tracking-tight text-foreground mb-1">
@@ -372,14 +371,14 @@ function DiagnosisView({ result }: { result: DiagnosisResult }) {
                         {s.substancjeRejestr.map((sub) => (
                           <span
                             key={sub.substance}
-                            className={`inline-flex items-center text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border ${
+                            className={`inline-flex items-center text-xs font-mono font-semibold px-1.5 py-0.5 rounded border ${
                               sub.status === 'dopuszczona'
                                 ? 'bg-signal-healthy/10 text-signal-healthy border-signal-healthy/30'
                                 : 'bg-signal-drought/10 text-signal-drought border-signal-drought/30'
                             }`}
                           >
                             {sub.status === 'dopuszczona'
-                              ? `${sub.substance}: ${sub.usableProducts} dopuszczonych środków`
+                              ? `${sub.substance}: ${sub.usableProducts} ${pluralPL(sub.usableProducts, 'dopuszczony środek', 'dopuszczone środki', 'dopuszczonych środków')}`
                               : `${sub.substance}: BRAK dopuszczonych środków — nie stosuj`}
                           </span>
                         ))}
@@ -427,16 +426,16 @@ function RejestrBadge({
   const warnCrop = rejestr.cropAuthorized === false;
   return (
     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-      <span className={`inline-flex items-center text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border ${m.cls}`}>
+      <span className={`inline-flex items-center text-xs font-mono font-semibold px-1.5 py-0.5 rounded border ${m.cls}`}>
         {m.label}
       </span>
       {rejestr.matchedName && rejestr.exactMatch === false && (
-        <span className="inline-flex items-center text-[10px] font-mono px-1.5 py-0.5 rounded border bg-secondary text-muted-foreground border-border">
+        <span className="inline-flex items-center text-xs font-mono px-1.5 py-0.5 rounded border bg-secondary text-muted-foreground border-border">
           dopasowano: {rejestr.matchedName}
         </span>
       )}
       {warnCrop && (
-        <span className="inline-flex items-center text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border bg-signal-drought/10 text-signal-drought border-signal-drought/30">
+        <span className="inline-flex items-center text-xs font-mono font-semibold px-1.5 py-0.5 rounded border bg-signal-drought/10 text-signal-drought border-signal-drought/30">
           brak rejestracji w tej uprawie
         </span>
       )}
@@ -445,7 +444,7 @@ function RejestrBadge({
           href={rejestr.labelPage}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[10px] font-mono underline underline-offset-2 text-muted-foreground hover:text-foreground"
+          className="text-xs font-mono underline underline-offset-2 text-muted-foreground hover:text-foreground"
         >
           etykieta (gov.pl) ↗
         </a>
