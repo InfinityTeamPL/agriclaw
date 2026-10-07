@@ -10,9 +10,11 @@ import { getOpenRouterClient } from '@/lib/ai/openrouter';
 import { PROMPT_ADVISORY_DISCIPLINE, ADVISORY_SHORT } from '@/lib/advisory';
 import { checkSorProduct, checkSubstances } from '@/lib/sor-registry';
 import { validationError } from '@/lib/http/validation-error';
+import { limitUser } from '@/lib/rate-limit';
 
 const bodySchema = z.object({
-  imageBase64: z.string().startsWith('data:image/'),
+  // Vercel i tak tnie body przy ~4,5 MB; limit chroni przed gigantycznym base64 do modelu.
+  imageBase64: z.string().startsWith('data:image/').max(6_000_000),
   fieldId: z.string().uuid().optional(),
   note: z.string().max(500).optional(),
 });
@@ -38,6 +40,9 @@ const DIAGNOSIS_SCHEMA = `{
 
 export async function POST(req: NextRequest) {
   const { user } = await requireAuth();
+  // Każde zdjęcie to płatne wywołanie modelu wizyjnego.
+  const limited = await limitUser(user.id, 'diagnose', 8, 60_000);
+  if (limited) return limited;
 
   const body = await req.json().catch(() => null);
   const parsed = bodySchema.safeParse(body);

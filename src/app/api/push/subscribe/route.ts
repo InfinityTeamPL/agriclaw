@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
+import { isAllowedPushEndpoint, MAX_PUSH_SUBSCRIPTIONS_PER_USER } from '@/lib/push-endpoints';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +18,13 @@ export async function POST(req: NextRequest) {
   const parsed = subscriptionSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: 'Niepoprawna subskrypcja' }, { status: 400 });
   const { endpoint, keys } = parsed.data;
+  if (!isAllowedPushEndpoint(endpoint)) {
+    return NextResponse.json({ error: 'Nieobsługiwany adres powiadomień przeglądarki.' }, { status: 400 });
+  }
+  const existing = await prisma.pushSubscription.count({ where: { userId: user.id, NOT: { endpoint } } });
+  if (existing >= MAX_PUSH_SUBSCRIPTIONS_PER_USER) {
+    return NextResponse.json({ error: 'Za dużo zarejestrowanych urządzeń. Wyłącz powiadomienia na jednym z nich.' }, { status: 400 });
+  }
   // Upsert po endpoincie: ta sama przeglądarka po ponownym zalogowaniu innego
   // użytkownika przechodzi na niego (alerty nie mogą trafiać do poprzedniego konta).
   await prisma.pushSubscription.upsert({

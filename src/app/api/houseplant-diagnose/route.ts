@@ -12,9 +12,10 @@ import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { getOpenRouterClient } from '@/lib/ai/openrouter';
 import { validationError } from '@/lib/http/validation-error';
+import { limitUser } from '@/lib/rate-limit';
 
 const bodySchema = z.object({
-  imageBase64: z.string().startsWith('data:image/'),
+  imageBase64: z.string().startsWith('data:image/').max(6_000_000),
   note: z.string().max(500).optional(),
 });
 
@@ -45,6 +46,8 @@ const HOUSEPLANT_SCHEMA = `{
 
 export async function POST(req: NextRequest) {
   const { user } = await requireAuth();
+  const limited = await limitUser(user.id, 'houseplant', 8, 60_000);
+  if (limited) return limited;
 
   const body = await req.json().catch(() => null);
   const parsed = bodySchema.safeParse(body);

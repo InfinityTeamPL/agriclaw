@@ -13,15 +13,15 @@ export async function GET() {
       service: 'agriclaw',
       db: 'connected',
       latency_ms: Date.now() - start,
-      node: process.versions.node,
     });
   } catch (err) {
+    // Publiczny endpoint: szczegóły (host bazy, komunikat Prismy) tylko do logów, nie do odpowiedzi.
+    console.error('[health] baza niedostępna', err);
     return NextResponse.json(
       {
         status: 'degraded',
         service: 'agriclaw',
         db: 'error',
-        error: String(err),
       },
       { status: 503 },
     );

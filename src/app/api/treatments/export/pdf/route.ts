@@ -46,9 +46,14 @@ function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): 
   return lines;
 }
 
+const PDF_MAX_ROWS = 5000;
+
 export async function GET(req: NextRequest) {
   const { user } = await requireAuth();
   const fieldId = req.nextUrl.searchParams.get('fieldId');
+  if (fieldId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(fieldId)) {
+    return NextResponse.json({ error: 'Nieprawidłowy identyfikator pola.' }, { status: 400 });
+  }
 
   // Farm info dla nagłówka
   const farms = await prisma.farm.findMany({
@@ -62,13 +67,16 @@ export async function GET(req: NextRequest) {
   // Zabiegi
   const treatments = await prisma.treatment.findMany({
     where: {
-      field: { farmId: farm.id },
+      field: { farmId: { in: farms.map((f) => f.id) } },
       ...(fieldId ? { fieldId } : {}),
     },
     include: { field: { select: { name: true, crop: true, areaHectares: true } } },
     orderBy: { performedAt: 'desc' },
-    take: 500,
+    take: PDF_MAX_ROWS + 1,
   });
+  // Dokument dla kontroli nie może po cichu gubić najstarszych wpisów.
+  const truncated = treatments.length > PDF_MAX_ROWS;
+  if (truncated) treatments.length = PDF_MAX_ROWS;
 
   // PDF creation
   const pdf = await PDFDocument.create();
@@ -126,6 +134,12 @@ export async function GET(req: NextRequest) {
       `Okres: ${treatments[treatments.length - 1]?.performedAt.toISOString().slice(0, 10) ?? '—'} do ${treatments[0]?.performedAt.toISOString().slice(0, 10) ?? '—'}`,
       { x: margin, y: pageHeight - margin - 30, size: 9, font, color: rgb(0.4, 0.4, 0.4) },
     );
+    if (truncated) {
+      p.drawText(
+        `UWAGA: pokazano ${PDF_MAX_ROWS} najnowszych wpisów — pobierz CSV dla pełnej księgi.`,
+        { x: margin + 420, y: pageHeight - margin - 30, size: 9, font: fontBold, color: rgb(0.7, 0.15, 0.1) },
+      );
+    }
     p.drawText(
       `Wygenerowano: ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · Podstawa prawna: ${SOR_RECORDS_LEGAL_BASIS}`,
       { x: margin, y: pageHeight - margin - 42, size: 8, font, color: rgb(0.5, 0.5, 0.5) },

@@ -15,7 +15,10 @@ import { prisma } from '@/lib/prisma';
  */
 function csvCell(value: unknown): string {
   let s = String(value ?? '').replace(/[\r\n]+/g, ' ');
-  if (/^[=+\-@]/.test(s)) s = `'${s}`;
+  // Ochrona przed formułami Excela dotyczy TEKSTU. Liczby (np. temperatura -3.5) zostają
+  // liczbami — apostrof zamieniał je w tekst i psuł sumowanie.
+  const isNumeric = typeof value === 'number' || /^-?\d+([.,]\d+)?$/.test(s);
+  if (!isNumeric && /^[=+\-@\t]/.test(s)) s = `'${s}`;
   return `"${s.replace(/"/g, '""')}"`;
 }
 
@@ -23,6 +26,10 @@ export async function GET(req: NextRequest) {
   const { user } = await requireAuth();
   const format = req.nextUrl.searchParams.get('format') ?? 'csv';
   const fieldId = req.nextUrl.searchParams.get('fieldId');
+  if (fieldId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(fieldId)) {
+    // Wcześniej zły fieldId był po cichu ignorowany i eksportowała się CAŁA księga.
+    return NextResponse.json({ error: 'Nieprawidłowy identyfikator pola.' }, { status: 400 });
+  }
 
   const rows = await prisma.$queryRaw<
     Array<{

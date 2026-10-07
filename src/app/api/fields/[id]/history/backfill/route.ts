@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma';
 import { getCopernicusClient, extractNdviValues } from '@/lib/satellite/copernicus';
 import { computeNdviStats } from '@/lib/satellite/ndvi';
 import { isCopernicusConfigured } from '@/lib/satellite/ndvi-mock';
+import { limitUser } from '@/lib/rate-limit';
 
 export const maxDuration = 300;
 
@@ -16,6 +17,9 @@ export async function POST(
   { params }: { params: { id: string } },
 ) {
   const { user } = await requireAuth();
+  // Backfill to do ~120 zapytań Copernicus (miesięczny limit jednostek wspólny dla całej aplikacji).
+  const limited = await limitUser(user.id, 'backfill', 3, 60 * 60_000);
+  if (limited) return limited;
   // Guard na ?years=abc → parseInt daje NaN, które przenikało do dat i dawało
   // Invalid Date → 500 z Prisma. Nieparsowalne / poza zakresem → domyślne 5 lat.
   const yearsRaw = parseInt(req.nextUrl.searchParams.get('years') ?? '5', 10);

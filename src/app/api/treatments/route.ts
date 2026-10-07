@@ -6,21 +6,12 @@ import { z } from 'zod';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { validationError } from '@/lib/http/validation-error';
-
-// Data zabiegu: pełny ISO datetime LUB czysta data YYYY-MM-DD. Zakotwiczony regex
-// (^...$) + sprawdzenie kalendarza (Date.parse) — inaczej '2026-99-99' czy
-// '2026-07-02cokolwiek' przechodziły i wywalały Prisma nieobsłużonym 500. Audyt 2.MEDIUM.
-const dateOnlyOrIso = z
-  .string()
-  .refine(
-    (v) => (/^\d{4}-\d{2}-\d{2}$/.test(v) || !Number.isNaN(Date.parse(v))) && !Number.isNaN(Date.parse(v)),
-    'Nieprawidłowa data (oczekiwano YYYY-MM-DD lub pełnego ISO datetime)',
-  );
+import { treatmentDateSchema, plannedDateSchema } from '@/lib/treatment-dates';
 
 const treatmentSchema = z.object({
   fieldId: z.string().uuid(),
-  performedAt: dateOnlyOrIso,
-  plannedAt: dateOnlyOrIso.nullable().optional(),
+  performedAt: treatmentDateSchema,
+  plannedAt: plannedDateSchema.nullable().optional(),
   type: z.enum(['spray', 'fertilizer', 'sowing', 'harvest', 'tillage', 'irrigation', 'mowing', 'other']),
   purpose: z.string().max(100).nullable().optional(),
   productName: z.string().min(1).max(200),
@@ -28,7 +19,7 @@ const treatmentSchema = z.object({
   registrationNo: z.string().max(50).nullable().optional(),
   doseValue: z.number().positive().nullable().optional(),
   doseUnit: z.string().max(20).nullable().optional(),
-  areaTreated: z.number().positive(),
+  areaTreated: z.number().positive().max(100_000),
   waterVolume: z.number().positive().nullable().optional(),
   operatorName: z.string().max(200).nullable().optional(),
   equipment: z.string().max(200).nullable().optional(),
