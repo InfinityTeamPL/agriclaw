@@ -59,6 +59,39 @@ export default async function SettingsPage() {
           </dl>
         </div>
       )}
+
+      {/* Prawa z RODO obiecane w Polityce prywatności: pobranie danych i zamknięcie konta. */}
+      <section className="bg-card border border-border rounded-lg shadow-card p-4 space-y-3">
+        <h2 className="font-display text-sm font-semibold tracking-tight text-foreground">Twoje dane</h2>
+        <p className="text-sm text-muted-foreground">
+          Twoje dane należą do Ciebie. Możesz pobrać wszystko, co o Tobie przechowujemy, albo poprosić o
+          zamknięcie konta.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <a
+            href="/api/user/export"
+            className="inline-flex items-center justify-center min-h-11 px-4 rounded-md border border-border bg-card text-sm font-medium text-foreground hover:bg-secondary transition"
+          >
+            Pobierz wszystkie dane (JSON)
+          </a>
+          <a
+            href="/api/treatments/export?format=csv"
+            className="inline-flex items-center justify-center min-h-11 px-4 rounded-md border border-border bg-card text-sm font-medium text-foreground hover:bg-secondary transition"
+          >
+            Księga polowa (CSV)
+          </a>
+          <a
+            href={`mailto:contact@infinityteam.io?subject=${encodeURIComponent('Usunięcie konta AgriClaw')}&body=${encodeURIComponent(`Proszę o usunięcie mojego konta i danych. Adres konta: ${user.email}`)}`}
+            className="inline-flex items-center justify-center min-h-11 px-4 rounded-md border border-destructive/40 bg-card text-sm font-medium text-destructive hover:bg-destructive/5 transition"
+          >
+            Poproś o usunięcie konta
+          </a>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Konto usuwamy w ciągu 30 dni od prośby. Wpisy księgi polowej możemy przechowywać dłużej, jeśli
+          wymagają tego przepisy.
+        </p>
+      </section>
     </div>
   );
 }
