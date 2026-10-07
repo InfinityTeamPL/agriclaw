@@ -80,14 +80,17 @@ Pisz ciepło i po ludzku, jak do kogoś kto lubi swoje rośliny, ale bez lania w
     if (msg.includes('OPENROUTER_API_KEY')) {
       return NextResponse.json(
         {
-          error:
-            'Diagnoza z kamery wymaga skonfigurowania OpenRouter (OPENROUTER_API_KEY w env).',
+          error: 'Diagnoza ze zdjęcia jest chwilowo niedostępna. Spróbuj ponownie później.',
           configRequired: 'OPENROUTER_API_KEY',
         },
         { status: 503 },
       );
     }
-    return NextResponse.json({ error: msg }, { status: 502 });
+    console.error('[houseplant] błąd modelu', msg);
+    return NextResponse.json(
+      { error: 'Nie udało się przeanalizować zdjęcia. Spróbuj ponownie za chwilę.' },
+      { status: 502 },
+    );
   }
 
   let diagnosis: Record<string, unknown> | null = null;

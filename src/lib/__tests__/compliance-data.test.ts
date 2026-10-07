@@ -31,6 +31,15 @@ describe('zgodność bez pól', () => {
     expect(r.rules).toEqual([]);
   });
 
+  it('małe gospodarstwo z polem (brak reguł do oceny) nie ma naruszeń, więc 100%', () => {
+    const r = evaluateCompliance({
+      totalHectares: 5,
+      fields: [{ id: '1', name: 'A', crop: 'wheat', areaHectares: 5, treatmentsCountThisSeason: 0, lastTreatmentAt: null }],
+    });
+    expect(r.score).toBe(100);
+    expect(r.failCount).toBe(0);
+  });
+
   it('nazwa uprawy w regule rotacji jest po polsku, nie slugiem', () => {
     const r = evaluateCompliance({
       totalHectares: 12,

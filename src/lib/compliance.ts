@@ -222,7 +222,8 @@ export function evaluateCompliance(input: ComplianceInput): ComplianceReport {
   const warns = rules.filter((r) => r.status === 'warn').length;
   const passes = rules.filter((r) => r.status === 'pass').length;
   const evaluated = passes + fails + warns;
-  const score = evaluated > 0 ? Math.round((passes / evaluated) * 100) : null;
+  // Są pola, ale żadna reguła nie podlega ocenie (np. gospodarstwo <10 ha) — nic nie narusza norm.
+  const score = evaluated > 0 ? Math.round((passes / evaluated) * 100) : 100;
 
   return {
     totalHectares: input.totalHectares,

@@ -134,6 +134,12 @@ export function formatNumberPL(n: number, maxFractionDigits = 3): string {
   return n.toLocaleString('pl-PL', { maximumFractionDigits: maxFractionDigits });
 }
 
+/** Liczba ze stałą liczbą miejsc po przecinku, po polsku: 18,5 zamiast 18.5. */
+export function formatFixedPL(n: number, digits = 1): string {
+  if (!Number.isFinite(n)) return '—';
+  return n.toLocaleString('pl-PL', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
 /** Indeks spektralny (NDVI, NDRE…) po polsku: 0,46 zamiast 0.46 — spójnie z „0,61 ha". */
 export function formatIndexPL(n: number): string {
   return n.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });

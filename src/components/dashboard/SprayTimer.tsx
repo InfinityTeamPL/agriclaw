@@ -8,6 +8,7 @@ import { Wind, Droplets, Thermometer, Clock } from 'lucide-react';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 import { ScanLine } from '@/components/brand/ScanLine';
 import { AdvisoryNotice } from './AdvisoryNotice';
+import { formatFixedPL } from '@/lib/ui/format';
 
 interface HourlyPoint {
   time: string;
@@ -192,7 +193,7 @@ export function SprayTimer({ fieldId }: Props) {
                   onFocus={() => setHover(h)}
                   tabIndex={0}
                   role="button"
-                  aria-label={`${h.time.slice(11, 16)}: ${qualityLabel[h.sprayQuality]}, wiatr ${Math.round(h.wind)} km/h, opad ${h.precip.toFixed(1).replace('.', ',')} mm`}
+                  aria-label={`${h.time.slice(11, 16)}: ${qualityLabel[h.sprayQuality]}, wiatr ${Math.round(h.wind)} km/h, opad ${formatFixedPL(h.precip, 1)} mm`}
                   className="flex-1 h-8 rounded-sm cursor-pointer transition-transform hover:scale-y-125 relative group"
                   style={{ background: qualityColor[h.sprayQuality], opacity: 0.9 }}
                 >
@@ -229,7 +230,7 @@ export function SprayTimer({ fieldId }: Props) {
           <div className="grid grid-cols-4 gap-2 text-muted-foreground">
             <div className="flex items-center gap-1">
               <Thermometer className="w-3 h-3" />
-              <span className="font-mono tabular">{hover.temp.toFixed(1)}°C</span>
+              <span className="font-mono tabular">{formatFixedPL(hover.temp, 1)}°C</span>
             </div>
             <div className="flex items-center gap-1">
               <Wind className="w-3 h-3" />
@@ -237,7 +238,7 @@ export function SprayTimer({ fieldId }: Props) {
             </div>
             <div className="flex items-center gap-1">
               <Droplets className="w-3 h-3" />
-              <span className="font-mono tabular">{hover.precip.toFixed(1)} mm</span>
+              <span className="font-mono tabular">{formatFixedPL(hover.precip, 1)} mm</span>
             </div>
             <div className="flex items-center gap-1">
               <Droplets className="w-3 h-3 text-signal-frost" />

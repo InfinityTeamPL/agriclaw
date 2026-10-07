@@ -16,6 +16,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatFixedPL } from '@/lib/ui/format';
 
 type NWindow = 'N1-start' | 'N2-flag-leaf' | 'N3-foliar' | 'out-of-window';
 
@@ -143,7 +144,7 @@ export function NitrogenCalculator({ fieldId }: Props) {
         {rec.ndreUsed !== null && (
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-card border border-signal-heat/30 text-xs">
             <Leaf className="w-3 h-3 text-signal-healthy" />
-            NDRE <span className="font-bold font-mono tabular">{rec.ndreUsed.toFixed(2)}</span>
+            NDRE <span className="font-bold font-mono tabular">{formatFixedPL(rec.ndreUsed, 2)}</span>
           </div>
         )}
       </div>
@@ -183,7 +184,7 @@ export function NitrogenCalculator({ fieldId }: Props) {
             </div>
             <div className="text-2xl font-semibold font-mono tabular text-signal-healthy">{rec.savingVsBaseline.pln} zł</div>
             <div className="text-[10px] text-signal-healthy">
-              {rec.savingVsBaseline.kgN} kg N × {data.areaHectares.toFixed(1)} ha
+              {rec.savingVsBaseline.kgN} kg N × {formatFixedPL(data.areaHectares, 1)} ha
             </div>
           </div>
         )}

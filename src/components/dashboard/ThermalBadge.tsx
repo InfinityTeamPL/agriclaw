@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { Thermometer, Loader2, AlertTriangle, Snowflake, Flame, Info } from 'lucide-react';
-import { formatDatePL } from '@/lib/ui/format';
+import { formatDatePL, formatFixedPL } from '@/lib/ui/format';
 
 interface ThermalResponse {
   thermal: { meanC: number; minC: number; maxC: number; spread: number; validCount: number };
@@ -115,14 +115,14 @@ export function ThermalBadge({ fieldId }: { fieldId: string }) {
               Temperatura (Landsat 8/9)
             </div>
             <div className="text-2xl font-semibold font-mono tabular mt-0.5">
-              {thermal.meanC.toFixed(1)}°C
+              {formatFixedPL(thermal.meanC, 1)}°C
             </div>
           </div>
         </div>
         <div className="text-right text-[10px] font-mono tabular opacity-70 shrink-0">
-          <div>min {thermal.minC.toFixed(1)}°</div>
-          <div>max {thermal.maxC.toFixed(1)}°</div>
-          <div>Δ {thermal.spread.toFixed(1)}°</div>
+          <div>min {formatFixedPL(thermal.minC, 1)}°</div>
+          <div>max {formatFixedPL(thermal.maxC, 1)}°</div>
+          <div>Δ {formatFixedPL(thermal.spread, 1)}°</div>
         </div>
       </div>
       <p className="text-sm leading-relaxed">{interpretation.diagnosis}</p>

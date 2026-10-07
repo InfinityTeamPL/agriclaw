@@ -33,7 +33,7 @@ const FarmMiniMap = dynamic(
 import { classifyNdvi } from '@/lib/satellite/ndvi';
 import { ndviColorHex } from '@/lib/design/ndvi-scale';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
-import { cropLabel, formatHa, formatDatePL, formatDateTimePL, severityStyle, pluralPL } from '@/lib/ui/format';
+import { cropLabel, formatHa, formatDatePL, formatDateTimePL, severityStyle, pluralPL, formatFixedPL } from '@/lib/ui/format';
 
 interface FieldItem {
   id: string;
@@ -442,7 +442,7 @@ function FieldCard({ field }: { field: FieldItem }) {
               style={{ borderColor: `${ndviColor}55`, color: 'hsl(var(--foreground))' }}
             >
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ndviColor }} />
-              NDVI {field.ndviMean.toFixed(2)}
+              NDVI {formatFixedPL(field.ndviMean, 2)}
             </div>
           ) : (
             <div className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-md bg-card border border-border text-muted-foreground">

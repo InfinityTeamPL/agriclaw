@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import { Loader2, Droplets, CloudRain, CloudSun, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatFixedPL } from '@/lib/ui/format';
 
 type Status = 'surplus' | 'balanced' | 'mild-deficit' | 'drought' | 'severe-drought';
 
@@ -162,7 +163,7 @@ export function WaterBalance({ fieldId }: Props) {
               Bilans wodny · {meta.label}
             </div>
             <div className="text-xs text-muted-foreground mt-0.5">
-              FAO-56 · Kc {b.kcCurrent.toFixed(2)}
+              FAO-56 · Kc {formatFixedPL(b.kcCurrent, 2)}
               {data.bbchLabel && ` · BBCH ${data.bbch} (${data.bbchLabel})`}
             </div>
           </div>
@@ -282,7 +283,7 @@ export function WaterBalance({ fieldId }: Props) {
                 {b.irrigationSuggestionMm} mm · {b.irrigationTotalM3.toLocaleString('pl-PL')} m³
               </div>
               <div className="text-xs text-signal-healthy">
-                Na polu {data.areaHectares.toFixed(1)} ha · najlepsza pora: wieczór 18-21 lub rano 4-7
+                Na polu {formatFixedPL(data.areaHectares, 1)} ha · najlepsza pora: wieczór 18-21 lub rano 4-7
               </div>
             </div>
           </div>

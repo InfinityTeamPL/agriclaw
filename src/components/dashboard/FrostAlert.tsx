@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react';
 import { Snowflake, AlertTriangle, Thermometer, ShieldCheck, Loader2, Wind } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { todayIsoPL } from '@/lib/ui/format';
+import { todayIsoPL, formatFixedPL } from '@/lib/ui/format';
 
 type FrostLevel = 'safe' | 'watch' | 'warning' | 'critical';
 
@@ -189,7 +189,7 @@ export function FrostAlert({ fieldId }: Props) {
                   : 'text-signal-frost',
             )}
           >
-            {data.minTempC.toFixed(1)}°C
+            {formatFixedPL(data.minTempC, 1)}°C
           </div>
         </div>
       </div>

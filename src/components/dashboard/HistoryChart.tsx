@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 import { ScanLine } from '@/components/brand/ScanLine';
 import { ndviColorHex } from '@/lib/design/ndvi-scale';
+import { formatFixedPL } from '@/lib/ui/format';
 
 interface MonthlyPoint {
   month: string; // YYYY-MM
@@ -254,7 +255,7 @@ export function HistoryChart({ fieldId }: { fieldId: string }) {
                 fillOpacity="0.6"
                 className="tabular"
               >
-                {v.toFixed(1)}
+                {formatFixedPL(v, 1)}
               </text>
             </g>
           ))}
@@ -285,7 +286,7 @@ export function HistoryChart({ fieldId }: { fieldId: string }) {
               fill={ndviColorHex(p.mean)}
             >
               <title>
-                {p.month}: NDVI {p.mean.toFixed(2)} (min {p.min.toFixed(2)}, max {p.max.toFixed(2)}, {p.samples} obserwacji)
+                {p.month}: NDVI {formatFixedPL(p.mean, 2)} (min {formatFixedPL(p.min, 2)}, max {formatFixedPL(p.max, 2)}, {p.samples} obserwacji)
               </title>
             </circle>
           ))}
@@ -333,7 +334,7 @@ export function HistoryChart({ fieldId }: { fieldId: string }) {
                   className="font-mono text-lg font-bold tabular"
                   style={{ color: ndviColorHex(y.peak) }}
                 >
-                  {y.peak.toFixed(2)}
+                  {formatFixedPL(y.peak, 2)}
                 </div>
                 <div className="text-[9px] font-mono tabular text-muted-foreground/70">{y.samples} obs.</div>
               </div>

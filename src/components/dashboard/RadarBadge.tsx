@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { Waves, AlertTriangle, CheckCircle2, Droplets } from 'lucide-react';
 import { toast } from 'sonner';
 import { ScanLine } from '@/components/brand/ScanLine';
+import { formatFixedPL } from '@/lib/ui/format';
 
 interface SoilMoistureBlock {
   relativePct: number;
@@ -147,9 +148,9 @@ export function RadarBadge({ fieldId }: { fieldId: string }) {
           </div>
         </div>
         <div className="text-right text-[10px] font-mono tabular text-muted-foreground shrink-0">
-          VV {radar.vv.mean.toFixed(1)} dB<br />
-          VH {radar.vh.mean.toFixed(1)} dB<br />
-          RVI {radar.rvi.mean.toFixed(2)}
+          VV {formatFixedPL(radar.vv.mean, 1)} dB<br />
+          VH {formatFixedPL(radar.vh.mean, 1)} dB<br />
+          RVI {formatFixedPL(radar.rvi.mean, 2)}
         </div>
       </div>
       <p className="text-sm text-muted-foreground leading-relaxed">{interpretation.details}</p>

@@ -113,13 +113,18 @@ ${PROMPT_ADVISORY_DISCIPLINE}`;
     if (msg.includes('OPENROUTER_API_KEY')) {
       return NextResponse.json(
         {
-          error: 'Diagnoza z kamery wymaga skonfigurowania OpenRouter (OPENROUTER_API_KEY w env). Załóż konto na openrouter.ai, gotowe w 2 min.',
+          error: 'Diagnoza ze zdjęcia jest chwilowo niedostępna. Spróbuj ponownie później.',
           configRequired: 'OPENROUTER_API_KEY',
         },
         { status: 503 },
       );
     }
-    return NextResponse.json({ error: msg }, { status: 502 });
+    // Surowy błąd dostawcy (np. 429 z treścią odpowiedzi) tylko do logów.
+    console.error('[diagnose] błąd modelu', msg);
+    return NextResponse.json(
+      { error: 'Nie udało się przeanalizować zdjęcia. Spróbuj ponownie za chwilę.' },
+      { status: 502 },
+    );
   }
 
   // Parsowanie JSON z fallbackiem
