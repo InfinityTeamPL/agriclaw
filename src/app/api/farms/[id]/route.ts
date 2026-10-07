@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { CHAT_ENGINE_VALUES } from '@/lib/agent/engine';
+import { validationError } from '@/lib/http/validation-error';
 
 const patchSchema = z.object({
   chatEngine: z.enum(CHAT_ENGINE_VALUES as [string, ...string[]]),
@@ -21,12 +22,12 @@ export async function PATCH(
     where: { id: params.id, userId: user.id },
     select: { id: true },
   });
-  if (!farm) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (!farm) return NextResponse.json({ error: 'Nie znaleziono.' }, { status: 404 });
 
   const body = await req.json().catch(() => null);
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return validationError(parsed.error);
   }
 
   const updated = await prisma.farm.update({

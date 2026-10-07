@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { verifySkillAuth } from '@/lib/skill-auth';
 import { withAdvisoryDisclaimer } from '@/lib/advisory';
 import { fetchWithTimeout } from '@/lib/satellite/http';
+import { validationError } from '@/lib/http/validation-error';
 
 const bodySchema = z.object({
   message: z.string().min(1).max(1600),
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return validationError(parsed.error);
   }
 
   const farm = await prisma.farm.findUnique({

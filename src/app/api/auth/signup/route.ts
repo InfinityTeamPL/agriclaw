@@ -3,11 +3,12 @@ import { hash } from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { rateLimitByIpAsync } from '@/lib/rate-limit';
+import { validationError } from '@/lib/http/validation-error';
 
 const signupSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8, 'Hasło min 8 znaków'),
-  name: z.string().min(1).max(100),
+  password: z.string().min(8, 'Hasło musi mieć co najmniej 8 znaków.'),
+  name: z.string().min(1, 'Podaj imię.').max(100, 'Imię jest za długie.'),
 });
 
 export async function POST(req: NextRequest) {
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = signupSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return validationError(parsed.error);
   }
 
   const { email, password, name } = parsed.data;
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
 
   const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
   if (existing) {
-    return NextResponse.json({ error: 'Użytkownik istnieje' }, { status: 409 });
+    return NextResponse.json({ error: 'Konto z tym adresem email już istnieje.' }, { status: 409 });
   }
 
   const hashed = await hash(password, 10);

@@ -15,6 +15,8 @@ export interface ParcelResult {
   polygon: GeoJSON.Polygon | GeoJSON.MultiPolygon;
   areaHectares: number;
   centroid: { lat: number; lon: number };
+  /** Z ilu osobnych części składa się działka (np. przecięta drogą). 1 dla zwykłej. */
+  parts: number;
 }
 
 /**
@@ -71,6 +73,7 @@ export async function fetchParcelByTeryt(teryt: string): Promise<ParcelResult | 
     polygon,
     areaHectares: area / 10_000,
     centroid,
+    parts: polygon.type === 'MultiPolygon' ? polygon.coordinates.length : 1,
   };
 }
 
@@ -112,6 +115,7 @@ export async function fetchParcelByCoords(
     polygon,
     areaHectares: area / 10_000,
     centroid,
+    parts: polygon.type === 'MultiPolygon' ? polygon.coordinates.length : 1,
   };
 }
 
@@ -141,13 +145,38 @@ function parsePolygon(wkt: string): GeoJSON.Polygon | null {
   return { type: 'Polygon', coordinates: rings };
 }
 
+// Zwraca zawartość każdej zbalansowanej grupy nawiasów na najwyższym poziomie:
+// "(a),(b)" → ["a", "b"]. Działa dla zagnieżdżeń, w których zwykły split po "),(" się gubi.
+function topLevelGroups(str: string): string[] {
+  const groups: string[] = [];
+  let depth = 0;
+  let start = -1;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    if (ch === '(') {
+      if (depth === 0) start = i + 1;
+      depth++;
+    } else if (ch === ')') {
+      depth--;
+      if (depth === 0 && start >= 0) groups.push(str.slice(start, i));
+    }
+  }
+  return groups;
+}
+
 function parseMultiPolygon(wkt: string): GeoJSON.MultiPolygon | null {
-  const match = wkt.match(/^MULTIPOLYGON\s*\(\((.+)\)\)$/s);
-  if (!match) return null;
-  // Simplified: bierzemy tylko pierwszy polygon dla większości działek
-  const firstPoly = match[1].split(/\)\),\s*\(\(/)[0];
-  const rings = firstPoly.split(/\),\s*\(/).map((r) => parseCoords(r));
-  return { type: 'MultiPolygon', coordinates: [rings] };
+  const body = wkt.replace(/^MULTIPOLYGONs*/i, '');
+  // body = "(((x y,...)),((x y,...)))" → grupa zewnętrzna zawiera poligony.
+  const [inner] = topLevelGroups(body);
+  if (!inner) return null;
+  const polygons: Array<Array<Array<[number, number]>>> = [];
+  for (const polyBody of topLevelGroups(inner)) {
+    // polyBody = "(x y,...),(x y,...)" → pierścienie (zewnętrzny + dziury)
+    const rings = topLevelGroups(polyBody).map((r) => parseCoords(r));
+    if (rings.length > 0 && rings[0].length >= 4) polygons.push(rings);
+  }
+  if (polygons.length === 0) return null;
+  return { type: 'MultiPolygon', coordinates: polygons };
 }
 
 function parseCoords(coordStr: string): Array<[number, number]> {
@@ -164,17 +193,9 @@ function parseCoords(coordStr: string): Array<[number, number]> {
 // Area + centroid (przybliżone dla małych polygonów WGS84)
 // ────────────────────────────────────────────────────────────
 
-function computePolygonAreaCentroid(
-  geom: GeoJSON.Polygon | GeoJSON.MultiPolygon,
-): { area: number; centroid: { lat: number; lon: number } } {
-  const ring =
-    geom.type === 'Polygon'
-      ? (geom.coordinates[0] as Array<[number, number]>)
-      : (geom.coordinates[0][0] as Array<[number, number]>);
-
-  if (ring.length < 3) return { area: 0, centroid: { lat: 0, lon: 0 } };
-
-  // Shoelace + konwersja do metrów przez spherical earth (R=6378137m)
+// Pole jednego pierścienia w m² (shoelace na sferze, R=6378137 m).
+function ringAreaM2(ring: Array<[number, number]>): number {
+  if (ring.length < 3) return 0;
   const R = 6_378_137;
   let area = 0;
   for (let i = 0; i < ring.length - 1; i++) {
@@ -184,19 +205,41 @@ function computePolygonAreaCentroid(
       ((lon2 - lon1) * Math.PI) / 180 *
       (2 + Math.sin((lat1 * Math.PI) / 180) + Math.sin((lat2 * Math.PI) / 180));
   }
-  const areaM2 = Math.abs((area * R * R) / 2);
+  return Math.abs((area * R * R) / 2);
+}
 
-  // Centroid — prosty średnia współrzędnych
+/** Powierzchnia poligonu w m²: pierścień zewnętrzny minus dziury. */
+export function polygonAreaM2(poly: GeoJSON.Polygon): number {
+  const [outer, ...holes] = poly.coordinates as Array<Array<[number, number]>>;
+  return Math.max(0, ringAreaM2(outer) - holes.reduce((sum, h) => sum + ringAreaM2(h), 0));
+}
+
+/** Rozbija geometrię na poligony. */
+export function polygonParts(geom: GeoJSON.Polygon | GeoJSON.MultiPolygon): GeoJSON.Polygon[] {
+  return geom.type === 'Polygon'
+    ? [geom]
+    : geom.coordinates.map((coordinates) => ({ type: 'Polygon' as const, coordinates }));
+}
+
+/** Największa część działki (do zapisania jako pole, gdy działka ma kilka części). */
+export function largestPart(geom: GeoJSON.Polygon | GeoJSON.MultiPolygon): GeoJSON.Polygon {
+  return polygonParts(geom).reduce((best, p) => (polygonAreaM2(p) > polygonAreaM2(best) ? p : best));
+}
+
+function computePolygonAreaCentroid(
+  geom: GeoJSON.Polygon | GeoJSON.MultiPolygon,
+): { area: number; centroid: { lat: number; lon: number } } {
+  const parts = polygonParts(geom);
+  const area = parts.reduce((sum, p) => sum + polygonAreaM2(p), 0);
+
+  // Centroid liczymy z największej części (prosta średnia wierzchołków zewnętrznego pierścienia).
+  const ring = largestPart(geom).coordinates[0] as Array<[number, number]>;
+  if (ring.length < 3) return { area: 0, centroid: { lat: 0, lon: 0 } };
   let sumLon = 0;
   let sumLat = 0;
   for (const [lon, lat] of ring) {
     sumLon += lon;
     sumLat += lat;
   }
-  const centroid = {
-    lat: sumLat / ring.length,
-    lon: sumLon / ring.length,
-  };
-
-  return { area: areaM2, centroid };
+  return { area, centroid: { lat: sumLat / ring.length, lon: sumLon / ring.length } };
 }

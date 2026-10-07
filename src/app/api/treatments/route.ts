@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
+import { validationError } from '@/lib/http/validation-error';
 
 // Data zabiegu: pełny ISO datetime LUB czysta data YYYY-MM-DD. Zakotwiczony regex
 // (^...$) + sprawdzenie kalendarza (Date.parse) — inaczej '2026-99-99' czy
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest) {
 
   if (fieldId) {
     const ok = await ensureFieldOwnership(user.id, fieldId);
-    if (!ok) return NextResponse.json({ error: 'Field not found' }, { status: 404 });
+    if (!ok) return NextResponse.json({ error: 'Nie znaleziono pola.' }, { status: 404 });
     const treatments = await prisma.treatment.findMany({
       where: { fieldId },
       orderBy: { performedAt: 'desc' },
@@ -111,11 +112,11 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = treatmentSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return validationError(parsed.error);
   }
 
   const ok = await ensureFieldOwnership(user.id, parsed.data.fieldId);
-  if (!ok) return NextResponse.json({ error: 'Field not found' }, { status: 404 });
+  if (!ok) return NextResponse.json({ error: 'Nie znaleziono pola.' }, { status: 404 });
 
   const treatment = await prisma.treatment.create({
     data: {

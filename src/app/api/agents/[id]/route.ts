@@ -27,7 +27,7 @@ export async function GET(
 ) {
   const { user } = await requireAuth();
   const agent = await loadOwnedAgent(user.id, params.id);
-  if (!agent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+  if (!agent) return NextResponse.json({ error: 'Nie znaleziono agenta.' }, { status: 404 });
 
   let health: { ok: boolean; uptime?: string; version?: string } | null = null;
   if (agent.status === 'READY' && agent.serverIp) {
@@ -75,7 +75,7 @@ export async function DELETE(
 ) {
   const { user } = await requireAuth();
   const agent = await loadOwnedAgent(user.id, params.id);
-  if (!agent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
+  if (!agent) return NextResponse.json({ error: 'Nie znaleziono agenta.' }, { status: 404 });
 
   // Best-effort: usuń VM. Jeśli to mock albo brak serverId, po prostu pomiń.
   if (

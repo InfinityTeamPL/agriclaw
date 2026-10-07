@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
+import { validationError } from '@/lib/http/validation-error';
 
 // Data: pełny ISO datetime LUB YYYY-MM-DD, z realnym sprawdzeniem kalendarza
 // (zakotwiczony regex + Date.parse) — inaczej '2026-99-99' dawał 500. Audyt 2.MEDIUM.
@@ -44,12 +45,12 @@ export async function PATCH(
 ) {
   const { user } = await requireAuth();
   const ok = await ensureOwnership(user.id, params.id);
-  if (!ok) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (!ok) return NextResponse.json({ error: 'Nie znaleziono.' }, { status: 404 });
 
   const body = await req.json().catch(() => null);
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return validationError(parsed.error);
   }
 
   const data: Record<string, unknown> = { ...parsed.data };
@@ -69,7 +70,7 @@ export async function DELETE(
 ) {
   const { user } = await requireAuth();
   const ok = await ensureOwnership(user.id, params.id);
-  if (!ok) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (!ok) return NextResponse.json({ error: 'Nie znaleziono.' }, { status: 404 });
 
   await prisma.treatment.delete({ where: { id: params.id } });
   return NextResponse.json({ ok: true });

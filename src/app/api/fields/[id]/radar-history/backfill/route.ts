@@ -40,7 +40,7 @@ export async function POST(
     LIMIT 1
   `;
   const field = rows[0];
-  if (!field) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (!field) return NextResponse.json({ error: 'Nie znaleziono.' }, { status: 404 });
 
   const polygon = JSON.parse(field.polygon) as GeoJSON.Polygon;
   const client = getCopernicusClient();

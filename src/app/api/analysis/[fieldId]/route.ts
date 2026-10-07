@@ -39,7 +39,7 @@ export async function POST(
   `;
 
   const field = rows[0];
-  if (!field) return NextResponse.json({ error: 'Field not found' }, { status: 404 });
+  if (!field) return NextResponse.json({ error: 'Nie znaleziono pola.' }, { status: 404 });
 
   const polygon = JSON.parse(field.polygon) as GeoJSON.Polygon;
   const today = new Date().toISOString().slice(0, 10);

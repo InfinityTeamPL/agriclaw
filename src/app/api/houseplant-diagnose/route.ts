@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 import { getOpenRouterClient } from '@/lib/ai/openrouter';
+import { validationError } from '@/lib/http/validation-error';
 
 const bodySchema = z.object({
   imageBase64: z.string().startsWith('data:image/'),
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return validationError(parsed.error);
   }
 
   const userNoteHint = parsed.data.note

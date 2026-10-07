@@ -25,7 +25,7 @@ import {
   getTreatmentTypeIcon,
   type CommonProduct,
 } from '@/lib/treatment-types';
-import { cropLabel, formatDatePL, formatHa, parsePlNumber, formatNumberPL } from '@/lib/ui/format';
+import { cropLabel, todayIsoPL, formatDatePL, formatHa, parsePlNumber, formatNumberPL } from '@/lib/ui/format';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 
 interface FieldOpt {
@@ -420,7 +420,7 @@ function TreatmentModal({
   const [fieldId, setFieldId] = useState(editing?.fieldId ?? fields[0]?.id ?? '');
   const [type, setType] = useState<string>(editing?.type ?? 'spray');
   const [performedAt, setPerformedAt] = useState(
-    editing ? editing.performedAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
+    editing ? editing.performedAt.slice(0, 10) : todayIsoPL(),
   );
   const [purpose, setPurpose] = useState(editing?.purpose ?? '');
   const [productName, setProductName] = useState(editing?.productName ?? '');

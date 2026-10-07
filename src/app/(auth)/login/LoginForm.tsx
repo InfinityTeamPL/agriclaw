@@ -2,7 +2,7 @@
 
 import { signIn } from 'next-auth/react';
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { Compass } from 'lucide-react';
@@ -10,8 +10,27 @@ import { GoogleButton } from '@/components/auth/GoogleButton';
 import { LogoMark } from '@/components/brand/LogoMark';
 import { NdviKeyline } from '@/components/brand/NdviKeyline';
 
+// Dozwolony powrót tylko do ścieżki w tej aplikacji (bez open-redirect na obcą domenę).
+function safeCallback(raw: string | null): string {
+  if (raw && raw.startsWith('/') && !raw.startsWith('//')) return raw;
+  return '/dashboard';
+}
+
+// Komunikaty NextAuth przekazywane w ?error= (np. anulowane lub nieudane logowanie Google).
+const AUTH_ERRORS: Record<string, string> = {
+  OAuthAccountNotLinked: 'Ten email ma już konto założone inną metodą. Zaloguj się tak, jak je zakładasz.',
+  AccessDenied: 'Logowanie zostało anulowane lub odrzucone.',
+  Configuration: 'Logowanie jest chwilowo niedostępne. Spróbuj ponownie za chwilę.',
+};
+
 export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
   const router = useRouter();
+  const params = useSearchParams();
+  const callbackUrl = safeCallback(params.get('callbackUrl'));
+  const urlError = params.get('error');
+  const [error, setError] = useState<string | null>(
+    urlError ? (AUTH_ERRORS[urlError] ?? 'Nie udało się zalogować. Spróbuj ponownie.') : null,
+  );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,18 +41,29 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
-    const res = await signIn('credentials', {
-      email: email.trim(),
-      password,
-      redirect: false,
-    });
-    setLoading(false);
-    if (res?.error) {
-      toast.error('Niepoprawny email lub hasło');
-      return;
+    setError(null);
+    try {
+      const res = await signIn('credentials', {
+        email: email.trim(),
+        password,
+        redirect: false,
+      });
+      if (res?.error) {
+        // Błąd zostaje na ekranie (toast znika po kilku sekundach, a rolnik ma w rękawicach).
+        setError(
+          googleEnabled
+            ? 'Niepoprawny email lub hasło. Jeśli zakładasz konto przez Google, użyj przycisku „Kontynuuj z Google”.'
+            : 'Niepoprawny email lub hasło.',
+        );
+        return;
+      }
+      router.push(callbackUrl);
+      router.refresh();
+    } catch {
+      setError('Brak połączenia z serwerem. Sprawdź internet i spróbuj ponownie.');
+    } finally {
+      setLoading(false);
     }
-    router.push('/dashboard');
-    router.refresh();
   };
 
   // Jeden klik = wejście na gotowe gospodarstwo demo. Konto jest publiczne
@@ -41,19 +71,25 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
   const demoLogin = async () => {
     if (demoLoading || loading) return;
     setDemoLoading(true);
-    const res = await signIn('credentials', {
-      email: 'demo@agriclaw.pl',
-      password: 'demo1234',
-      redirect: false,
-    });
-    setDemoLoading(false);
-    if (res?.error) {
-      toast.error('Konto demo chwilowo niedostępne. Spróbuj ponownie.');
-      return;
+    setError(null);
+    try {
+      const res = await signIn('credentials', {
+        email: 'demo@agriclaw.pl',
+        password: 'demo1234',
+        redirect: false,
+      });
+      if (res?.error) {
+        setError('Konto demo chwilowo niedostępne. Spróbuj ponownie.');
+        return;
+      }
+      toast.success('Oglądasz gospodarstwo demo — możesz klikać wszystko.');
+      router.push('/dashboard');
+      router.refresh();
+    } catch {
+      setError('Brak połączenia z serwerem. Sprawdź internet i spróbuj ponownie.');
+    } finally {
+      setDemoLoading(false);
     }
-    toast.success('Oglądasz gospodarstwo demo — możesz klikać wszystko.');
-    router.push('/dashboard');
-    router.refresh();
   };
 
   // Link "zobacz demo" z landingu/kampanii: /login?demo=1 → od razu logujemy.
@@ -114,9 +150,10 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
               id="email"
               type="email"
               required
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 font-mono text-sm bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full min-h-11 px-3 py-2 font-mono text-sm bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
@@ -128,19 +165,38 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
               id="password"
               type="password"
               required
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 font-mono text-sm bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full min-h-11 px-3 py-2 font-mono text-sm bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
+
+          {error && (
+            <p
+              role="alert"
+              className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+            >
+              {error}
+            </p>
+          )}
 
           <button
             type="submit"
             disabled={loading || demoLoading}
-            className="w-full bg-primary text-primary-foreground font-semibold py-2 rounded-md shadow-card hover:brightness-110 disabled:opacity-50 transition-all"
+            className="w-full min-h-11 bg-primary text-primary-foreground font-semibold py-2 rounded-md shadow-card hover:brightness-110 disabled:opacity-50 transition-all"
           >
             {loading ? 'Loguję...' : 'Zaloguj'}
           </button>
+          <p className="text-center text-xs text-muted-foreground">
+            Nie pamiętasz hasła?{' '}
+            <a
+              href="mailto:contact@infinityteam.io?subject=Reset%20has%C5%82a%20AgriClaw"
+              className="text-primary font-medium hover:underline"
+            >
+              Napisz do nas
+            </a>
+          </p>
         </form>
 
         {/* Demo: pełnoprawny, widoczny przycisk — jeden klik i jesteś w środku.
@@ -158,7 +214,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
           type="button"
           onClick={demoLogin}
           disabled={demoLoading || loading}
-          className="w-full flex items-center justify-center gap-2.5 py-2.5 rounded-md border border-signal-healthy/40 bg-signal-healthy/5 text-foreground font-semibold hover:bg-signal-healthy/10 hover:border-signal-healthy/60 disabled:opacity-60 transition"
+          className="w-full min-h-11 flex items-center justify-center gap-2.5 py-2.5 rounded-md border border-signal-healthy/40 bg-signal-healthy/5 text-foreground font-semibold hover:bg-signal-healthy/10 hover:border-signal-healthy/60 disabled:opacity-60 transition"
         >
           <Compass className="w-4 h-4 text-signal-healthy" />
           {demoLoading ? 'Otwieram gospodarstwo demo…' : 'Wypróbuj konto demo'}

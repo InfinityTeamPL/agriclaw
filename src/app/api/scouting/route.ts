@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { requireAuth } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
+import { validationError } from '@/lib/http/validation-error';
 
 const scoutingSchema = z.object({
   fieldId: z.string().uuid(),
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
 
   if (fieldId) {
     const ok = await ensureFieldOwnership(user.id, fieldId);
-    if (!ok) return NextResponse.json({ error: 'Field not found' }, { status: 404 });
+    if (!ok) return NextResponse.json({ error: 'Nie znaleziono pola.' }, { status: 404 });
     const items = await prisma.scouting.findMany({
       where: { fieldId },
       orderBy: { createdAt: 'desc' },
@@ -91,10 +92,10 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = scoutingSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return validationError(parsed.error);
   }
   const ok = await ensureFieldOwnership(user.id, parsed.data.fieldId);
-  if (!ok) return NextResponse.json({ error: 'Field not found' }, { status: 404 });
+  if (!ok) return NextResponse.json({ error: 'Nie znaleziono pola.' }, { status: 404 });
 
   const scouting = await prisma.scouting.create({ data: parsed.data });
   return NextResponse.json(scouting, { status: 201 });

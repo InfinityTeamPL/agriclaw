@@ -11,6 +11,8 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Settings2, Trash2, Loader2, X } from 'lucide-react';
 import { cropLabel } from '@/lib/ui/format';
+import { todayIsoPL } from '@/lib/ui/format';
+import { fetchJson } from '@/lib/ui/api-error';
 
 const CROP_OPTIONS: Array<{ value: string; label: string }> = [
   'wheat',
@@ -44,7 +46,7 @@ export function FieldSettings({
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = todayIsoPL();
 
   const dirty =
     name !== initialName ||
@@ -58,8 +60,9 @@ export function FieldSettings({
       return;
     }
     setSaving(true);
-    try {
-      const res = await fetch(`/api/fields/${fieldId}`, {
+    const res = await fetchJson(
+      `/api/fields/${fieldId}`,
+      {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -68,38 +71,38 @@ export function FieldSettings({
           // '' → null czyści datę (powrót do kalendarza); inaczej 'YYYY-MM-DD'
           sowingDate: sowingDate ? sowingDate : null,
         }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(typeof data?.error === 'string' ? data.error : `HTTP ${res.status}`);
-      }
-      toast.success('Zapisano ustawienia pola.');
-      setOpen(false);
-      router.refresh();
-    } catch (e) {
-      toast.error(`Nie udało się zapisać: ${e instanceof Error ? e.message : 'błąd'}`);
-    } finally {
-      setSaving(false);
+      },
+      'Nie udało się zapisać ustawień pola. Spróbuj ponownie.',
+    );
+    setSaving(false);
+    if (!res.ok) {
+      toast.error(res.message);
+      return;
     }
+    toast.success('Zapisano ustawienia pola.');
+    setOpen(false);
+    router.refresh();
   };
 
   const remove = async () => {
     if (deleting) return;
     setDeleting(true);
-    try {
-      const res = await fetch(`/api/fields/${fieldId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json().catch(() => ({}))) as { softDeleted?: boolean };
-      toast.success(
-        data.softDeleted
-          ? 'Pole ukryte. Księga polowa (zabiegi) została zachowana zgodnie z przepisami.'
-          : 'Pole usunięte.',
-      );
-      router.push('/dashboard/fields');
-    } catch {
-      toast.error('Nie udało się usunąć pola.');
+    const res = await fetchJson<{ softDeleted?: boolean }>(
+      `/api/fields/${fieldId}`,
+      { method: 'DELETE' },
+      'Nie udało się usunąć pola. Spróbuj ponownie.',
+    );
+    if (!res.ok) {
+      toast.error(res.message);
       setDeleting(false);
+      return;
     }
+    toast.success(
+      res.data?.softDeleted
+        ? 'Pole ukryte. Księga polowa (zabiegi) została zachowana zgodnie z przepisami.'
+        : 'Pole usunięte.',
+    );
+    router.push('/dashboard/fields');
   };
 
   if (!open) {

@@ -20,6 +20,7 @@ import { getAgentTemplate, type AgriAdvisorContext } from '@/lib/agent-templates
 import { createServer, waitForServer } from '@/lib/hetzner';
 import { deployAgent } from '@/lib/ssh-deploy';
 import type { ProvisionConfig } from '@/lib/provision-script';
+import { validationError } from '@/lib/http/validation-error';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -186,7 +187,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const parsed = deployAgentSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    return validationError(parsed.error);
   }
   const { farmId, channel, model } = parsed.data;
 
@@ -202,7 +203,7 @@ export async function POST(req: NextRequest) {
     },
   });
   if (!farm || farm.userId !== user.id) {
-    return NextResponse.json({ error: 'Farm not found' }, { status: 404 });
+    return NextResponse.json({ error: 'Nie znaleziono gospodarstwa.' }, { status: 404 });
   }
 
   // MVP: tylko jeden agent (READY/PROVISIONING) per farm
