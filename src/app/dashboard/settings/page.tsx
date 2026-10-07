@@ -54,7 +54,7 @@ export default async function SettingsPage() {
             </div>
             <div className="flex justify-between gap-2">
               <dt className="text-muted-foreground">Plan</dt>
-              <dd className="text-right capitalize">{farm.plan}</dd>
+              <dd className="text-right">{farm.plan === 'free' ? 'Darmowy' : farm.plan}</dd>
             </div>
           </dl>
         </div>

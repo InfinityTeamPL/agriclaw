@@ -5,6 +5,7 @@
 //  - prawa strona: sticky sidebar ze statystyką NDVI + sparkline + tabs
 // Tabs: Analiza / Historia / Rekomendacje.
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
@@ -295,7 +296,7 @@ export function FieldDetailView({ field, ndviHistory, recommendations }: Props) 
 
           {/* Tabs */}
           <div className="rounded-lg bg-card border border-border overflow-hidden shadow-card">
-            <div className="flex items-center p-1.5 m-1.5 rounded-md bg-secondary">
+            <div role="tablist" aria-label="Szczegóły pola" className="flex items-center p-1.5 m-1.5 rounded-md bg-secondary">
               <TabButton active={tab === 'analysis'} onClick={() => setTab('analysis')}>
                 Analiza
               </TabButton>
@@ -373,9 +374,11 @@ function TabButton({
   return (
     <button
       type="button"
+      role="tab"
+      aria-selected={active}
       onClick={onClick}
       className={cn(
-        'flex-1 px-3 py-2 rounded-md text-xs font-semibold transition',
+        'flex-1 px-3 min-h-11 rounded-md text-xs font-semibold transition',
         active
           ? 'bg-card text-primary shadow-card'
           : 'text-muted-foreground hover:text-foreground',
@@ -435,16 +438,17 @@ function AnalysisTab({
       <div className="rounded-md bg-secondary border border-border p-3 text-sm text-foreground">
         {describeNdvi(latest.mean, crop, { sowingDate: field.sowingDate, at: new Date(latest.observedAt) })}
       </div>
-      <a
-        href="/dashboard/agent"
-        className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-md bg-primary text-primary-foreground text-sm hover:brightness-110 transition"
+      <Link
+        // Pytanie o to konkretne pole trafia do czatu jako gotowy szkic (agent/page czyta ?q=).
+        href={`/dashboard/agent?q=${encodeURIComponent(`Co słychać na polu „${field.name}"? Czy coś wymaga mojej uwagi?`)}`}
+        className="flex items-center justify-between gap-2 px-3 py-2.5 min-h-11 rounded-md bg-primary text-primary-foreground text-sm hover:brightness-110 transition"
       >
         <span className="inline-flex items-center gap-2">
           <MessageSquare className="w-4 h-4" />
           Zapytaj agenta o to pole
         </span>
         <span aria-hidden="true">→</span>
-      </a>
+      </Link>
     </div>
   );
 }

@@ -4,7 +4,7 @@
 // Rolnik ma swoje numery w wniosku JPO, wkleja → my mamy polygon 1:1 z systemem płatności.
 
 import { useId, useState } from 'react';
-import { MapPin, Loader2, Check, Info, AlertTriangle } from 'lucide-react';
+import { Loader2, Check, Info, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatHa, formatNumberPL } from '@/lib/ui/format';
 import { fetchJson } from '@/lib/ui/api-error';
@@ -62,18 +62,6 @@ export function ParcelImport({ onImported }: Props) {
 
   return (
     <div className="rounded-lg bg-card border border-border shadow-card p-4 space-y-3">
-      <div className="flex items-start gap-3">
-        <div className="w-9 h-9 rounded-md bg-primary/10 ring-1 ring-primary/20 flex items-center justify-center shrink-0">
-          <MapPin className="w-4 h-4 text-primary" />
-        </div>
-        <div className="flex-1">
-          <h3 className="font-display font-semibold tracking-tight text-foreground">Import z ARiMR</h3>
-          <p className="text-xs text-muted-foreground">
-            Masz numer działki z wniosku JPO? Wklej — pobierzemy granicę 1:1 z ewidencji.
-          </p>
-        </div>
-      </div>
-
       <div>
         <label htmlFor={inputId} className="block text-xs font-semibold text-foreground mb-1">
           Numer TERYT działki

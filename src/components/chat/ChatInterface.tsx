@@ -24,6 +24,8 @@ export interface ChatInitialMessage {
 
 interface Props {
   farmId: string;
+  /** Wstępnie wpisane (niewysłane) pytanie, np. z karty pola. */
+  initialDraft?: string;
   initialConversationId: string | null;
   initialMessages: ChatInitialMessage[];
 }
@@ -44,13 +46,14 @@ const SUGGESTIONS = [
 
 export function ChatInterface({
   farmId,
+  initialDraft = '',
   initialConversationId,
   initialMessages,
 }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>(
     initialMessages.map((m) => ({ id: m.id, role: m.role, content: m.content })),
   );
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(initialDraft);
   const [sending, setSending] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(
     initialConversationId,

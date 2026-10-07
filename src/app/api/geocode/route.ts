@@ -15,9 +15,21 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return validationError(parsed.error);
   }
-  const result = await geocodeAddress(parsed.data.address);
+  let result;
+  try {
+    result = await geocodeAddress(parsed.data.address);
+  } catch (err) {
+    console.error('[geocode] usługa adresowa niedostępna', err);
+    return NextResponse.json(
+      { error: 'Wyszukiwarka adresów chwilowo nie odpowiada. Spróbuj ponownie za chwilę.' },
+      { status: 502 },
+    );
+  }
   if (!result) {
-    return NextResponse.json({ error: 'Nie znaleziono adresu' }, { status: 404 });
+    return NextResponse.json(
+      { error: 'Nie znaleziono takiego adresu. Wpisz miejscowość i województwo, np. Włocławek, kujawsko-pomorskie.' },
+      { status: 404 },
+    );
   }
   return NextResponse.json(result);
 }

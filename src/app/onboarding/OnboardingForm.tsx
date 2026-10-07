@@ -108,8 +108,9 @@ export function OnboardingForm({ defaultName = '' }: { defaultName?: string }) {
         setLoading(false);
         return;
       }
-      toast.success('Gospodarstwo utworzone.');
-      router.push('/dashboard');
+      toast.success('Gospodarstwo utworzone. Teraz dodaj pierwsze pole.');
+      // Od razu do dodania pola — strona obiecuje „pola dorysujesz potem".
+      router.push('/dashboard/fields/new');
       router.refresh();
     } catch (err) {
       console.error(err);
