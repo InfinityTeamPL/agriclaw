@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   MapPin,
@@ -224,6 +224,15 @@ function AddScoutingModal({
   const [runDiagnose, setRunDiagnose] = useState(false);
   const [diagnosisText, setDiagnosisText] = useState<string | null>(null);
 
+  // Escape zamyka (świadomy gest); klik w tło nie kasuje wpisanej notatki i zdjęcia.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   const captureGps = () => {
     if (!navigator.geolocation) {
       toast.error('GPS niedostępny w tej przeglądarce');
@@ -238,7 +247,14 @@ function AddScoutingModal({
         toast.success(`GPS złapany (dokładność ${Math.round(pos.coords.accuracy)} m)`);
       },
       (err) => {
-        toast.error('Nie udało się pobrać GPS: ' + err.message);
+        // err.code: 1 = odmowa, 2 = brak pozycji, 3 = przekroczony czas (komunikat przeglądarki jest po angielsku)
+        toast.error(
+          err.code === 1
+            ? 'Brak zgody na lokalizację. Włącz ją w ustawieniach przeglądarki i spróbuj ponownie.'
+            : err.code === 3
+              ? 'Nie udało się ustalić pozycji na czas. Wyjdź na otwartą przestrzeń i spróbuj ponownie.'
+              : 'Nie udało się pobrać pozycji GPS.',
+        );
         setGpsLoading(false);
       },
       { enableHighAccuracy: true, timeout: 15000 },
@@ -351,15 +367,18 @@ function AddScoutingModal({
   return (
     <div
       className="fixed inset-0 z-50 bg-foreground/40 flex items-center justify-center p-4"
-      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Nowa obserwacja"
     >
-      <div
-        className="bg-card border border-border rounded-lg shadow-pop w-full max-w-xl max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="bg-card border border-border rounded-lg shadow-pop w-full max-w-xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-card z-10 flex items-center justify-between p-5 border-b border-border">
           <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">Nowa obserwacja</h2>
-          <button onClick={onClose} className="w-8 h-8 rounded-md hover:bg-muted flex items-center justify-center">
+          <button
+            onClick={onClose}
+            aria-label="Zamknij"
+            className="w-11 h-11 -mr-2 rounded-md hover:bg-muted flex items-center justify-center"
+          >
             <X className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>

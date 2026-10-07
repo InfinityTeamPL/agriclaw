@@ -35,8 +35,10 @@ export default async function FieldsPage() {
   const fieldIds = rows.map((r) => r.id);
   const readings = fieldIds.length
     ? await prisma.ndviReading.findMany({
-        where: { fieldId: { in: fieldIds } },
+        // Tylko najnowszy realny odczyt każdego pola (wcześniej pobierało całą historię wszystkich pól).
+        where: { fieldId: { in: fieldIds }, source: { not: 'mock' } },
         orderBy: { observedAt: 'desc' },
+        distinct: ['fieldId'],
       })
     : [];
 
