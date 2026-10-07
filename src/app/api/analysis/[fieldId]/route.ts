@@ -60,7 +60,6 @@ export async function POST(
   let sceneAt: Date | null = null;
   let sceneCloud = 0;
   let noClearScene = false;
-  let cdseError: string | undefined;
 
   if (isCopernicusConfigured()) {
     try {
@@ -75,21 +74,16 @@ export async function POST(
         noClearScene = true;
       }
     } catch (err) {
-      cdseError = String(err);
-      const mock = generateMockNdvi({
-        fieldId: field.id,
-        crop: field.crop,
-        lat: field.centroid_lat,
-        lon: field.centroid_lon,
-      });
-      indices = {
-        ndvi: mock,
-        // Mock estymacje pozostałych indeksów na podstawie NDVI
-        ndre: { ...mock, mean: mock.mean * 0.55, min: mock.min * 0.5, max: mock.max * 0.6 },
-        ndwi: { ...mock, mean: mock.mean * 0.3 - 0.05, min: mock.min * 0.3 - 0.08, max: mock.max * 0.35 },
-        savi: { ...mock, mean: mock.mean * 1.15, min: mock.min * 1.1, max: mock.max * 1.2 },
-      };
-      isMock = true;
+      // Copernicus skonfigurowany, ale odpowiedział błędem. NIE podstawiamy zmyślonego NDVI:
+      // zapisałby się jako odczyt i rekomendacja, a rolnik oglądałby je jak prawdziwy pomiar.
+      console.error('[analysis] błąd Copernicus', err);
+      return NextResponse.json(
+        {
+          error:
+            'Nie udało się pobrać zdjęć satelitarnych z Copernicus. To zwykle chwilowa awaria — spróbuj ponownie za kilka minut.',
+        },
+        { status: 502 },
+      );
     }
   } else {
     const mock = generateMockNdvi({
@@ -120,7 +114,6 @@ export async function POST(
         status: 'no_clear_imagery',
         message:
           'Brak bezchmurnego zdjęcia satelitarnego w ostatnich 14 dniach. Sprawdź radar Sentinel-1 (widzi przez chmury) albo spróbuj ponownie za kilka dni.',
-        cdse_error: cdseError,
       },
       { status: 200 },
     );
@@ -254,7 +247,6 @@ export async function POST(
       description: describeNdvi(indices.ndvi.mean, field.crop, { sowingDate: field.sowing_date, at: observedAt }),
       source: isMock ? 'mock' : 'sentinel-2',
       mock: isMock,
-      cdse_error: cdseError,
       trend: previousReading
         ? {
             previousMean: previousReading.ndviMean,
